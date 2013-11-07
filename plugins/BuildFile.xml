@@ -1,0 +1,22 @@
+<use   name="FWCore/Framework"/>
+<use   name="FWCore/ParameterSet"/>
+<use   name="FWCore/PluginManager"/>
+<use   name="FWCore/ServiceRegistry"/>
+<use   name="FWCore/MessageLogger"/>
+<use   name="FWCore/Utilities"/>
+<use   name="CommonTools/UtilAlgos"/>
+<use   name="CommonTools/Utils"/>
+<use   name="DataFormats/CLHEP"/>
+<use   name="DataFormats/Common"/>
+<use   name="GeneratorInterface/LHEInterface"/>
+<use   name="SimDataFormats/GeneratorProducts"/>
+<use   name="PhysicsTools/Utilities"/>
+<use   name="PhysicsTools/JetMCUtils"/>
+<use   name="ZSV/BAnalysis/"/>
+<use   name="lhapdf"/>
+<use   name="boost"/>
+<use   name="rootcore"/>
+<use   name="rootrflx"/>
+<library   name="BianchiTTHStudiesPlugins" file="*.cc">
+  <flags   EDM_PLUGIN="1"/>
+</library>
