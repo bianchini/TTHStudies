@@ -34,7 +34,7 @@ def processAllBatch(jobName, outName, split):
     
     f = open(scriptName,'w')
     f.write('#!/bin/bash\n\n')
-    f.write('cd /shome/bianchi/CMSSW_5_3_3_patch2/src/VHbbAnalysis/VHbbDataFormats/bin\n')
+    f.write('cd $HOME/CMSSW_5_3_3_patch2/src/VHbbAnalysis/VHbbDataFormats/bin\n')
     f.write('source /swshare/psit3/etc/profile.d/cms_ui_env.sh\n')
     f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
     f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
