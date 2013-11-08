@@ -17,9 +17,16 @@ import FWCore.ParameterSet.Config as cms
 
 pathI   = "srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt/"
 pathI2  = "srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_Step2/"
+
 pathI3  = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt/"
-pathI4  = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_Step2/"
-pathI5  = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/" 
+
+
+# input dir for Skim
+pathI4  = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/"
+
+# output dir for Skim (N.B. no '/' at the end)
+pathI5  = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2" 
+
 
 pathO   = "/scratch/bianchi/HBB_EDMNtuple/All.H.DiJetPt/"
 fileN   = "DiJetPt_"
@@ -124,7 +131,7 @@ def processAllBatch(samples, skims, redoStep3):
                 
             f = open(scriptName,'w')
             f.write('#!/bin/bash\n\n')
-            f.write('cd /shome/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/bin/\n')
+            f.write('cd ${HOME}/CMSSW_5_3_3_patch2_New/src/Bianchi/TTHStudies/bin/\n')
             f.write('source /swshare/psit3/etc/profile.d/cms_ui_env.sh\n')
             f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
             f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
@@ -167,61 +174,80 @@ def processAllBatch(samples, skims, redoStep3):
 
 
 samples = [ 
-    #['WW_TuneZ2star_8TeV_pythia6_tauola', 'WW'],
+
+    ['WW_TuneZ2star_8TeV_pythia6_tauola', 'WW'],
     #['WZ_TuneZ2star_8TeV_pythia6_tauola', 'WZ'],
-    #['ZZ_TuneZ2star_8TeV_pythia6_tauola', 'ZZ'],
-    #['DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball', 'DYJets'],
-    #['T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola', 'TtW'],
-    #['T_s-channel_TuneZ2star_8TeV-powheg-tauola', 'Ts'],
-    #['T_t-channel_TuneZ2star_8TeV-powheg-tauola', 'Tt'],
-    #['Tbar_s-channel_TuneZ2star_8TeV-powheg-tauola', 'Tbars'],
-    #['Tbar_t-channel_TuneZ2star_8TeV-powheg-tauola', 'Tbart'],
+    #['ZZ_TuneZ2star_8TeV_pythia6_tauola', 'ZZ'],  
+
+    #['T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola',    'TtW'],
+    #['T_s-channel_TuneZ2star_8TeV-powheg-tauola',        'Ts'],
+    #['T_t-channel_TuneZ2star_8TeV-powheg-tauola',        'Tt'],
+    #['Tbar_s-channel_TuneZ2star_8TeV-powheg-tauola',     'Tbars'],
+    #['Tbar_t-channel_TuneZ2star_8TeV-powheg-tauola',     'Tbart'],
     #['Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola', 'TbartW'],
-    #['TTJets_HadronicMGDecays_8TeV-madgraph-part', 'TTJetsFullHad'],
-    ['TTJets_FullLeptMGDecays_8TeV-madgraph-part', 'TTJetsFullLept'],
-    #['TTJets_SemiLeptMGDecays_8TeV-madgraph-part', 'TTJetsSemiLept'],
-    #['WJetsToLNu_PtW-100_TuneZ2star_8TeV-madgraph',     'WJets100'],
-    #['WJetsToLNu_PtW-70To100_TuneZ2star_8TeV-madgraph', 'WJets70100'],
-    #['ZH_ZToLL_HToBB_M-125_8TeV-powheg-herwigpp',  'ZH25'],
-    #['WH_WToLNu_HToBB_M-125_8TeV-powheg-herwigpp', 'WH25'],
-    #['SingleElectronRun2012AJul13EdmV42b',  'SingleElectron_1'],
-    #['SingleElectronRun2012AAug06EdmV42',   'SingleElectron_2'],
-    #['SingleElectronRun2012BJul13EdmV42',   'SingleElectron_3'],
-    #['SingleElectronRun2012CAug24RerecoEdmV42', 'SingleElectron_4'],
-    #['SingleElectronRun2012CPromptv2EdmV42', 'SingleElectron_5'],
-    #['SingleElectronRun2012CPromptV2TopUpEdmV42', 'SingleElectron_6'],
-    #['SingleMuRun2012AJul13EdmV42', 'SingleMu_1'],
-    #['SingleMuRun2012AAug06EdmV42', 'SingleMu_2'],
-    #['SingleMuRun2012BJul13EdmV42', 'SingleMu_3'],
-    #['SingleMuRun2012CAug24RerecoEdmV42',  'SingleMu_4'],
-    #['SingleMuRun2012CPromptv2EdmV42',     'SingleMu_5'],
-    #['SingleMuRun2012CPromptV2TopUpEdmV42','SingleMu_6']
-    #['DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',   'DoubleEle_1'],
-    #['DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2','DoubleEle_2'],
-    #['DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED','DoubleEle_3'],
-    #['DoubleElectronRun2012CAug24RerecoEdmV42','DoubleEle_4'],
+
+    #['TTJets_HadronicMGDecays_8TeV-madgraph',            'TTJetsFullHad'],
+    #['TTJets_FullLeptMGDecays_8TeV-madgraph',            'TTJetsFullLept'],
+    #['TTJets_SemiLeptMGDecays_8TeV-madgraph',            'TTJetsSemiLept'],
+
+    #['TTWJets_8TeV-madgraph','TTW'],
+    #['TTZJets_8TeV-madgraph_v2','TTZ'],
+
+    #['SingleElectronRun2012AJul13EdmV42b',                 'SingleElectron_1'],
+    #['SingleElectronRun2012AAug06EdmV42',                  'SingleElectron_2'],
+    #['SingleElectronRun2012BJul13EdmV42',                  'SingleElectron_3'],
+    #['SingleElectronRun2012CAug24RerecoEdmV42',            'SingleElectron_4'],
+    #['SingleElectronRun2012CPromptv2EdmV42',               'SingleElectron_5'],
+    #['SingleElectronRun2012CPromptV2TopUpEdmV42',          'SingleElectron_6'],
+    #['SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2', 'SingleElectron_7'],
+    #['SingleElectronRun2012D-PromptReco-v1_v3',            'SingleElectron_8'],
+
+    #['SingleMuRun2012AJul13EdmV42',                        'SingleMu_1'],
+    #['SingleMuRun2012AAug06EdmV42',                        'SingleMu_2'],
+    #['SingleMuRun2012BJul13EdmV42',                        'SingleMu_3'],
+    #['SingleMuRun2012CAug24RerecoEdmV42',                  'SingleMu_4'],
+    #['SingleMuRun2012CPromptv2EdmV42',                     'SingleMu_5'],
+    #['SingleMuRun2012CPromptV2TopUpEdmV42',                'SingleMu_6'],
+    #['SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',       'SingleMu_7'],
+    #['SingleMuRun2012D-PromptReco-v1',                     'SingleMu_8'],
+
+    #['DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',               'DoubleEle_1'],
+    #['DoubleElectronRun2012CAug24RerecoEdmV42',                      'DoubleEle_2'],
+    #['DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               'DoubleEle_3'],
+    #['DoubleElectronRun2012CAug24RerecoEdmV42',                      'DoubleEle_4'],    
     #['DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1','DoubleEle_5'],
     #['DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2','DoubleEle_6'],
+    #['DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',           'DoubleEle_7'],
+    #['DoubleElectronRun2012D',                                       'DoubleEle_8'],
+
     #['TTH_HToBB_M-110_8TeV-pythia6','TTH110'],
     #['TTH_HToBB_M-115_8TeV-pythia6','TTH115'],
     #['TTH_HToBB_M-120_8TeV-pythia6','TTH120'],
     #['TTH_HToBB_M-125_8TeV-pythia6','TTH125'],
     #['TTH_HToBB_M-130_8TeV-pythia6','TTH130'],
     #['TTH_HToBB_M-135_8TeV-pythia6','TTH135'],
-    #['TTWJets_8TeV-madgraph','TTW'],
-    #['TTZJets_8TeV-madgraph','TTZ'],
+
     #['WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball','WJets'],
-    #['DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph','DYJets10to50']
+    #['DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph','DYJets10to50'],
+    #['DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph-tarball', 'DYJets'],
+
+
+    ##['WJetsToLNu_PtW-100_TuneZ2star_8TeV-madgraph',     'WJets100'],
+    ##['WJetsToLNu_PtW-70To100_TuneZ2star_8TeV-madgraph', 'WJets70100'],
+    ##['ZH_ZToLL_HToBB_M-125_8TeV-powheg-herwigpp',  'ZH25'],
+    ##['WH_WToLNu_HToBB_M-125_8TeV-powheg-herwigpp', 'WH25'],
+   
     ]
 
 skims = [
-    #['VType0','numJets30bTag>=2&&Vtype==0&&numJets30>=2&&jet1.pt>30&&jet2.pt>30'],
-    ['VType1','numJets30bTag>=2&&Vtype==1&&numJets30>=2&&jet1.pt>30&&jet2.pt>30'],
-    #['VType2','numJets30bTag>=2&&Vtype==2&&numJets30>=3&&jet1.pt>30&&jet2.pt>30&&jet3.pt>30'],
-    #['VType3','numJets30bTag>=2&&Vtype==3&&numJets30>=3&&jet1.pt>30&&jet2.pt>30&&jet3.pt>30']
+    ['VType0','Vtype==0'],
+    ['VType1','Vtype==1'],
+    ['VType2','Vtype==2'],
+    ['VType3','Vtype==3']
     ]
 #skims = []
 
+
 #processAll(samples)
-processAllBatch(samples, skims, False)
 #processAllDebugBatch(samples)
+processAllBatch(samples, skims, False)

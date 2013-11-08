@@ -69,11 +69,11 @@ int main(int argc, const char* argv[])
   const edm::ParameterSet& in = builder.processDesc()->getProcessPSet()->getParameter<edm::ParameterSet>("fwliteInput");
 
   std::string pathToFile( in.getParameter<std::string>("pathToFile" ) );
-  std::string outPath(    in.getParameter<std::string>("outPath" ) );
-  std::string ordering(   in.getParameter<std::string>("ordering" ) );
-  std::string newDir(     in.getParameter<std::string>("newDir" ) );
-  double lumi(            in.getParameter<double>("lumi" ) );
-  bool verbose(           in.getParameter<bool>("verbose" ) );
+  std::string outPath   ( in.getParameter<std::string>("outPath" ) );
+  std::string ordering  ( in.getParameter<std::string>("ordering" ) );
+  std::string newDir    ( in.getParameter<std::string>("newDir" ) );
+  double lumi           ( in.getParameter<double>     ("lumi" ) );
+  bool verbose          ( in.getParameter<bool>       ("verbose" ) );
 
 
   std::map<string,string> subsets;
@@ -113,13 +113,13 @@ int main(int argc, const char* argv[])
       string fNick = string((argv[3]));
       string cut   = "DUMMY";
       edm::ParameterSet pset;
-      pset.addParameter("skip",false);
+      pset.addParameter("skip",    false);
       pset.addParameter("name",    fName);
       pset.addParameter("nickName",fNick);
-      pset.addParameter("color",1);
-      pset.addParameter("xSec",-1.);
-      pset.addParameter("update",false);
-      pset.addParameter("cut",cut);
+      pset.addParameter("color",       1);
+      pset.addParameter("xSec",      -1.);
+      pset.addParameter("update",  false);
+      pset.addParameter("cut",       cut);
       samples.push_back( pset );
     }
     else{
@@ -129,7 +129,7 @@ int main(int argc, const char* argv[])
   }
 
 
-  bool openAllFiles = false;
+  bool openAllFiles  = false;
   Samples* mySamples = new Samples(openAllFiles, pathToFile, ordering, samples, lumi, verbose);
   map<string, TH1F*> mapHist;
   vector<string> mySampleFiles;
@@ -168,26 +168,9 @@ int main(int argc, const char* argv[])
       
       string skim_it = it->first;
       TCut cut((it->second).c_str());
-
-      //string cleanSE  = "srmrm srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_"+skim_it+"/"+newDir+"/"+fileName+"_"+skim_it+".root"; 
-      //cout << cleanSE << endl;
-      //gSystem->Exec(cleanSE.c_str());
-     
-      //string outputName0 = pathToFile+"/"+fileName+"_"+skim_it+".root"; 
-      //TFile* fs0      = new TFile(outputName0.c_str(), "RECREATE");
-      //string copyToSE0 = " srmcp -2 file:///"+outputName0+
-      //" srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_"+skim_it+"/"+fileName+"_"+skim_it+".root"; 
-      //cout << copyToSE0 << endl;
-      //gSystem->Exec(copyToSE0.c_str());
-      //fs0->Close();
-      //delete fs0;
-
-      string outputName = outPath+"/AllHDiJetPt_"+skim_it+"/"+newDir+"/"+fileName+"_"+skim_it+".root"; 
+   
+      string outputName = outPath+"_"+skim_it+"/"+newDir+"/"+fileName+"_"+skim_it+".root"; 
       TFile* fs      = TFile::Open(outputName.c_str(), "RECREATE");
-     
-      //fwlite::TFileService fs = fwlite::TFileService( ("TThNTuples_"+currentName+".root").c_str());
-      //TTree* outTree = fs.make<TTree>("outTree","TTH Tree");
-      //TTree* outTree = new TTree("tree","TTH tree");
       
       TIter nextkey((mySamples->GetFile( currentName ))->GetListOfKeys());
       TH1F *key;
@@ -199,6 +182,7 @@ int main(int argc, const char* argv[])
 	h->Write(key->GetName());
       }
       cout << "Start copying skim " << skim_it << endl;
+      cout << " ---> " << outputName << endl;
       cout << "Cut: " << it->second << endl;
       TTree* outTree = (mySamples->GetTree( currentName, "tree"))->CopyTree( cut );
       if(!outTree){
@@ -216,34 +200,10 @@ int main(int argc, const char* argv[])
       fs->Close();
       
       mySamples->GetFile( currentName )->Close();
-      
-      //string moveToScratch = "mv ./"+outputName+" "+pathToFile;
-      //cout << moveToScratch << endl;
-      //gSystem->Exec(moveToScratch.c_str());
-
-      //string cleanSE  = "srmrm srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_"+skim_it+"/"+fileName+"_"+skim_it+".root"; 
-      //cout << cleanSE << endl;
-      //gSystem->Exec(cleanSE.c_str());
-      //string copyToSE = " srmcp -2 file:///"+outputName+
-      //" srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_"+skim_it+"/"+fileName+"_"+skim_it+".root"; 
-      //cout << copyToSE << endl;
-      //gSystem->Exec(copyToSE.c_str());
-      
+            
     }
 
-
     cout << endl;  
-
-    //string copyToSE = " srmcp -2 file:///"+string(mySamples->GetFile( currentName )->GetName())+
-    //" srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_Step2/"+
-    //mySamples->GetFileName(currentName);
-
-    //cout << copyToSE << endl;
-    //gSystem->Exec(copyToSE.c_str());
-
-    //string removeFromScratch = "rm "+string(mySamples->GetFile( currentName )->GetName());
-    //cout << removeFromScratch << endl;
-    //gSystem->Exec(removeFromScratch.c_str());
   }
 
   
