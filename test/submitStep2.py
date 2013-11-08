@@ -47,9 +47,9 @@ def processAllBatch(jobName, outName, split):
     f.close()
 
     os.system('chmod +x '+scriptName)
-    submitToQueue = 'qsub -V -cwd -l h_vmem=6G -q all.q -N '+jobName+'_'+str(split[0])+'-'+str(split[1])+' '+scriptName 
+    submitToQueue = 'qsub -V -cwd -l h_vmem=2G -q all.q -N '+jobName+'_'+str(split[0])+'-'+str(split[1])+' '+scriptName 
     print submitToQueue
-    os.system(submitToQueue)
+    #os.system(submitToQueue)
 
 
 ###########################################################################
@@ -57,17 +57,20 @@ def processAllBatch(jobName, outName, split):
 
 
 #processAllBatch("WJets", "DiJetPt_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball", [1, 500])
+
 for k in range(22):
-    #processAllBatch("WJets", "DiJetPt_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball", [k*200+1,(k+1)*200])
+    processAllBatch("WJets", "DiJetPt_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball", [k*200+1,(k+1)*200])
+
+for k in range(14):
     processAllBatch("DYJets-10to50", "DiJetPt_DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph", [k*200+1,(k+1)*200])
 
+processAllBatch("TTH110", "DiJetPt_TTH_HToBB_M-110_8TeV-pythia6")
+processAllBatch("TTH115", "DiJetPt_TTH_HToBB_M-115_8TeV-pythia6")
+processAllBatch("TTH120", "DiJetPt_TTH_HToBB_M-120_8TeV-pythia6")
+processAllBatch("TTH125", "DiJetPt_TTH_HToBB_M-125_8TeV-pythia6")
+processAllBatch("TTH130", "DiJetPt_TTH_HToBB_M-130_8TeV-pythia6")
+processAllBatch("TTH135", "DiJetPt_TTH_HToBB_M-135_8TeV-pythia6")
 
-#processAllBatch("TTH110", "DiJetPt_TTH_HToBB_M-110_8TeV-pythia6")
-#processAllBatch("TTH115", "DiJetPt_TTH_HToBB_M-115_8TeV-pythia6")
-#processAllBatch("TTH120", "DiJetPt_TTH_HToBB_M-120_8TeV-pythia6")
-#processAllBatch("TTH125", "DiJetPt_TTH_HToBB_M-125_8TeV-pythia6")
-#processAllBatch("TTH130", "DiJetPt_TTH_HToBB_M-130_8TeV-pythia6")
-#processAllBatch("TTH135", "DiJetPt_TTH_HToBB_M-135_8TeV-pythia6")
 #processAllBatch("TTW",    "DiJetPt_TTWJets_8TeV-madgraph")
 #processAllBatch("TTZ",    "DiJetPt_TTZJets_8TeV-madgraph")
 
