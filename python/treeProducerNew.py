@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Types as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-VType = "_VType2"
+VType = ""
 
 xsecTT_FH = 106.9
 xsecTT_SL = 103.0
@@ -11,7 +11,7 @@ process = cms.Process("TreeProducer")
 
 process.fwliteInput = cms.PSet(
 
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt"+VType+"/v2/"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
     verbose       = cms.bool(False),

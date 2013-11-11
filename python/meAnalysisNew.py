@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Types  as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-VType     = "_VType2"
+VType     = ""
 
 xsecTT_SL = 103.0
 xsecTT_FL = 24.8
@@ -11,9 +11,9 @@ process = cms.Process("MEAnalysisNew")
 process.fwliteInput = cms.PSet(
 
     outFileName   = cms.string("./root/MEAnalysisNew.root"),
-    pathToTF      = cms.string("./root/transferFunctionsNew_partonE_new.root"),
-    pathToCP      = cms.string("./root/ControlPlotsNew_new.root"),
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt"+VType+"/v2/"),
+    pathToTF      = cms.string("./root/transferFunctions.root"),
+    pathToCP      = cms.string("./root/ControlPlots.root"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
 
@@ -227,7 +227,7 @@ process.fwliteInput = cms.PSet(
     'x>=12 ? x^(-2.010e-01)*exp((-1.5785e-02)*x) : 4.184e-02*x'),           # tth Pt
  
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
-    speedup       = cms.untracked.int32(0), ###### CHECK HERE
+    speedup       = cms.untracked.int32(1), ###### CHECK HERE
 
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
@@ -259,7 +259,7 @@ process.fwliteInput = cms.PSet(
     useBtag          = cms.untracked.int32(1),
     selectByBTagShape= cms.untracked.int32(1),
     
-    printout     = cms.int32(1),
+    printout     = cms.int32(0),
     debug        = cms.int32(0),   
     verbose      = cms.bool(False),
 
@@ -282,7 +282,7 @@ process.fwliteInput = cms.PSet(
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
     fixNumEvJob    = cms.untracked.int32(1),
-    evLimits       = cms.vint32(0,5),
+    evLimits       = cms.vint32(0,100),
 
     doJERbias  = cms.untracked.int32(0),   
     doCSVup    = cms.untracked.int32(0),
