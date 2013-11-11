@@ -38,141 +38,35 @@
 #include "DataFormats/FWLite/interface/LuminosityBlock.h"
 #include "DataFormats/FWLite/interface/Run.h"
 #include "DataFormats/Luminosity/interface/LumiSummary.h"
+
 #include "Bianchi/TTHStudies/interface/MEIntegratorNew.h"
 #include "Bianchi/TTHStudies/interface/Samples.h"
 #include "Bianchi/TTHStudies/interface/MECombination.h"
+#include "Bianchi/TTHStudies/interface/HelperFunctions.h"
 
- 
+// dR distance for reco-gen matching
 #define GENJETDR  0.3
+
+// maximum number of VEGAS evaluation
 #define MAX_REEVAL_TRIES 3
+
+// 3.141...
 #define PI TMath::Pi()
+
+// maximum number of permutations per event
 #define NMAXPERMUT 30
+
+// maximum number of mass points for likelihood scan
 #define NMAXMASS   20
+
+// maximum number of four-vectors per event saved in output 
 #define NMAXJETS   10
 
+// if one, MC jets are already corrected for JER
+#define JERCORRECTED 1
+
+
 using namespace std;
-
-
-typedef struct 
-{
-  float et; 
-  float sumet;
-  float sig;
-  float phi;
-} metInfo;
-
-
-typedef struct 
-{
-  int run;
-  int lumi;
-  int event;
-  int json;
-} EventInfo;
- 
-
-//struct sorterByPt {
-//bool operator() (float i,float j) const { return (i>j);}
-//};
-
-
-typedef struct
-{
-  TLorentzVector p4;
-  float csv;
-} JetObservable;
-
-struct JetObservableListerByPt
-{
-  bool operator()( const JetObservable &lx, const JetObservable& rx ) const {
-    return (lx.p4).Pt() > (rx.p4).Pt();
-  }
-};
-
-struct JetObservableListerByCSV
-{
-  bool operator()( const JetObservable &lx, const JetObservable& rx ) const {
-    return (lx.csv) > (rx.csv);
-  }
-};
-
-
-typedef struct
-{
-  float bmass;
-  float bpt;
-  float beta;
-  float bphi;
-  float bstatus;
-  float wdau1mass;
-  float wdau1pt;
-  float wdau1eta;
-  float wdau1phi;
-  float wdau1id;
-  float wdau2mass;
-  float wdau2pt;
-  float wdau2eta;
-  float wdau2phi;
-  float wdau2id;
-} genTopInfo;
-
-typedef struct 
-{
-  float mass; 
-  float pt;
-  float eta;
-  float phi;
-  float status;
-  float charge;
-  float momid;
-} genParticleInfo;
-
-
-//https://twiki.cern.ch/twiki/bin/viewauth/CMS/JetResolution
-float resolutionBias(float eta, int shift)
-{
-  if(eta < 0.5){
-    // bias 1s up
-    if(shift ==+1) return 0.058;
-    // nominal bias
-    if(shift == 0) return 0.052;  
-    // bias 1s down
-    if(shift ==-1) return 0.048;
-  }
-  if(eta < 1.1){
-    // bias 1s up
-    if(shift ==+1) return 0.063;
-    // nominal bias
-    if(shift == 0) return 0.057;    
-    // bias 1s down
-    if(shift ==-1) return 0.051;
-  }
-  if(eta < 1.7){
-    // bias 1s up
-    if(shift ==+1) return 0.102;
-    // nominal bias
-    if(shift == 0) return 0.096;    
-    // bias 1s down
-    if(shift ==-1) return 0.090;
-  }
-  if(eta < 2.3){
-    // bias 1s up
-    if(shift ==+1) return 0.224;
-    // nominal bias
-    if(shift == 0) return 0.134;    
-    // bias 1s down
-    if(shift ==-1) return 0.044;
-  }
-  if(eta < 5.0){
-    // bias 1s up
-    if(shift ==+1) return 0.488;
-    // nominal bias
-    if(shift == 0) return 0.288;    
-    // bias 1s down
-    if(shift ==-1) return 0.088;
-  }
-  return 0;
-}
 
 
 int main(int argc, const char* argv[])
@@ -450,6 +344,8 @@ int main(int argc, const char* argv[])
   float mH_scan_[NMAXMASS];
   float mT_scan_[NMAXMASS];
 
+  // a flag for the event type
+  int Vtype_;
   // event-dependent weight (for normalization)
   float weight_;
   // cpu time
@@ -460,17 +356,22 @@ int main(int argc, const char* argv[])
   int nPVs_;
   // pu reweighting
   float PUweight_, PUweightP_, PUweightM_;
+  // trigger turn-on
+  float trigger_;
+  // trigger bits (data)
+  bool triggerFlags_[70];
   // number of gen jets
   float lheNj_;
 
   // lepton kinematic (at most two leptons)
-  int nLep_;
+  int   nLep_;
   float lepton_pt_    [2];
   float lepton_eta_   [2];
   float lepton_phi_   [2];
   float lepton_m_     [2];
   float lepton_charge_[2];
   float lepton_rIso_  [2];
+  int   lepton_type_  [2];
 
   // met kinematic
   float MET_pt_;
@@ -516,8 +417,6 @@ int main(int argc, const char* argv[])
   tree->Branch("type",         &type_,          "type/I");
   tree->Branch("nSimBs",       &nSimBs_,        "nSimBs/I");
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,   "nMatchSimBs/I");
-  //tree->Branch("nC",           &nC_,            "nC/I");
-  //tree->Branch("nCTop",        &nCTop_,         "nCTop/I");
   tree->Branch("weight",       &weight_,        "weight/F");
   tree->Branch("time",         &time_,          "time/F");
   tree->Branch("flag_type0",   &flag_type0_,    "flag_type0/I");
@@ -526,12 +425,15 @@ int main(int argc, const char* argv[])
   tree->Branch("flag_type3",   &flag_type3_,    "flag_type3/I");
   tree->Branch("flag_type4",   &flag_type4_,    "flag_type4/I");
   tree->Branch("flag_type6",   &flag_type6_,    "flag_type6/I");
+  tree->Branch("Vtype",        &Vtype_,         "type/I");
   tree->Branch("EVENT",        &EVENT_,         "run/I:lumi/I:event/I:json/I");
   tree->Branch("nPVs",         &nPVs_,          "nPVs/I");
   tree->Branch("PUweight",     &PUweight_,      "PUweight/F");
   tree->Branch("PUweightP",    &PUweightP_,     "PUweightP/F");
   tree->Branch("PUweightM",    &PUweightM_,     "PUweightM/F");
   tree->Branch("lheNj",        &lheNj_,         "lheNj/F");
+  tree->Branch("trigger",      &trigger_,       "trigger/F");
+  tree->Branch("triggerFlags", triggerFlags_,   "triggerFlags[70]/b");
 
 
   // marginalized over permutations (all <=> Sum_{p=0}^{nTotPermut}( mH=MH, mT=MT ) )
@@ -570,6 +472,7 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_m",                lepton_m_,     "lepton_m[nLep]/F");
   tree->Branch("lepton_charge",           lepton_charge_,"lepton_charge[nLep]/F");
   tree->Branch("lepton_rIso",             lepton_rIso_,  "lepton_rIso[nLep]/F");
+  tree->Branch("lepton_type",             lepton_type_,  "lepton_type[nLep]/I");  
 
   // MET kinematics
   tree->Branch("MET_pt",                  &MET_pt_,    "MET_pt/F");
@@ -651,16 +554,18 @@ int main(int argc, const char* argv[])
     genTopInfo      genTop, genTbar;
     metInfo         METtype1p2corr;
     EventInfo       EVENT;
-    int             nvlep, nSimBs, /*nC, nCTop,*/ nhJets, naJets, nPVs;
+    int             nvlep, nSimBs, /*nC, nCTop,*/ nhJets, naJets, nPVs, Vtype;
     float           PUweight, PUweightP, PUweightM;
     float           lheNj;
-    Int_t   vLepton_type      [999];
-    Float_t vLepton_mass      [999];
-    Float_t vLepton_pt        [999];
-    Float_t vLepton_eta       [999];
-    Float_t vLepton_phi       [999];
-    Float_t vLepton_charge    [999];
-    Float_t vLepton_pfCorrIso [999];
+    float           weightTrig2012;
+    UChar_t         triggerFlags[70];
+    Int_t   vLepton_type      [2];
+    Float_t vLepton_mass      [2];
+    Float_t vLepton_pt        [2];
+    Float_t vLepton_eta       [2];
+    Float_t vLepton_phi       [2];
+    Float_t vLepton_charge    [2];
+    Float_t vLepton_pfCorrIso [2];
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
     Float_t hJet_phi          [999];
@@ -703,7 +608,10 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("PUweight",         &PUweight);
     currentTree->SetBranchAddress("PUweightP",        &PUweightP);
     currentTree->SetBranchAddress("PUweightM",        &PUweightM);
-    currentTree->SetBranchAddress("lheNj",            &lheNj);    
+    currentTree->SetBranchAddress("lheNj",            &lheNj); 
+    currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
+    currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
+    currentTree->SetBranchAddress("Vtype",            &Vtype);        
     currentTree->SetBranchAddress("nhJets",           &nhJets);
     currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("nSimBs",           &nSimBs);
@@ -803,7 +711,7 @@ int main(int argc, const char* argv[])
       btag_LR_            = -99;
 
       for( int k = 0; k < 2; k++){
-	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99;
+	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99;
       }
       for( int k = 0; k < NMAXJETS; k++){
 	jet_pt_[k] = -99; jet_eta_[k] = -99; jet_phi_[k] = -99; jet_m_[k] = -99;  jet_csv_[k] = -99;
@@ -984,14 +892,24 @@ int main(int argc, const char* argv[])
       ///////////////////////////////////
 
       properEventSL = false;      
-      if( nvlep==1 ){
+      if( nvlep==1 && (Vtype==2 || Vtype==3) ){
 
 	// first lepton...
 	leptonLV.SetPtEtaPhiM(vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);      
+
 	// cut on lepton (SL)
-	properEventSL = 
-	  (vLepton_type[0]==13 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.1 && vLepton_pfCorrIso[0]<0.10) ||
-	  (vLepton_type[0]==11 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.5 && !(TMath::Abs(leptonLV.Eta())>1.442 &&  TMath::Abs(leptonLV.Eta())<1.566) && vLepton_pfCorrIso[0]<0.10) ;	
+	int lepSelVtype2 =  (Vtype==2 && vLepton_type[0]==13 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.1 && vLepton_pfCorrIso[0]<0.10);
+	int lepSelVtype3 =  (Vtype==3 && vLepton_type[0]==11 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.5 && !(TMath::Abs(leptonLV.Eta())>1.442 &&  TMath::Abs(leptonLV.Eta())<1.566) && vLepton_pfCorrIso[0]<0.10) ;
+
+	// OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
+	int trigVtype2 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
+
+	// OR of one trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*"
+	int trigVtype3 =  (Vtype==3 && ( triggerFlags[3]>0 ) );
+  
+	// ID && trigger
+	properEventSL = (lepSelVtype2 && (isMC ? 1 : trigVtype2)) || (lepSelVtype3 && (isMC ? 1 : trigVtype3));	 
+
 
 	// save lepton kinematics...
 	nLep_ = 1;
@@ -1002,6 +920,7 @@ int main(int argc, const char* argv[])
 	lepton_m_      [0] = leptonLV.M();
 	lepton_charge_ [0] = vLepton_charge   [0];
 	lepton_rIso_   [0] = vLepton_pfCorrIso[0];
+	lepton_type_   [0] = vLepton_type[0];
 
       }
 
@@ -1011,7 +930,7 @@ int main(int argc, const char* argv[])
       ///////////////////////////////////
 
       properEventDL = false;
-      if( nvlep>=2 ){
+      if( nvlep>=2 && (Vtype==0 || Vtype==1)){
 	
 	// first lepton...
 	leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
@@ -1019,21 +938,29 @@ int main(int argc, const char* argv[])
 	leptonLV2.SetPtEtaPhiM(vLepton_pt[1],vLepton_eta[1],vLepton_phi[1],vLepton_mass[1]);
 
 	// cut on leptons (DL)
-	properEventDL = (
-			 ( vLepton_type[0]==13 && vLepton_type[1]==13 && 
-			   ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
-			      leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.4 && vLepton_pfCorrIso[1]<0.20) ||
-			     (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.4 && vLepton_pfCorrIso[0]<0.20 &&
-			      leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.1 && vLepton_pfCorrIso[1]<0.10) )
-			   ) ||
-			 ( vLepton_type[0]==11 && vLepton_type[0]==11 && 
-			   ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.10 &&
-			      leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.20) ||
-			     (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.20 &&
-			      leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.10) )
-			   )
-			 )
-	  &&  vLepton_charge[0]*vLepton_charge[1]<0 ;
+	int lepSelVtype0 = ( Vtype==0 && vLepton_type[0]==13 && vLepton_type[1]==13 && 
+			    ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
+			       leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.4 && vLepton_pfCorrIso[1]<0.20) ||
+			      (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.4 && vLepton_pfCorrIso[0]<0.20 &&
+			       leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.1 && vLepton_pfCorrIso[1]<0.10) )
+			    ) && vLepton_charge[0]*vLepton_charge[1]<0;
+
+	int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[0]==11 && 
+			    ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.10 &&
+			       leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.20) ||
+			      (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.20 &&
+			       leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.10) )
+			    ) && vLepton_charge[0]*vLepton_charge[1]<0;
+	
+	// OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
+	int trigVtype0 =  (Vtype==0 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
+
+	// OR of two trigger paths:    "HLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_v.*", "HLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_v.*"     
+	int trigVtype1 =  (Vtype==1 && ( triggerFlags[5]>0 || triggerFlags[6]>0 ) );		 
+			
+	// ID && trigger
+	properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
+	  
 
 	// save lepton(s) kinematics into the tree...
 	nLep_ = 2;
@@ -1045,6 +972,7 @@ int main(int argc, const char* argv[])
 	lepton_m_      [0] = leptonLV.M();
 	lepton_charge_ [0] = vLepton_charge   [0];
 	lepton_rIso_   [0] = vLepton_pfCorrIso[0];
+	lepton_type_   [0] = vLepton_type[0];	
 
 	// lep 2...
 	lepton_pt_     [1] = leptonLV2.Pt();
@@ -1053,6 +981,7 @@ int main(int argc, const char* argv[])
 	lepton_m_      [1] = leptonLV2.M();
 	lepton_charge_ [1] = vLepton_charge   [1];
 	lepton_rIso_   [1] = vLepton_pfCorrIso[1];
+	lepton_type_   [1] = vLepton_type[1];
 
       }
 
@@ -1100,17 +1029,17 @@ int main(int argc, const char* argv[])
 	  int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
 	  float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
 
-	  // for JEC/JER systematics
+	  // for JEC/JER systematics (N.B. this assumes that the jets are already corrected)
 	  float shift     = 1.0;
 	  if     ( doJECup   )  shift *= (1+JECUnc);
 	  else if( doJECdown )  shift *= (1-JECUnc);
-	  else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1)*(1-ptGen/pt)   : 1.0);
-	  else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1)*(1-ptGen/pt)   : 1.0);
+	  else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	  else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
 	  else{}
 
 	  // if correct for bias in jet resolution (for sanity, enforce isMC)
 	  if( isMC && doJERbias && !doJERup && !doJERdown) 
-	    shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0)*(1-ptGen/pt)   : 1.0);
+	    shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
 
 	  // change energy/mass by shift
 	  pt *= shift;
@@ -2444,6 +2373,7 @@ int main(int argc, const char* argv[])
       nSimBs_      = nSimBs;
       weight_      = scaleFactor;
       nPVs_        = nPVs;
+      Vtype_       = Vtype;
 
       EVENT_.run   = EVENT.run;
       EVENT_.lumi  = EVENT.lumi;
@@ -2455,6 +2385,11 @@ int main(int argc, const char* argv[])
       PUweightM_   = PUweightM;
 
       lheNj_       = lheNj;
+      
+      trigger_     = weightTrig2012;
+      for(int k = 0; k < 70 ; k++){
+	triggerFlags_[k] = triggerFlags[k];
+      }
       
       // fill the tree...
       tree->Fill();      

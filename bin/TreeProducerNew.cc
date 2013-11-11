@@ -31,52 +31,13 @@
 #include "DataFormats/Luminosity/interface/LumiSummary.h"
 
 #include "Bianchi/TTHStudies/interface/Samples.h"
+#include "Bianchi/TTHStudies/interface/HelperFunctions.h"
+
 
 #define GENJETDR 0.3
 #define VERBOSE  false
 
 using namespace std;
-
-typedef struct 
-{
-  float et; 
-  float sumet;
-  float sig;
-  float phi;
-} metInfo;
-
-
-typedef struct
-{
-  float bmass;
-  float bpt;
-  float beta;
-  float bphi;
-  float bstatus;
-  float wdau1mass;
-  float wdau1pt;
-  float wdau1eta;
-  float wdau1phi;
-  float wdau1id;
-  float wdau2mass;
-  float wdau2pt;
-  float wdau2eta;
-  float wdau2phi;
-  float wdau2id;
-} genTopInfo;
-
-
-typedef struct 
-{
-  float mass; 
-  float pt;
-  float eta;
-  float phi;
-  float status;
-  float charge;
-  float momid;
-} genParticleInfo;
-
 
 
 Float_t deltaR(TLorentzVector j1, TLorentzVector j2){
@@ -96,7 +57,10 @@ int main(int argc, const char* argv[])
 
   AutoLibraryLoader::enable();
 
-  fwlite::TFileService fs = fwlite::TFileService("./root/treeProducerNew_new.root");
+  fwlite::TFileService fs = fwlite::TFileService("./root/treeProducerTEST.root");
+
+  Float_t readerVars[15];
+  TMVA::Reader* reader = getTMVAReader("BDTG", readerVars);
 
   TTree* genTree          = fs.make<TTree>("genTree","event tree");
   TTree* genJetLightTree  = fs.make<TTree>("genJetLightTree","event tree");
@@ -118,6 +82,7 @@ int main(int argc, const char* argv[])
   float puWeight;
 
   float ptRecoHeavy;
+  float ptRecoRegHeavy;
   float phiRecoHeavy;
   float etaRecoHeavy;
   float csvRecoHeavy;
@@ -164,6 +129,7 @@ int main(int argc, const char* argv[])
   genEventTree->Branch("puWeight",       &puWeight,    "puWeight/F");
 
   genJetHeavyTree->Branch("ptReco",      &ptRecoHeavy,  "ptReco/F");
+  genJetHeavyTree->Branch("ptRecoReg",   &ptRecoRegHeavy,"ptRecoReg/F");
   genJetHeavyTree->Branch("etaReco",     &etaRecoHeavy, "etaReco/F");
   genJetHeavyTree->Branch("phiReco",     &phiRecoHeavy, "phiReco/F");
   genJetHeavyTree->Branch("csvReco",     &csvRecoHeavy, "csvReco/F");
@@ -228,6 +194,10 @@ int main(int argc, const char* argv[])
     cout << "Problems... leaving" << endl;
     return 0;
   }
+
+  string currentName0       = mySampleFiles[0];
+  mySamples->OpenFile( currentName0 );
+  TTree* currentTree0       = mySamples->GetTree( currentName0, "tree");
 
   for(unsigned int i = 0 ; i < mySampleFiles.size(); i++){
     
@@ -323,6 +293,11 @@ int main(int argc, const char* argv[])
     for (Long64_t i = 0; i < nentries ; i++){
       
       if(i%5000==0) cout << i << endl;
+      if(i>20000){
+	i = nentries;
+	continue;
+      }
+
       currentTree->GetEntry(i);
 
     
@@ -461,7 +436,7 @@ int main(int argc, const char* argv[])
       for(int coll = 0 ; coll < 2 ; coll++){
 	
 	// loop over jets
-	for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){	 
 
 	  float ptGen = -99.;
 	  if(coll==0 && hJet_genPt[hj]>0.){
@@ -490,6 +465,12 @@ int main(int argc, const char* argv[])
 	  TLorentzVector p4;
 	  p4.SetPtEtaPhiM( pt, eta, phi, m );
 
+	  // only jets above the pt cut
+	  if( p4.Pt()<20 ) continue;
+
+	  // only jets in acceptance
+	  if( TMath::Abs(p4.Eta())>2.5 ) continue;
+
 	  // for csv systematics
 	  float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
 	  float csv = TMath::Max(csv_nominal, float(0.0));
@@ -513,7 +494,12 @@ int main(int argc, const char* argv[])
 	    }
 	  }
 
-	 
+	  // test regression
+	  float ptReg = -99.;
+	  if (coll==0){
+	    ptReg = getRegressionEnergy("BDTG", reader, readerVars, currentTree0, i, (coll==0 ? hj : -hj-1), 0 );
+	  }
+
 	  // 1st case: the jet is matched to flavor 5
 	  if( abs(flavor)==5 ){
 
@@ -524,6 +510,7 @@ int main(int argc, const char* argv[])
 	    etaRecoHeavy  = eta;
 	    phiRecoHeavy  = phi;
 	    massRecoHeavy = m;
+	    ptRecoRegHeavy = ptReg*TMath::CosH(eta);
 	 
 	    // no ambiguous matches...
 	    if( matchesB==1 && matchesL==0 && posB!=999){
@@ -534,6 +521,14 @@ int main(int argc, const char* argv[])
 	      ptHeavy  = -99;
 	      etaHeavy = -99;
 	      phiHeavy = -99;
+	    }
+
+
+	    if( TMath::Abs(eta+1.865071) < 1e-04 ){
+	      cout << "Entry " << i << endl;
+	      cout << "Coll " << coll << endl;
+	      cout << " hj " <<  hj << endl;
+	      cout << eta << ", " << csv << ", " << genPtHeavy << ", " << ptRecoHeavy << endl;
 	    }
 
 	    genJetHeavyTree->Fill();
