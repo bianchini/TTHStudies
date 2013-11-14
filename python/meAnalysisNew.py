@@ -11,8 +11,8 @@ process = cms.Process("MEAnalysisNew")
 process.fwliteInput = cms.PSet(
 
     outFileName   = cms.string("./root/MEAnalysisNew.root"),
-    pathToTF      = cms.string("./root/transferFunctions.root"),
-    pathToCP      = cms.string("./root/ControlPlots.root"),
+    pathToTF      = cms.string("./root/transferFunctionsNew_partonE_new.root"),
+    pathToCP      = cms.string("./root/ControlPlotsNew_new.root"),
     pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
