@@ -56,7 +56,7 @@ Label MakeLabel(TString str)
 /// Main                                                                     ///
 ////////////////////////////////////////////////////////////////////////////////
 
-void TrainRegression(TString myMethodList="BDTG", TString outfileName="TMVAReg.root" )
+void TrainRegression(TString myMethodList="BDTG", TString outfileName="TMVAReg.root" , TString target = "pt_part")
 {
     gROOT->SetBatch(1);
     gROOT->LoadMacro("HelperFunctions.h" );  // make functions visible to TTreeFormula
@@ -101,7 +101,7 @@ void TrainRegression(TString myMethodList="BDTG", TString outfileName="TMVAReg.r
     // Create a ROOT output file where TMVA will store ntuples, histograms, etc.
     TFile* outputFile = TFile::Open( outfileName, "RECREATE" );
 
-    TMVA::Factory *factory = new TMVA::Factory( "TMVARegression", outputFile, 
+    TMVA::Factory *factory = new TMVA::Factory( "TMVARegression_target-"+target, outputFile, 
                                                 "!V:!Silent:!Color:!DrawProgressBar:Transformations=I:AnalysisType=Regression" );
     
     const std::vector<std::string> & inputExpressions      = GetInputExpressionsReg();
@@ -115,17 +115,14 @@ void TrainRegression(TString myMethodList="BDTG", TString outfileName="TMVAReg.r
         factory->AddVariable(expr, label.xlabel, label.unit, label.type);
     }
 
-    //factory->AddTarget( "pt_gen" );
-    factory->AddTarget( "pt_part" );
-    //factory->AddTarget( "hJet_genPt" );
+    factory->AddTarget( target );
 
-
-    factory->AddSpectator( "pt_part", "parton pt",  "GeV", 'F');
-    factory->AddSpectator( "pt_gen",  "genjet pt",  "GeV", 'F');
-    factory->AddSpectator( "e_part", "parton e",  "GeV", 'F');
-    factory->AddSpectator( "e_gen",  "genjet e",  "GeV", 'F');
-    factory->AddSpectator( "eta_part", "parton eta",  "", 'F');
-    factory->AddSpectator( "eta_rec",  "parton eta",  "", 'F');
+    //factory->AddSpectator( "pt_part", "parton pt",  "GeV", 'F');
+    //factory->AddSpectator( "pt_gen",  "genjet pt",  "GeV", 'F');
+    //factory->AddSpectator( "e_part", "parton e",  "GeV", 'F');
+    //factory->AddSpectator( "e_gen",  "genjet e",  "GeV", 'F');
+    //factory->AddSpectator( "eta_part", "parton eta",  "", 'F');
+    //factory->AddSpectator( "eta_rec",  "parton eta",  "", 'F');
 
     TFile *input(0);
     TString dirname = "/shome/bianchi/CMSSW_5_3_3_patch2_New/src/Bianchi/TTHStudies/bin/root/";
@@ -137,7 +134,7 @@ void TrainRegression(TString myMethodList="BDTG", TString outfileName="TMVAReg.r
     
     std::vector<std::string> processes;
     //processes.push_back("TTH_HToBB_M-125_8TeV-pythia6");
-    processes.push_back("treeProducerTEST");
+    processes.push_back("treeProducerTRAIN");
 
     std::vector<TFile *> files;
 
