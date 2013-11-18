@@ -57,10 +57,9 @@ int main(int argc, const char* argv[])
 
   AutoLibraryLoader::enable();
 
-  fwlite::TFileService fs = fwlite::TFileService("./root/treeProducerTEST.root");
-
-  Float_t readerVars[15];
-  TMVA::Reader* reader = getTMVAReader("BDTG", readerVars);
+  string target = argc>2 ? string(argv[2]) : "";
+  string extraname = "TEST"+target;
+  fwlite::TFileService fs = fwlite::TFileService("./root/treeProducer"+extraname+".root");
 
   TTree* genTree          = fs.make<TTree>("genTree","event tree");
   TTree* genJetLightTree  = fs.make<TTree>("genJetLightTree","event tree");
@@ -81,36 +80,63 @@ int main(int argc, const char* argv[])
   float px, pxReco, py, pyReco;
   float puWeight;
 
+  Float_t regVarsFHeavy[14];
+  Int_t   regVarsIHeavy[2];
+
+  float eRecoHeavy;
   float ptRecoHeavy;
-  float ptRecoRegHeavy;
   float phiRecoHeavy;
   float etaRecoHeavy;
-  float csvRecoHeavy;
-  float ptHeavy;
-  float genPtHeavy;
-  float etaHeavy;
-  float phiHeavy;
   float massRecoHeavy;
+  float csvRecoHeavy;
+  float eRecoRegHeavy;
+  float ptRecoRegHeavy;
+  float ePartHeavy;
+  float ptPartHeavy;
+  float etaPartHeavy;
+  float phiPartHeavy;
+  float eGenHeavy;
+  float ptGenHeavy;
+  float etaGenHeavy;
+  float phiGenHeavy;
   int   flavorHeavy;
 
+  float eRecoLight;
   float ptRecoLight;
   float phiRecoLight;
   float etaRecoLight;
-  float csvRecoLight;
-  float ptLight;
-  float genPtLight;
-  float etaLight;
-  float phiLight;
   float massRecoLight;
+  float csvRecoLight;
+  float eRecoRegLight;
+  float ptRecoRegLight;
+  float ePartLight;
+  float ptPartLight;
+  float etaPartLight;
+  float phiPartLight;
+  float eGenLight;
+  float ptGenLight;
+  float etaGenLight;
+  float phiGenLight;
   int   flavorLight;
 
+  float eRecoGluon;
   float ptRecoGluon;
   float phiRecoGluon;
   float etaRecoGluon;
-  float csvRecoGluon;
-  float genPtGluon;
   float massRecoGluon;
+  float csvRecoGluon;
+  float eRecoRegGluon;
+  float ptRecoRegGluon;
+  float ePartGluon;
+  float ptPartGluon;
+  float etaPartGluon;
+  float phiPartGluon;
+  float eGenGluon;
+  float ptGenGluon;
+  float etaGenGluon;
+  float phiGenGluon;
   int   flavorGluon;
+
 
   genTree->Branch("BetaW",               &BetaW,       "BetaW/F");
   genTree->Branch("GammaW",              &GammaW,      "GammaW/F");
@@ -128,37 +154,60 @@ int main(int argc, const char* argv[])
   genEventTree->Branch("pyReco",         &pyReco,      "pyReco/F");
   genEventTree->Branch("puWeight",       &puWeight,    "puWeight/F");
 
-  genJetHeavyTree->Branch("ptReco",      &ptRecoHeavy,  "ptReco/F");
-  genJetHeavyTree->Branch("ptRecoReg",   &ptRecoRegHeavy,"ptRecoReg/F");
-  genJetHeavyTree->Branch("etaReco",     &etaRecoHeavy, "etaReco/F");
-  genJetHeavyTree->Branch("phiReco",     &phiRecoHeavy, "phiReco/F");
-  genJetHeavyTree->Branch("csvReco",     &csvRecoHeavy, "csvReco/F");
-  genJetHeavyTree->Branch("pt",          &ptHeavy,      "pt/F");
-  genJetHeavyTree->Branch("ptGen",       &genPtHeavy,   "ptGen/F");
-  genJetHeavyTree->Branch("eta",         &etaHeavy,     "eta/F");
-  genJetHeavyTree->Branch("phi",         &phiHeavy,     "phi/F");
-  genJetHeavyTree->Branch("massReco",    &massRecoHeavy,"massReco/F");
-  genJetHeavyTree->Branch("flavor",      &flavorHeavy,  "flavor/I");
+  addRegressionBranchesPerJet(genJetHeavyTree, regVarsFHeavy, regVarsIHeavy);
+  genJetHeavyTree->Branch("e_rec",       &eRecoHeavy,    "e_rec/F");
+  genJetHeavyTree->Branch("pt_rec",      &ptRecoHeavy,   "pt_rec/F");
+  genJetHeavyTree->Branch("eta_rec",     &etaRecoHeavy,  "eta_rec/F");
+  genJetHeavyTree->Branch("phi_rec",     &phiRecoHeavy,  "phi_rec/F");
+  genJetHeavyTree->Branch("csv_rec",     &csvRecoHeavy,  "csv_rec/F");
+  genJetHeavyTree->Branch("mass_rec",    &massRecoHeavy, "mass_rec/F");
+  genJetHeavyTree->Branch("e_rec_reg",   &eRecoRegHeavy, "e_rec_reg/F");
+  genJetHeavyTree->Branch("pt_rec_reg",  &ptRecoRegHeavy,"pt_rec_reg/F");
+  genJetHeavyTree->Branch("e_part",      &ePartHeavy,    "e_part/F");
+  genJetHeavyTree->Branch("pt_part",     &ptPartHeavy,   "pt_part/F");
+  genJetHeavyTree->Branch("eta_part",    &etaPartHeavy,  "eta_part/F");
+  genJetHeavyTree->Branch("phi_part",    &phiPartHeavy,  "phi_part/F");
+  genJetHeavyTree->Branch("e_gen",       &eGenHeavy,     "e_gen/F");
+  genJetHeavyTree->Branch("pt_gen",      &ptGenHeavy,    "pt_gen/F");
+  genJetHeavyTree->Branch("eta_gen",     &etaGenHeavy,   "eta_gen/F");
+  genJetHeavyTree->Branch("phi_gen",     &phiGenHeavy,   "phi_gen/F");
+  genJetHeavyTree->Branch("flavor",      &flavorHeavy,   "flavor/I");
 
-  genJetLightTree->Branch("ptReco",      &ptRecoLight,  "ptReco/F");
-  genJetLightTree->Branch("etaReco",     &etaRecoLight, "etaReco/F");
-  genJetLightTree->Branch("phiReco",     &phiRecoLight, "phiReco/F");
-  genJetLightTree->Branch("csvReco",     &csvRecoLight, "csvReco/F");
-  genJetLightTree->Branch("pt",          &ptLight,      "pt/F");
-  genJetLightTree->Branch("ptGen",       &genPtLight,   "ptGen/F");
-  genJetLightTree->Branch("eta",         &etaLight,     "eta/F");
-  genJetLightTree->Branch("phi",         &phiLight,     "phi/F");
-  genJetLightTree->Branch("massReco",    &massRecoLight,"massReco/F");
-  genJetLightTree->Branch("flavor",      &flavorLight,  "flavor/I");
+  genJetLightTree->Branch("e_rec",       &eRecoLight,    "e_rec/F");
+  genJetLightTree->Branch("pt_rec",      &ptRecoLight,   "pt_rec/F");
+  genJetLightTree->Branch("eta_rec",     &etaRecoLight,  "eta_rec/F");
+  genJetLightTree->Branch("phi_rec",     &phiRecoLight,  "phi_rec/F");
+  genJetLightTree->Branch("csv_rec",     &csvRecoLight,  "csv_rec/F");
+  genJetLightTree->Branch("mass_rec",    &massRecoLight, "mass_rec/F");
+  genJetLightTree->Branch("e_rec_reg",   &eRecoRegLight, "e_rec_reg/F");
+  genJetLightTree->Branch("pt_rec_reg",  &ptRecoRegLight,"pt_rec_reg/F");
+  genJetLightTree->Branch("e_part",      &ePartLight,    "e_part/F");
+  genJetLightTree->Branch("pt_part",     &ptPartLight,   "pt_part/F");
+  genJetLightTree->Branch("eta_part",    &etaPartLight,  "eta_part/F");
+  genJetLightTree->Branch("phi_part",    &phiPartLight,  "phi_part/F");
+  genJetLightTree->Branch("e_gen",       &eGenLight,     "e_gen/F");
+  genJetLightTree->Branch("pt_gen",      &ptGenLight,    "pt_gen/F");
+  genJetLightTree->Branch("eta_gen",     &etaGenLight,   "eta_gen/F");
+  genJetLightTree->Branch("phi_gen",     &phiGenLight,   "phi_gen/F");
+  genJetLightTree->Branch("flavor",      &flavorLight,   "flavor/I");
 
-  genJetGluonTree->Branch("ptReco",      &ptRecoGluon,  "ptReco/F");
-  genJetGluonTree->Branch("etaReco",     &etaRecoGluon, "etaReco/F");
-  genJetGluonTree->Branch("phiReco",     &phiRecoGluon, "phiReco/F");
-  genJetGluonTree->Branch("massReco",    &massRecoGluon,"massReco/F");
-  genJetGluonTree->Branch("csvReco",     &csvRecoGluon, "csvReco/F");
-  genJetGluonTree->Branch("ptGen",       &genPtGluon,   "ptGen/F");
-  genJetGluonTree->Branch("flavor",      &flavorGluon,  "flavor/I");
-
+  genJetGluonTree->Branch("e_rec",       &eRecoGluon,    "e_rec/F");
+  genJetGluonTree->Branch("pt_rec",      &ptRecoGluon,   "pt_rec/F");
+  genJetGluonTree->Branch("eta_rec",     &etaRecoGluon,  "eta_rec/F");
+  genJetGluonTree->Branch("phi_rec",     &phiRecoGluon,  "phi_rec/F");
+  genJetGluonTree->Branch("csv_rec",     &csvRecoGluon,  "csv_rec/F");
+  genJetGluonTree->Branch("mass_rec",    &massRecoGluon, "mass_rec/F");
+  genJetGluonTree->Branch("e_rec_reg",   &eRecoRegGluon, "e_rec_reg/F");
+  genJetGluonTree->Branch("pt_rec_reg",  &ptRecoRegGluon,"pt_rec_reg/F");
+  genJetGluonTree->Branch("e_part",      &ePartGluon,    "e_part/F");
+  genJetGluonTree->Branch("pt_part",     &ptPartGluon,   "pt_part/F");
+  genJetGluonTree->Branch("eta_part",    &etaPartGluon,  "eta_part/F");
+  genJetGluonTree->Branch("phi_part",    &phiPartGluon,  "phi_part/F");
+  genJetGluonTree->Branch("e_gen",       &eGenGluon,     "e_gen/F");
+  genJetGluonTree->Branch("pt_gen",      &ptGenGluon,    "pt_gen/F");
+  genJetGluonTree->Branch("eta_gen",     &etaGenGluon,   "eta_gen/F");
+  genJetGluonTree->Branch("phi_gen",     &phiGenGluon,   "phi_gen/F");
+  genJetGluonTree->Branch("flavor",      &flavorGluon,   "flavor/I");
 
   PythonProcessDesc builder(argv[1]);
  
@@ -168,8 +217,14 @@ int main(int argc, const char* argv[])
 
   std::string pathToFile   (in.getParameter<std::string>("pathToFile" ) );
   std::string ordering     (in.getParameter<std::string>("ordering" ) );
-  double lumi              (in.getParameter<double>("lumi") );
-  bool verbose             (in.getParameter<bool>("verbose") );
+  double lumi              (in.getParameter<double>     ("lumi") );
+  bool verbose             (in.getParameter<bool>       ("verbose") );
+  bool evalReg             (in.getParameter<bool>       ("evalReg") );
+  int  maxnum              (in.getParameter<int>        ("maxnum") );
+
+  Float_t readerVars[12];
+  TMVA::Reader* reader = evalReg ? getTMVAReader("./root/weights/", "target-"+target, "BDTG", readerVars) : 0;
+
 
   bool openAllFiles  = false;
   Samples* mySamples = new Samples(openAllFiles, pathToFile, ordering, samples, lumi, verbose);
@@ -208,7 +263,7 @@ int main(int argc, const char* argv[])
     TTree* currentTree       = mySamples->GetTree( currentName, "tree");
     cout << "Done!!" << endl;
     
-    int nvlep, nhJets, naJets;
+    int nvlep, nhJets, naJets, Vtype;
 
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
@@ -247,8 +302,9 @@ int main(int argc, const char* argv[])
     float           PUweight;
 
   
-    currentTree->SetBranchAddress("nhJets",      &nhJets);
-    currentTree->SetBranchAddress("naJets",      &naJets);
+    currentTree->SetBranchAddress("Vtype",            &Vtype);
+    currentTree->SetBranchAddress("nhJets",           &nhJets);
+    currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
     currentTree->SetBranchAddress("hJet_eta",         hJet_eta);    
     currentTree->SetBranchAddress("hJet_phi",         hJet_phi);    
@@ -289,11 +345,13 @@ int main(int argc, const char* argv[])
 
     int printed = 0;
     Long64_t nentries = currentTree->GetEntries();
-    
+    cout << "Total entries: " << nentries << endl;
+
     for (Long64_t i = 0; i < nentries ; i++){
       
-      if(i%5000==0) cout << i << endl;
-      if(i>20000){
+      if(i%5000==0) cout << i << "  (" << float(i)/float(nentries)*100. << " % completed)" << endl;
+
+      if(i>maxnum){
 	i = nentries;
 	continue;
       }
@@ -433,17 +491,26 @@ int main(int argc, const char* argv[])
    
 
       // loop over jet collections
-      for(int coll = 0 ; coll < 2 ; coll++){
-	
+      for(int coll = 0 ; coll < 2 ; coll++){       
+
 	// loop over jets
 	for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){	 
 
-	  float ptGen = -99.;
+	  float eGen   = -99.;
+	  float ptGen  = -99.;
+	  float etaGen = -99.;
+	  float phiGen = -99.;
 	  if(coll==0 && hJet_genPt[hj]>0.){
-	    ptGen = hJet_genPt[hj]*TMath::CosH(hJet_genEta[hj]);
+	    eGen   = hJet_genPt[hj]*TMath::CosH(hJet_genEta[hj]);
+	    ptGen  = hJet_genPt[hj];
+	    etaGen = hJet_genEta[hj];
+	    phiGen = hJet_genPhi[hj];
 	  }
 	  if(coll==1 && aJet_genPt[hj]>0.){
-	    ptGen = aJet_genPt[hj]*TMath::CosH(aJet_genEta[hj]);	  
+	    eGen   = aJet_genPt[hj]*TMath::CosH(aJet_genEta[hj]);
+	    ptGen  = aJet_genPt[hj];
+	    etaGen = aJet_genEta[hj];
+	    phiGen = aJet_genPhi[hj];
 	  }
 
 	  float pt     = (coll==0) ? hJet_pt [hj]  : aJet_pt [hj];
@@ -494,41 +561,47 @@ int main(int argc, const char* argv[])
 	    }
 	  }
 
-	  // test regression
-	  float ptReg = -99.;
-	  if (coll==0){
-	    ptReg = getRegressionEnergy("BDTG", reader, readerVars, currentTree0, i, (coll==0 ? hj : -hj-1), 0 );
-	  }
-
 	  // 1st case: the jet is matched to flavor 5
 	  if( abs(flavor)==5 ){
 
-	    csvRecoHeavy  = csv;
-	    genPtHeavy    = ptGen;
-	    flavorHeavy   = abs(flavor);
-	    ptRecoHeavy   = e;
+	    fillRegressionBranchesPerJet( regVarsFHeavy, regVarsIHeavy, currentTree0, i, (coll==0 ? hj : -hj-1), int(verbose));
+
+	    eRecoHeavy    = e;
+	    ptRecoHeavy   = pt;
 	    etaRecoHeavy  = eta;
 	    phiRecoHeavy  = phi;
 	    massRecoHeavy = m;
-	    ptRecoRegHeavy = ptReg*TMath::CosH(eta);
-	 
+	    csvRecoHeavy  = csv;
+	    flavorHeavy   = abs(flavor);
+
+	    eGenHeavy     = eGen;
+	    ptGenHeavy    = ptGen;
+	    etaGenHeavy   = etaGen;
+	    phiGenHeavy   = phiGen;
+
 	    // no ambiguous matches...
-	    if( matchesB==1 && matchesL==0 && posB!=999){
-	      ptHeavy       = genHeavy[posB].E();
-	      etaHeavy      = genHeavy[posB].Eta();
-	      phiHeavy      = genHeavy[posB].Phi();
-	    }else{
-	      ptHeavy  = -99;
-	      etaHeavy = -99;
-	      phiHeavy = -99;
+	    if( matchesB==1 && matchesL==0 && posB!=999 ){
+	      ePartHeavy        = genHeavy[posB].E();
+	      ptPartHeavy       = genHeavy[posB].Pt();
+	      etaPartHeavy      = genHeavy[posB].Eta();
+	      phiPartHeavy      = genHeavy[posB].Phi();
+	    }
+	    else{
+	      ePartHeavy   = -99;
+	      ptPartHeavy  = -99;
+	      etaPartHeavy = -99;
+	      phiPartHeavy = -99;
 	    }
 
-
-	    if( TMath::Abs(eta+1.865071) < 1e-04 ){
-	      cout << "Entry " << i << endl;
-	      cout << "Coll " << coll << endl;
-	      cout << " hj " <<  hj << endl;
-	      cout << eta << ", " << csv << ", " << genPtHeavy << ", " << ptRecoHeavy << endl;
+	    if( evalReg ){
+	      float output  = -99;
+	      getRegressionEnergy(output, "BDTG", reader, readerVars, currentTree0, i, (coll==0 ? hj : -hj-1), int(verbose));
+	      eRecoRegHeavy  = output*TMath::CosH( etaRecoHeavy );
+	      ptRecoRegHeavy = output;
+	    }
+	    else{
+	      eRecoRegHeavy  = -99;
+	      ptRecoRegHeavy = -99;
 	    }
 
 	    genJetHeavyTree->Fill();
@@ -537,38 +610,52 @@ int main(int argc, const char* argv[])
 	  // 2nd case: the jet is matched to flavor < 5
 	  else if( abs(flavor)<5 ){
 
-	    csvRecoLight  = csv;
-	    genPtLight    = ptGen;
-	    flavorLight   = abs(flavor);
-	    ptRecoLight   = e;
+	    eRecoLight    = e;
+	    ptRecoLight   = pt;
 	    etaRecoLight  = eta;
 	    phiRecoLight  = phi;
 	    massRecoLight = m;
-	 
+	    csvRecoLight  = csv;
+	    flavorLight   = abs(flavor);
+
+	    eGenLight     = eGen;
+	    ptGenLight    = ptGen;
+	    etaGenLight   = etaGen;
+	    phiGenLight   = phiGen;
+
 	    // no ambiguous matches...
-	    if( matchesB==0 && matchesL==1 && posL!=999){
-	      ptLight       = genLight[posL].E();
-	      etaLight      = genLight[posL].Eta();
-	      phiLight      = genLight[posL].Phi();
-	    }else{
-	      ptLight  = -99;
-	      etaLight = -99;
-	      phiLight = -99;
+	    if( matchesB==0 && matchesL==1 && posL!=999 ){
+	      ePartLight        = genLight[posL].E();
+	      ptPartLight       = genLight[posL].Pt();
+	      etaPartLight      = genLight[posL].Eta();
+	      phiPartLight      = genLight[posL].Phi();
+	    }
+	    else{
+	      ePartLight   = -99;
+	      ptPartLight  = -99;
+	      etaPartLight = -99;
+	      phiPartLight = -99;
 	    }
 
 	    genJetLightTree->Fill();
+
 	  }
 
 	  // 3rd case: gluon
 	  else if( abs(flavor)==21 ){
 
-	    csvRecoGluon  = csv;
-	    genPtGluon    = ptGen;
-	    flavorGluon   = abs(flavor);
-	    ptRecoGluon   = e;
+	    eRecoGluon    = e;
+	    ptRecoGluon   = pt;
 	    etaRecoGluon  = eta;
 	    phiRecoGluon  = phi;
 	    massRecoGluon = m;
+	    csvRecoGluon  = csv;
+	    flavorGluon   = abs(flavor);
+
+	    eGenGluon     = eGen;
+	    ptGenGluon    = ptGen;
+	    etaGenGluon   = etaGen;
+	    phiGenGluon   = phiGen;	  
 
 	    genJetGluonTree->Fill();
 	  }
@@ -584,7 +671,9 @@ int main(int argc, const char* argv[])
       //////////////////////////////////////////////////
 
       if(  TMath::Abs(TOPHADW2.Py())>0 &&  TMath::Abs(TOPHADW1.Py())>0 && TMath::Abs(TOPHADB.Py())>0 &&
-	   TMath::Abs(TOPLEPW2.Py())>0 &&  TMath::Abs(TOPLEPW1.Py())>0 && TMath::Abs(TOPLEPB.Py())>0 ){
+	   TMath::Abs(TOPLEPW2.Py())>0 &&  TMath::Abs(TOPLEPW1.Py())>0 && TMath::Abs(TOPLEPB.Py())>0 &&
+	   (Vtype==2 || Vtype==3)
+	   ){
 
 	TLorentzVector TOPLEP = TOPLEPW1+TOPLEPW2+TOPLEPB;
 	TLorentzVector TOPHAD = TOPHADW1+TOPHADW2+TOPHADB;
@@ -618,6 +707,14 @@ int main(int argc, const char* argv[])
 	
 	BetaWLep     = TMath::Cos( (TOPLEPB.Vect()).Angle( boostToTopLepCMS  ));       
 	GammaWLep    = TMath::Cos( (TOPLEPW1.Vect()).Angle(boostToWLepCMS) );
+
+	/*
+	cout << "*** check..." << endl;
+	cout << "- TOPLEPW1 M=" << TOPLEPW1.M() << endl;
+	cout << "- TOPLEPW2 M=" << TOPLEPW2.M() << endl;
+	cout << "- GammaWLep = " << GammaWLep << endl; 
+	cout << "************" << endl;
+	*/
 
 	genTree->Fill();
       }

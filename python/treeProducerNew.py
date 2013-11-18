@@ -15,6 +15,8 @@ process.fwliteInput = cms.PSet(
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
     verbose       = cms.bool(False),
+    evalReg       = cms.bool(True),
+    maxnum        = cms.int32(100000),
 
     samples       = cms.VPSet(
     
