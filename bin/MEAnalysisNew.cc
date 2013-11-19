@@ -116,11 +116,13 @@ int main(int argc, const char* argv[])
   vector<double> massesT    ( in.getParameter<vector<double> > ("massesT"));
 
   // FLAGS
-  int   switchoffOL      ( in.getUntrackedParameter<int>    ("switchoffOL",     0));
-  int   speedup          ( in.getUntrackedParameter<int>    ("speedup",         0));
-  int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB", 1));
-  int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",         0));
+  int   switchoffOL      ( in.getUntrackedParameter<int>    ("switchoffOL",      0));
+  int   speedup          ( in.getUntrackedParameter<int>    ("speedup",          0));
+  int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB",  1));
+  int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          0));
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
+  int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
+
   int   doTypeBTag4      ( in.getUntrackedParameter<int>    ("doTypeBTag4", 0));
   int   doTypeBTag5      ( in.getUntrackedParameter<int>    ("doTypeBTag5", 0));
   int   doTypeBTag6      ( in.getUntrackedParameter<int>    ("doTypeBTag6", 0));
@@ -143,8 +145,8 @@ int main(int argc, const char* argv[])
   int   norm             ( in.getUntrackedParameter<int>    ("norm",      0));
   int   hypo             ( in.getUntrackedParameter<int>    ("hypo",      0));
   int   SoB              ( in.getUntrackedParameter<int>    ("SoB",       1));
-  int   doJERbias        ( in.getUntrackedParameter<int>    ("doJERbias", 0));
 
+  int   doJERbias        ( in.getUntrackedParameter<int>    ("doJERbias", 0));
   int   doCSVup          ( in.getUntrackedParameter<int>    ("doCSVup",   0));
   int   doCSVdown        ( in.getUntrackedParameter<int>    ("doCSVdown", 0));
   int   doJECup          ( in.getUntrackedParameter<int>    ("doJECup",   0));
@@ -169,25 +171,41 @@ int main(int argc, const char* argv[])
   int evLow  = evLimits[0];
   int evHigh = evLimits[1];
 
+  // a clock to monitor the timing
   TStopwatch* clock = new TStopwatch();
 
   // file with b-tag pdf
   TFile* fCP = TFile::Open(pathToCP.c_str(),"READ");
 
+  // name of csv in the input file ()
+  TString csvName = "csv_rec";
+
   // b-tag pdf for b-quark ('b'), c-quark ('c'), and light jets ('l')
   map<string,TH1F*> btagger; 
   if( useBtag && fCP!=0 ){
-    btagger["b_Bin0"] = fCP->Get("csv_b_Bin0__csvReco")!=0 ? (TH1F*)fCP->Get("csv_b_Bin0__csvReco") : 0;
-    btagger["b_Bin1"] = fCP->Get("csv_b_Bin1__csvReco")!=0 ? (TH1F*)fCP->Get("csv_b_Bin1__csvReco") : 0;
-    btagger["c_Bin0"] = fCP->Get("csv_c_Bin0__csvReco")!=0 ? (TH1F*)fCP->Get("csv_c_Bin0__csvReco") : 0;
-    btagger["c_Bin1"] = fCP->Get("csv_c_Bin1__csvReco")!=0 ? (TH1F*)fCP->Get("csv_c_Bin1__csvReco") : 0;
-    btagger["l_Bin0"] = fCP->Get("csv_l_Bin0__csvReco")!=0 ? (TH1F*)fCP->Get("csv_l_Bin0__csvReco") : 0;
-    btagger["l_Bin1"] = fCP->Get("csv_l_Bin1__csvReco")!=0 ? (TH1F*)fCP->Get("csv_l_Bin1__csvReco") : 0;
+
+    // load the correct histogram
+    btagger["b_Bin0"] = fCP->Get("csv_b_Bin0__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_b_Bin0__"+csvName) : 0;
+    btagger["b_Bin1"] = fCP->Get("csv_b_Bin1__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_b_Bin1__"+csvName) : 0;
+    btagger["c_Bin0"] = fCP->Get("csv_c_Bin0__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_c_Bin0__"+csvName) : 0;
+    btagger["c_Bin1"] = fCP->Get("csv_c_Bin1__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_c_Bin1__"+csvName) : 0;
+    btagger["l_Bin0"] = fCP->Get("csv_l_Bin0__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_l_Bin0__"+csvName) : 0;
+    btagger["l_Bin1"] = fCP->Get("csv_l_Bin1__"+csvName)!=0 ? (TH1F*)fCP->Get("csv_l_Bin1__"+csvName) : 0;
+
+    // check that all histograms have been found
+    int countFailures = 0;
+    for(map<string,TH1F*>::iterator it_b = btagger.begin() ; it_b != btagger.end() ; it_b++){
+      if( it_b->second == 0){
+	cout << "Could not find " << it_b->first << endl;
+	countFailures++;
+      }
+    }
+    if( countFailures>0 )  return 0;
   }
-  else if( useBtag && fCP!=0 ){
+  else if( useBtag && fCP==0 ){
     cout << "Cound not find " << pathToCP << ": exit" << endl;
     return 0;
-  }
+  } 
 
   // Higgs mass values for scan
   const int nHiggsMassPoints  = massesH.size();
@@ -257,6 +275,11 @@ int main(int argc, const char* argv[])
   }
 
 
+  Float_t readerVars[12];
+  if( useRegression ){
+    cout << "The b-energy regression will be used..." << endl;
+  }
+  TMVA::Reader* reader =  useRegression ? getTMVAReader("./root/weights/", "target-pt_gen", "BDTG", readerVars) : 0;
 
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
   /* @@@@@@@@@@@@@@@@@@@@@@@ OUTPUT @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -536,6 +559,13 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
+
+  // open first sample for b-energy regression => get pointer to the tree
+  string currentName0     = mySampleFiles[0];
+  mySamples->OpenFile( currentName0 );
+  TTree* currentTree_reg  = mySamples->GetTree( currentName0, "tree");
+
+
   // loop over input files
   for(unsigned int sample = 0 ; sample < mySampleFiles.size(); sample++){
     
@@ -675,6 +705,7 @@ int main(int argc, const char* argv[])
     // loop over entries
     int counter = 0;
     Long64_t nentries = currentTree->GetEntries();
+    cout << "Total number of entries: " << nentries << endl;
 
     if( evHigh<0 ) evHigh = nentries;
     for (Long64_t i = 0; i < nentries ; i++){
@@ -686,7 +717,10 @@ int main(int argc, const char* argv[])
       if(!fixNumEvJob && !(i>=evLow && i<evHigh) ) continue;
       events_++;
 
-      if(i%5000==0) cout << i << endl;
+      // print the processed event number
+      if(i%500==0){
+	cout << i << " (" << float(i)/float(nentries) << " %)" << endl;
+      }
 
       // read event...
       currentTree->GetEntry(i);
@@ -906,10 +940,17 @@ int main(int argc, const char* argv[])
 
 	// OR of one trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*"
 	int trigVtype3 =  (Vtype==3 && ( triggerFlags[3]>0 ) );
-  
+
 	// ID && trigger
 	properEventSL = (lepSelVtype2 && (isMC ? 1 : trigVtype2)) || (lepSelVtype3 && (isMC ? 1 : trigVtype3));	 
 
+	if( debug>=2 ){
+	  cout << "******** Event " << EVENT.event << endl;	
+	  cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
+	  cout << "Lep sel. Vtype2 = " << lepSelVtype2 << ", lep sel. Vtype3 = " << lepSelVtype3 << endl;
+	  cout << "Trigger: " <<  ((isMC ? 1 : trigVtype2) || (isMC ? 1 : trigVtype3)) << endl;
+	  cout << "Passes = " << int (properEventSL) << endl;
+	}
 
 	// save lepton kinematics...
 	nLep_ = 1;
@@ -961,6 +1002,12 @@ int main(int argc, const char* argv[])
 	// ID && trigger
 	properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
+	if( debug>=2 ){
+	  cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
+	  cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
+	  cout << "Trigger: " <<  ((isMC ? 1 : trigVtype0) || (isMC ? 1 : trigVtype1)) << endl;
+	  cout << "Passes = " << int (properEventDL) << endl;
+	}
 
 	// save lepton(s) kinematics into the tree...
 	nLep_ = 2;
@@ -999,7 +1046,10 @@ int main(int argc, const char* argv[])
       MET_sumEt_ = METtype1p2corr.sumet; 
 
       // continue if leptons do not satisfy cuts
-      if( !(properEventSL || properEventDL) ) continue;
+      if( !(properEventSL || properEventDL) ){
+	if( debug>=2 ) cout << "Rejected by lepton selection" << endl;
+	continue;
+      }
 
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -1054,9 +1104,10 @@ int main(int argc, const char* argv[])
 	  // only jets above pt cut...
 	  if( pt < 30  ) continue;	  
 
+	  // the jet four-vector
 	  TLorentzVector p4;
 	  p4.SetPtEtaPhiM( pt, eta, phi, m );
-
+	  	
 	  // for csv systematics
 	  float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
 	  float csv_upBC    =  (coll==0) ? hJet_csv_upBC   [hj] : aJet_csv_upBC   [hj];
@@ -1075,43 +1126,49 @@ int main(int argc, const char* argv[])
 
 	  // the jet observables (p4 and csv)
 	  JetObservable myJet;
-	  myJet.p4  = p4;
-	  myJet.csv = csv; 
-	  
-	  // use pt to order jet collection
-	  //jet_map[ p4.Pt() ] = myJet;
-	  jet_map.push_back( myJet );
+	  myJet.p4    = p4;
+	  myJet.csv   = csv; 
+	  myJet.index = (coll==0 ? hj : -hj-1);
+	  myJet.shift = shift;
 
-	  //if( debug )
-	  //cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+	  // push back the jet...
+	  jet_map.push_back    ( myJet );
+
+	  if( debug>=3 ){
+	    cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+	  }
 	  
 	}
       }
 
 
       // order jet list by Pt
-      std::sort( jet_map.begin(), jet_map.end(), JetObservableListerByPt() );
+      std::sort( jet_map.begin(),     jet_map.end(),     JetObservableListerByPt() );
       
+
       // if use btag shape, order by decreasing CSV 
       //       <=> when considering only a subset of the jets, this ensures that the combination
       //           obtained from CSVM only jets is among those considered
-      if( selectByBTagShape ) 
-	std::sort( jet_map.begin(), jet_map.end(), JetObservableListerByCSV() );
 
+      if( selectByBTagShape )
+	std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
+
+
+      
    
       // fill arrays of jets
       std::vector<TLorentzVector>  jets_p4;
+      std::vector<TLorentzVector>  jets_p4_reg;
       std::vector<double>          jets_csv;
       std::vector<double>          jets_csv_prob_b;
       std::vector<double>          jets_csv_prob_c;
       std::vector<double>          jets_csv_prob_j;
       int jetsAboveCut = 0;
 
-      //for( jet_map_it = jet_map.begin() ; jet_map_it != jet_map.end(); jet_map_it++){
       for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){
 	
 	// the four-vector
-	TLorentzVector p4 = jet_map[jj].p4; //(jet_map_it->second).p4;
+	TLorentzVector p4 = jet_map[jj].p4; 
 	
 	// the csv value
 	float csv = jet_map[jj].csv;
@@ -1120,7 +1177,40 @@ int main(int argc, const char* argv[])
 	if( p4.Pt()>40 ) jetsAboveCut++;
 	
 	// store jet p4...
-	jets_p4.push_back ( p4  );
+	jets_p4.push_back ( p4 );
+
+	// the jet four-vector (for regression)
+	TLorentzVector p4_reg;
+
+	// the regressed pt of the jet
+	float pt_reg;  
+
+	// call to the function that computes the regressed pt of the jet
+	if( useRegression )
+	  getRegressionEnergy(pt_reg,            // the regressed pt (passed by &reference)
+			      "BDTG",            // the TMVA method
+			      reader,            // the TMVA reader
+			      readerVars,        // arrays with input variables
+			      currentTree_reg,   // the tree under process
+			      i,                 // the event of currentTree_reg under process
+			      jet_map[jj].index ,// index of hJet/aJet collection to be read 
+			      jet_map[jj].shift, // a multiplicative variation of the input jet energy/pt 
+			      (debug>=3) );      // if 1, print the input and output values (debug)
+
+	// else, just copy the old jet
+	else
+	  pt_reg = p4.Pt();
+
+	// protect against negative/too small values
+	if( pt_reg < 20. ) 
+	  pt_reg = p4.Pt(); 
+
+	// set the jet (keep same direction as old jet)
+	p4_reg.SetPtEtaPhiM( pt_reg, p4.Eta(), p4.Phi(), p4.M()*(pt_reg/p4.Pt()) );
+
+	// push back the regressed jet
+	jets_p4_reg.push_back ( p4_reg );
+
 	// store csv
 	jets_csv.push_back( csv );
 	
@@ -1138,9 +1228,10 @@ int main(int argc, const char* argv[])
 
       }
 
+
       // continue if not enough jets
       if( jetsAboveCut<4 ){
-	//cout << "Less then 4 jets.. continue" << endl;
+	if( debug>=2 ) cout << "Rejected by min jet cut" << endl;
 	continue;
       }
       
@@ -1215,6 +1306,10 @@ int main(int argc, const char* argv[])
       numBTagT_ = numJets30BtagT;
       numJets_  = ( numJets30BtagM + numJets30UntagM);
 
+      if( debug>=2 ){
+	cout << "numBTagM = " << numBTagM_ << endl;
+	cout << "numJets = "  << numJets_ << endl;
+      }
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@ JET RE-ORDERING BY CSV PROB @@@@@@@@@@@@@@@@@@@@@@@@@@  */      
 
@@ -1705,18 +1800,27 @@ int main(int argc, const char* argv[])
 	}
 
 	// DEBUG
-	if(debug){
+	if(debug>=1){
 	  cout << "*** Event ID " << EVENT.event << " *** " << endl;
 	  cout << " ==> SL=" << int(properEventSL) << ", DL=" << properEventDL << endl;
 	  cout << "     NJets " << numJets_ << " (" << numBTagM_ << " tagged)" << endl;
+	  if(useRegression) 
+	    cout <<  "     !!! The b-tagged jets will undergo energy regression !!!" << endl;
 	  cout << "     b-tagged: " << endl;
-	  for( unsigned int jj = 0; jj<btag_indices_backup.size(); jj++)
+	  for( unsigned int jj = 0; jj<btag_indices_backup.size(); jj++){
 	    cout << "     (" 
 		 << jets_p4[ btag_indices_backup[jj] ].Pt() << "," 
 		 << jets_p4[ btag_indices_backup[jj] ].Eta() << ","
 		 << jets_p4[ btag_indices_backup[jj] ].Phi() << "," 
 		 << jets_p4[ btag_indices_backup[jj] ].M() << "), CSV= " 
 		 << jets_csv[btag_indices_backup[jj] ] << endl;
+	    if( useRegression ) 	       
+	      cout   << "R -> (" 
+		     << jets_p4_reg[ btag_indices_backup[jj] ].Pt() << "," 
+		     << jets_p4_reg[ btag_indices_backup[jj] ].Eta() << ","
+		     << jets_p4_reg[ btag_indices_backup[jj] ].Phi() << "," 
+		     << jets_p4_reg[ btag_indices_backup[jj] ].M() << ")" << endl;  
+		}
 	  cout << "     b-untagged: " << endl;
 	  for( unsigned int jj = 0; jj<buntag_indices_backup.size(); jj++)
 	    cout << "     (" 
@@ -1729,9 +1833,13 @@ int main(int argc, const char* argv[])
 	  if(passes_btagshape){
 	    cout << "     @@@@@ the jet collection has been re-ordered according to btag probability @@@@@@" << endl;
 	    cout << "     b-tagged: " << endl;
-	    for( unsigned int jj = 0; jj < btag_indices.size(); jj++)
+	    for( unsigned int jj = 0; jj < btag_indices.size(); jj++){
 	      cout << "     (" << jets_p4[ btag_indices[jj] ].Pt() << "," << jets_p4[ btag_indices[jj] ].Eta() << ","
 		   << jets_p4[ btag_indices[jj] ].Phi() << "," << jets_p4[ btag_indices[jj] ].M() << "), CSV= " << jets_csv[ btag_indices[jj] ] << endl;
+	      if( useRegression ) 
+		cout << "R -> (" << jets_p4_reg[ btag_indices[jj] ].Pt() << "," << jets_p4_reg[ btag_indices[jj] ].Eta() << ","
+		     << jets_p4_reg[ btag_indices[jj] ].Phi() << "," << jets_p4_reg[ btag_indices[jj] ].M() << "), CSV= " << jets_csv[ btag_indices[jj] ] << endl; 
+	    }
 	    cout << "     b-untagged: " << endl;
 	    for( unsigned int jj = 0; jj<buntag_indices.size(); jj++)
 	      cout << "     (" << jets_p4[ buntag_indices[jj] ].Pt() << "," << jets_p4[ buntag_indices[jj] ].Eta() << ","
@@ -1802,12 +1910,12 @@ int main(int argc, const char* argv[])
 	  pos_to_index[7] = banytag_indices[4];	 
 	}
 	else if( type_<=3 && type_>=0){
-	  jets.push_back( jets_p4[ btag_indices[0] ]  );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[0] ] : jets_p4_reg[ btag_indices[0] ]  );
 	  jets.push_back( jets_p4[ ind1 ]);  
 	  jets.push_back( jets_p4[ ind2 ]);  
-	  jets.push_back( jets_p4[ btag_indices[1] ]  );
-	  jets.push_back( jets_p4[ btag_indices[2] ]  );
-	  jets.push_back( jets_p4[ btag_indices[3] ]  );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[1] ] : jets_p4_reg[ btag_indices[1] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ] );
 	  
 	  pos_to_index[2] = btag_indices[0];
 	  pos_to_index[3] = ind1;
@@ -1817,12 +1925,12 @@ int main(int argc, const char* argv[])
 	  pos_to_index[7] = btag_indices[3];	 
 	}
 	else if( type_==6 ){
-	  jets.push_back( jets_p4[ btag_indices[0] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[0] ] : jets_p4_reg[ btag_indices[0] ] );
 	  jets.push_back( leptonLV2   );  
 	  jets.push_back( neutrinoLV  );      // dummy  
-	  jets.push_back( jets_p4[ btag_indices[1] ] );
-	  jets.push_back( jets_p4[ btag_indices[2] ] );
-	  jets.push_back( jets_p4[ btag_indices[3] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[1] ] : jets_p4_reg[ btag_indices[1] ]);
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ]);
+	  jets.push_back( !useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ]);
 
 	  pos_to_index[2] = btag_indices[0];
 	  pos_to_index[3] = btag_indices[0];  // dummy
@@ -1832,12 +1940,12 @@ int main(int argc, const char* argv[])
 	  pos_to_index[7] = btag_indices[3];
 	}
 	else if( type_==7 ){
-	  jets.push_back( jets_p4[ btagLoose_indices[0] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[0] ] : jets_p4_reg[ btagLoose_indices[0] ] );
 	  jets.push_back( leptonLV2   );  
 	  jets.push_back( neutrinoLV  );           // dummy  
-	  jets.push_back( jets_p4[ btagLoose_indices[1] ] );
-	  jets.push_back( jets_p4[ btagLoose_indices[2] ] );
-	  jets.push_back( jets_p4[ btagLoose_indices[3] ] );
+	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[1] ] : jets_p4_reg[ btagLoose_indices[1] ]);
+	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[2] ] : jets_p4_reg[ btagLoose_indices[2] ]);
+	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[3] ] : jets_p4_reg[ btagLoose_indices[3] ]);
 
 	  pos_to_index[2] = btagLoose_indices[0];
 	  pos_to_index[3] = btagLoose_indices[0];  // dummy
@@ -1885,8 +1993,8 @@ int main(int argc, const char* argv[])
 	// check if there is a tag-untag pair that satisfies the "cs-tag" 
 	for( unsigned int w = 0; w<btag_indices.size(); w++){
 	  
-	  float m1 = ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M();
-	  float m2 = ( jets_p4[btag_indices[w]] + jets_p4[ind2] ).M();
+	  float m1 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind1] ).M();
+	  float m2 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind2] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind2] ).M();
 	  
 	  if( ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 0 ){
 	    flag_type0_ = 0; 

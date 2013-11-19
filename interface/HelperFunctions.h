@@ -41,6 +41,8 @@ typedef struct
 {
   TLorentzVector p4;
   float csv;
+  int index;
+  float shift;
 } JetObservable;
 
 
@@ -225,26 +227,37 @@ TMVA::Reader* getTMVAReader( std::string pathtofile, std::string target, std::st
   TString weightfile = weightdir + "TMVARegression_" + target + "_" + regMethod + ".weights.xml";
   reader->BookMVA(regMethod + " method", weightfile);
 
+  cout << "*** getTMVAReader has ben called ***" << endl;
+  cout << " => A regression of type " << regMethod << " will be used. Reading data file from " <<
+    string(weightfile.Data()) << endl;
+  cout << " => Total of " << nvars << " variables used as input" << endl;
+
   return reader;
 }
 
 void getRegressionEnergy(float& output, std::string regMethod, 
 			 TMVA::Reader *reader, Float_t readerVars[12], 
-			 TTree* tree, Long64_t entry , int jetpos, 
+			 TTree* tree, Long64_t entry , int jetpos, float shift,
 			 int verbose){
 
   TString jetColl =  "h" ;
   int j = jetpos>=0 ? jetpos : -jetpos-1;
 
-  float hJet_pt[2],         hJet_genPt[2],         hJet_ptRaw[2],        hJet_eta[2],  hJet_phi[2],    hJet_e[2], hJet_JECUnc[2];
-  float hJet_vtx3dL[2],     hJet_vtx3deL[2],       hJet_vtxMass[2],      hJet_vtxPt[2];
-  float hJet_cef[2],        hJet_ptLeadTrack[2],   hJet_nconstituents[2];
+  float hJet_pt[2],         hJet_genPt[2],         //hJet_ptRaw[2],        
+    hJet_eta[2],  hJet_phi[2],    hJet_e[2], hJet_JECUnc[2];
+  float hJet_vtx3dL[2],     hJet_vtx3deL[2],       hJet_vtxMass[2]   // hJet_vtxPt[2]
+    ;
+  float hJet_cef[2],        //hJet_ptLeadTrack[2],   
+    hJet_nconstituents[2];
   float hJet_SoftLeptPt[2], hJet_SoftLeptptRel[2], hJet_SoftLeptdR[2];
   int hJet_SoftLeptIdlooseMu[2], hJet_SoftLeptId95[2];
 
-  float aJet_pt[999],         aJet_genPt[999],         aJet_ptRaw[999],        aJet_eta[999],  aJet_phi[999],    aJet_e[999], aJet_JECUnc[999];
-  float aJet_vtx3dL[999],     aJet_vtx3deL[999],       aJet_vtxMass[999],      aJet_vtxPt[999];
-  float aJet_cef[999],        aJet_ptLeadTrack[999],   aJet_nconstituents[999];
+  float aJet_pt[999],         aJet_genPt[999],         //aJet_ptRaw[999],
+    aJet_eta[999],  aJet_phi[999],    aJet_e[999], aJet_JECUnc[999];
+  float aJet_vtx3dL[999],     aJet_vtx3deL[999],       aJet_vtxMass[999]      //aJet_vtxPt[999]
+    ;
+  float aJet_cef[999],        //aJet_ptLeadTrack[999], 
+    aJet_nconstituents[999];
   float aJet_SoftLeptPt[999], aJet_SoftLeptptRel[999], aJet_SoftLeptdR[999];
   int   aJet_SoftLeptIdlooseMu[999], aJet_SoftLeptId95[999];
 
@@ -301,16 +314,16 @@ void getRegressionEnergy(float& output, std::string regMethod,
   //smear_pt_res( aJet_ptRaw[j], aJet_genPt[j], aJet_eta[j]);
 
   readerVars[0]  = jetpos>=0 ? 
-    hJet_pt[j] : 
-    aJet_pt[j];
+    hJet_pt[j]*shift : 
+    aJet_pt[j]*shift;
 
   readerVars[1]  = jetpos>=0 ? 
-    evalEt( hJet_pt[j], hJet_eta[j], hJet_phi[j], hJet_e[j]) : 
-    evalEt( aJet_pt[j], aJet_eta[j], aJet_phi[j], aJet_e[j]);
+    evalEt( hJet_pt[j]*shift, hJet_eta[j], hJet_phi[j], hJet_e[j]*shift) : 
+    evalEt( aJet_pt[j]*shift, aJet_eta[j], aJet_phi[j], aJet_e[j]*shift);
 
   readerVars[2]  = jetpos>=0 ? 
-    evalMt( hJet_pt[j], hJet_eta[j], hJet_phi[j], hJet_e[j]) : 
-    evalMt( aJet_pt[j], aJet_eta[j], aJet_phi[j], aJet_e[j]);
+    evalMt( hJet_pt[j]*shift, hJet_eta[j], hJet_phi[j], hJet_e[j]*shift) : 
+    evalMt( aJet_pt[j]*shift, aJet_eta[j], aJet_phi[j], aJet_e[j]*shift);
 
   //readerVars[4]  = jetpos>=0 ? 
   //TMath::Max(float(0.), hJet_ptLeadTrack[j] ) : 
@@ -407,15 +420,21 @@ void fillRegressionBranchesPerJet( Float_t readerVarsF[14],
 				   TTree* tree, Long64_t entry , 
 				   int jetpos, int verbose){
 
-  float hJet_pt[2],         hJet_genPt[2],         hJet_ptRaw[2],        hJet_eta[2],  hJet_phi[2],    hJet_e[2], hJet_JECUnc[2];
-  float hJet_vtx3dL[2],     hJet_vtx3deL[2],       hJet_vtxMass[2],      hJet_vtxPt[2];
-  float hJet_cef[2],        hJet_ptLeadTrack[2],   hJet_nconstituents[2];
+  float hJet_pt[2],         hJet_genPt[2],         //hJet_ptRaw[2], 
+    hJet_eta[2],  hJet_phi[2],    hJet_e[2], hJet_JECUnc[2];
+  float hJet_vtx3dL[2],     hJet_vtx3deL[2],       hJet_vtxMass[2]     //hJet_vtxPt[2]
+    ;
+  float hJet_cef[2],        //hJet_ptLeadTrack[2],  
+    hJet_nconstituents[2];
   float hJet_SoftLeptPt[2], hJet_SoftLeptptRel[2], hJet_SoftLeptdR[2];
   int hJet_SoftLeptIdlooseMu[2], hJet_SoftLeptId95[2];
 
-  float aJet_pt[999],         aJet_genPt[999],         aJet_ptRaw[999],        aJet_eta[999],  aJet_phi[999],    aJet_e[999], aJet_JECUnc[999];
-  float aJet_vtx3dL[999],     aJet_vtx3deL[999],       aJet_vtxMass[999],      aJet_vtxPt[999];
-  float aJet_cef[999],        aJet_ptLeadTrack[999],   aJet_nconstituents[999];
+  float aJet_pt[999],         aJet_genPt[999],         //aJet_ptRaw[999],
+    aJet_eta[999],  aJet_phi[999],    aJet_e[999], aJet_JECUnc[999];
+  float aJet_vtx3dL[999],     aJet_vtx3deL[999],       aJet_vtxMass[999]      //aJet_vtxPt[999]
+    ;
+  float aJet_cef[999],        //aJet_ptLeadTrack[999],   
+    aJet_nconstituents[999];
   float aJet_SoftLeptPt[999], aJet_SoftLeptptRel[999], aJet_SoftLeptdR[999];
   int aJet_SoftLeptIdlooseMu[999], aJet_SoftLeptId95[999];
 

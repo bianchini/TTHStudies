@@ -766,7 +766,7 @@ int main(int argc, const char* argv[])
 
 
 
-  w->writeToFile(outFileName.c_str(),kTRUE);
+  w->writeToFile((outFileName+string(extraname.Data())+".root").c_str(),kTRUE);
 
   TCanvas *c1CsvLight_Bin0 = new TCanvas("c1CsvLight_Bin0","canvas",10,30,650,600);
   RooPlot* plotCsvLight_Bin0 = csvRecoLight.frame(Bins(10),Title("cvs light, Bin0"));

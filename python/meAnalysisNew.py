@@ -10,9 +10,9 @@ process = cms.Process("MEAnalysisNew")
 
 process.fwliteInput = cms.PSet(
 
-    outFileName   = cms.string("./root/MEAnalysisNew.root"),
-    pathToTF      = cms.string("./root/transferFunctionsNew_partonE_new.root"),
-    pathToCP      = cms.string("./root/ControlPlotsNew_new.root"),
+    outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
+    pathToTF      = cms.string("./root/transferFunctionsTEST_reg.root"),
+    pathToCP      = cms.string("./root/ControlPlotsTEST_reg.root"),
     pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
@@ -144,7 +144,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -187,8 +187,8 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(True),  
-    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph-part'+VType),
+    skip     = cms.bool(False),  
+    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_SL),
@@ -196,7 +196,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsFullLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_FL),
@@ -243,9 +243,9 @@ process.fwliteInput = cms.PSet(
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
 
     doType0ByBTagShape = cms.untracked.int32(1),
-    doType1ByBTagShape = cms.untracked.int32(0),
-    doType2ByBTagShape = cms.untracked.int32(0),
-    doType3ByBTagShape = cms.untracked.int32(0),
+    doType1ByBTagShape = cms.untracked.int32(1),
+    doType2ByBTagShape = cms.untracked.int32(1),
+    doType3ByBTagShape = cms.untracked.int32(1),
     doType6ByBTagShape = cms.untracked.int32(0),
 
     useME         = cms.int32(1),
@@ -258,6 +258,7 @@ process.fwliteInput = cms.PSet(
     doubleGaussianB  = cms.untracked.int32(1),
     useBtag          = cms.untracked.int32(1),
     selectByBTagShape= cms.untracked.int32(1),
+    useRegression    = cms.untracked.int32(0),
     
     printout     = cms.int32(0),
     debug        = cms.int32(0),   
@@ -282,7 +283,7 @@ process.fwliteInput = cms.PSet(
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
     fixNumEvJob    = cms.untracked.int32(1),
-    evLimits       = cms.vint32(0,100),
+    evLimits       = cms.vint32(0,40),
 
     doJERbias  = cms.untracked.int32(0),   
     doCSVup    = cms.untracked.int32(0),

@@ -263,7 +263,8 @@ int main(int argc, const char* argv[])
     TTree* currentTree       = mySamples->GetTree( currentName, "tree");
     cout << "Done!!" << endl;
     
-    int nvlep, nhJets, naJets, Vtype;
+    int //nvlep, 
+      nhJets, naJets, Vtype;
 
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
@@ -275,7 +276,7 @@ int main(int argc, const char* argv[])
     Float_t hJet_csv_downBC   [999];
     Float_t hJet_csv_upL      [999];
     Float_t hJet_csv_downL    [999];
-    Float_t hJet_JECUnc       [999];
+    //Float_t hJet_JECUnc       [999];
     Float_t hJet_genPt        [999];
     Float_t hJet_genEta       [999];
     Float_t hJet_genPhi       [999];
@@ -290,7 +291,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_csv_downBC   [999];
     Float_t aJet_csv_upL      [999];
     Float_t aJet_csv_downL    [999];
-    Float_t aJet_JECUnc       [999];
+    //Float_t aJet_JECUnc       [999];
     Float_t aJet_genPt        [999];
     Float_t aJet_genEta       [999];
     Float_t aJet_genPhi       [999];
@@ -315,7 +316,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
     currentTree->SetBranchAddress("hJet_csv_upL",     hJet_csv_upL);
     currentTree->SetBranchAddress("hJet_csv_downL",   hJet_csv_downL);
-    currentTree->SetBranchAddress("hJet_JECUnc",      hJet_JECUnc);
+    //currentTree->SetBranchAddress("hJet_JECUnc",      hJet_JECUnc);
     currentTree->SetBranchAddress("hJet_genPt",       hJet_genPt);
     currentTree->SetBranchAddress("hJet_genEta",      hJet_genEta);
     currentTree->SetBranchAddress("hJet_genPhi",      hJet_genPhi);
@@ -330,7 +331,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_csv_downBC",  aJet_csv_downBC);
     currentTree->SetBranchAddress("aJet_csv_upL",     aJet_csv_upL);
     currentTree->SetBranchAddress("aJet_csv_downL",   aJet_csv_downL);
-    currentTree->SetBranchAddress("aJet_JECUnc",      aJet_JECUnc);
+    //currentTree->SetBranchAddress("aJet_JECUnc",      aJet_JECUnc);
     currentTree->SetBranchAddress("aJet_genPt",       aJet_genPt);
     currentTree->SetBranchAddress("aJet_genEta",      aJet_genEta);
     currentTree->SetBranchAddress("aJet_genPhi",      aJet_genPhi);
@@ -343,7 +344,6 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("METtype1p2corr",  &METtype1p2corr);
     currentTree->SetBranchAddress("PUweight",        &PUweight);
 
-    int printed = 0;
     Long64_t nentries = currentTree->GetEntries();
     cout << "Total entries: " << nentries << endl;
 
@@ -523,7 +523,7 @@ int main(int argc, const char* argv[])
 
 	  // This is filled only for hJets
 	  int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
-	  float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
+	  //float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
 	  int flavor   = (coll==0) ? hJet_flavour [hj] : aJet_flavour [hj];
 
 	  // only jets passing ID...
@@ -595,7 +595,7 @@ int main(int argc, const char* argv[])
 
 	    if( evalReg ){
 	      float output  = -99;
-	      getRegressionEnergy(output, "BDTG", reader, readerVars, currentTree0, i, (coll==0 ? hj : -hj-1), int(verbose));
+	      getRegressionEnergy(output, "BDTG", reader, readerVars, currentTree0, i, (coll==0 ? hj : -hj-1), 1.0, int(verbose));
 	      eRecoRegHeavy  = output*TMath::CosH( etaRecoHeavy );
 	      ptRecoRegHeavy = output;
 	    }

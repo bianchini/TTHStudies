@@ -11,8 +11,8 @@ sys.path.append('./')
 import FWCore.ParameterSet.Config as cms
 
 #### mass scan
-#massesH     = cms.vdouble(125)
-massesH     = cms.vdouble(55., 65., 75., 85., 95., 105., 115., 125., 135., 145., 155., 165., 185., 205., 225., 250., 275., 300.)
+massesH     = cms.vdouble(125)
+#massesH     = cms.vdouble(55., 65., 75., 85., 95., 105., 115., 125., 135., 145., 155., 165., 185., 205., 225., 250., 275., 300.)
 massesT     = cms.vdouble(174.3)
 MH          = 125.00
 MT          = 174.30
@@ -32,10 +32,13 @@ usePDF      = 1
 # to print intermediate steps
 printout    = 1
 
-
+# cut values to select events
 btag_prob_cut_6jets = 0.988
 btag_prob_cut_5jets = 0.992
 btag_prob_cut_4jets = 0.992
+
+# regression
+useRegression = 0
 
 
 def submitMEAnalysisNew(type,
@@ -74,7 +77,14 @@ def submitMEAnalysisNew(type,
         else:
             sam.skip = cms.bool(False)
             
-    process.fwliteInput.outFileName      = cms.string('../root/MEAnalysisNew_MHscan_'+script+'.root')
+    process.fwliteInput.outFileName      = cms.string('../root/MEAnalysisNew_'+script+'.root')
+    process.fwliteInput.pathToFile       = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/")
+    if useRegression:
+        process.fwliteInput.pathToTF         = cms.string("./root/transferFunctionsTEST_reg.root"),
+        process.fwliteInput.pathToCP         = cms.string("./root/ControlPlotsTEST_reg.root"),
+    else:
+        process.fwliteInput.pathToTF         = cms.string("./root/transferFunctionsTEST.root"),
+        process.fwliteInput.pathToCP         = cms.string("./root/ControlPlotsTEST_reg.root"),
     process.fwliteInput.norm             = cms.untracked.int32(norm)
     process.fwliteInput.useME            = cms.int32(useME)
     process.fwliteInput.useJac           = cms.int32(useJac)
@@ -85,6 +95,8 @@ def submitMEAnalysisNew(type,
     process.fwliteInput.btag_prob_cut_6jets = cms.untracked.double(btag_prob_cut_6jets)
     process.fwliteInput.btag_prob_cut_5jets = cms.untracked.double(btag_prob_cut_5jets)
     process.fwliteInput.btag_prob_cut_4jets = cms.untracked.double(btag_prob_cut_4jets)
+
+    process.fwliteInput.useRegression    = cms.untracked.int32(useRegression)
 
     process.fwliteInput.massesH          = massesH
     process.fwliteInput.massesT          = massesT
@@ -106,7 +118,7 @@ def submitMEAnalysisNew(type,
    
     f = open(scriptName,'w')
     f.write('#!/bin/bash\n\n')
-    f.write('cd /shome/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/bin/\n')
+    f.write('cd ${CMSSW_BASE}/src/Bianchi/TTHStudies/bin/\n')
     f.write('source /swshare/psit3/etc/profile.d/cms_ui_env.sh\n')
     f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
     f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
@@ -118,7 +130,7 @@ def submitMEAnalysisNew(type,
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = 'qsub -V -cwd -l h_vmem=6G -q all.q -N job'+sample+' '+scriptName 
+    submitToQueue = 'qsub -V -cwd -l h_vmem=2G -q all.q -N job'+sample+' '+scriptName 
     print submitToQueue
     os.system(submitToQueue)
     
@@ -163,13 +175,13 @@ def submitFullMEAnalysisNew( type, analysis ):
     else:
         print "Doing nominal analysis"
 
-   # TTJetsSemiLept
+   # TTJetsSemiLept --> 16749255
     sample  = 'TTJetsSemiLept'
     counter = 0
-    for i in range(150):
+    for i in range(300):   # ---> ~ 40/job
         counter = counter + 1
         if doSL:
-            submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*25000+1, (i+1)*25000 )
+            submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*56000+1, (i+1)*56000 )
             
 
     # TTJetsFullLept
@@ -188,17 +200,17 @@ def submitFullMEAnalysisNew( type, analysis ):
         if doSL:
             submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*30000+1, (i+1)*30000 )
 
-    # TTH125
+    # TTH125 --> 194808
     sample  = 'TTH125'
     counter = 0
     num_of_jobs = 1
     evs_per_job = 100
     if doSL:
-         num_of_jobs = 110
-         evs_per_job = 500
+         num_of_jobs =  195
+         evs_per_job = 1000  # ---> ~ 40/job
     else:
-         num_of_jobs = 8
-         evs_per_job = 300
+         num_of_jobs =    10
+         evs_per_job = 21000 # ---> ~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
         submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, i*evs_per_job+1, (i+1)*evs_per_job )

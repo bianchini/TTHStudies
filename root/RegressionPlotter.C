@@ -300,3 +300,85 @@ void plotTFAll(float binW=(300.-30.)/58.){
   
 
 }
+
+
+void plot_correlation( TString target = "pt_gen", TString varRec = "e_rec_reg", TString varGen = "e_gen", 
+		       TString cut = "(TMath::Abs(eta_part)<1.0)",  
+		       TString xTitle = "gen-jet energy (GeV)", TString yTitle = "#frac{reco-gen}{gen}",
+		       TString header = "b-jet 0#leq#eta#leq1, (regression)",
+		       TString outname = "pt_gen_Bin0_e_gen"){
+
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.1);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
+
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,1);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TFile* f = TFile::Open("../bin/root/treeProducerTEST"+target+".root");
+  TTree* tree = (TTree*)f->Get("genJetHeavyTree");
+
+  TH2F* h2 = new TH2F("h2", "Simulation #sqrt{s}=8 TeV; "+xTitle+";"+yTitle, 100, 30, 300, 120, -0.9, 0.9);
+
+  tree->Draw("("+varRec+"-"+varGen+")/"+varGen+":"+varGen+">>h2", varGen+">20 && "+varRec+">20 &&"+cut, "");
+
+  h2->GetYaxis()->CenterTitle();
+  h2->Scale( 1./h2->GetMaximum());
+  h2->Draw("COLZ");
+
+  TLegend* leg = new TLegend(0.11,0.026,0.45,0.25,NULL,"brNDC");
+  leg->SetHeader( header );
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.06); 
+  leg->Draw();
+
+  if(1){
+    c1->SaveAs("Plots/Plot_Regression_correlation_"+outname+".png");
+  }
+
+}
+
+void plot_correlationAll(){
+
+  plot_correlation("pt_gen",  "e_rec_reg", "e_part", "abs(eta_part)<1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (regression)", "pt_gen_Bin0_e_rec_reg_vs_e_part");
+  plot_correlation("pt_gen",  "e_rec",     "e_part", "abs(eta_part)<1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (stdandard)",  "pt_gen_Bin0_e_rec_vs_e_part");
+
+  plot_correlation("pt_gen",  "e_rec_reg", "e_part", "abs(eta_part)>1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (regression)", "pt_gen_Bin1_e_rec_reg_vs_e_part");
+  plot_correlation("pt_gen",  "e_rec",     "e_part", "abs(eta_part)>1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (stdandard)",  "pt_gen_Bin1_e_rec_vs_e_part");
+
+  plot_correlation("pt_gen",  "e_rec_reg", "e_gen", "abs(eta_part)<1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (regression)", "pt_gen_Bin0_e_rec_reg_vs_e_gen");
+  plot_correlation("pt_gen",  "e_rec",     "e_gen", "abs(eta_part)<1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (stdandard)",  "pt_gen_Bin0_e_rec_vs_e_gen");
+
+  plot_correlation("pt_gen",  "e_rec_reg", "e_gen", "abs(eta_part)>1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (regression)", "pt_gen_Bin1_e_rec_reg_vs_e_gen");
+  plot_correlation("pt_gen",  "e_rec",     "e_gen", "abs(eta_part)>1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (stdandard)",  "pt_gen_Bin1_e_rec_vs_e_gen");
+
+
+  plot_correlation("pt_part",  "e_rec_reg", "e_part", "abs(eta_part)<1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (regression)", "pt_part_Bin0_e_rec_reg_vs_e_part");
+  plot_correlation("pt_part",  "e_rec",     "e_part", "abs(eta_part)<1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (stdandard)",  "pt_part_Bin0_e_rec_vs_e_part");
+
+  plot_correlation("pt_part",  "e_rec_reg", "e_part", "abs(eta_part)>1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (regression)", "pt_part_Bin1_e_rec_reg_vs_e_part");
+  plot_correlation("pt_part",  "e_rec",     "e_part", "abs(eta_part)>1.0", "gen-parton energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (stdandard)",  "pt_part_Bin1_e_rec_vs_e_part");
+
+  plot_correlation("pt_part",  "e_rec_reg", "e_gen", "abs(eta_part)<1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (regression)", "pt_part_Bin0_e_rec_reg_vs_e_gen");
+  plot_correlation("pt_part",  "e_rec",     "e_gen", "abs(eta_part)<1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 0#leq#eta#leq1, (stdandard)",  "pt_part_Bin0_e_rec_vs_e_gen");
+
+  plot_correlation("pt_part",  "e_rec_reg", "e_gen", "abs(eta_part)>1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (regression)", "pt_part_Bin1_e_rec_reg_vs_e_gen");
+  plot_correlation("pt_part",  "e_rec",     "e_gen", "abs(eta_part)>1.0", "gen-jet energy (GeV)", "#frac{reco-gen}{gen}", "b-jet 1#leq#eta#leq2.5, (stdandard)",  "pt_part_Bin1_e_rec_vs_e_gen");
+
+}
