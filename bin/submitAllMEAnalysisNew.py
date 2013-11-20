@@ -38,13 +38,13 @@ btag_prob_cut_5jets = 0.992
 btag_prob_cut_4jets = 0.992
 
 # regression
-useRegression = 0
+useRegression = 1
 
 
 def submitMEAnalysisNew(type,
                         script,
                         sample,
-                        doCSVup, doCSVdown, doJECup, doJECdown,
+                        doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,
                         evLow,evHigh
                         ):
 
@@ -63,9 +63,9 @@ def submitMEAnalysisNew(type,
         print "Unsupported analysis..."
         return
 
-    if VType!=("_"+type):
-        print "Attention! Mismatch between VType... Please, check and run again."
-        return
+    #if VType!=("_"+type):
+    #    print "Attention! Mismatch between VType... Please, check and run again."
+    #    return
 
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
@@ -78,13 +78,15 @@ def submitMEAnalysisNew(type,
             sam.skip = cms.bool(False)
             
     process.fwliteInput.outFileName      = cms.string('../root/MEAnalysisNew_'+script+'.root')
-    process.fwliteInput.pathToFile       = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/")
+    process.fwliteInput.pathToFile       = cms.string('dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/')
+
     if useRegression:
-        process.fwliteInput.pathToTF         = cms.string("./root/transferFunctionsTEST_reg.root"),
-        process.fwliteInput.pathToCP         = cms.string("./root/ControlPlotsTEST_reg.root"),
+        process.fwliteInput.pathToTF         = cms.string('./root/transferFunctionsTEST_reg.root')
+        process.fwliteInput.pathToCP         = cms.string('./root/ControlPlotsTEST_reg.root')
     else:
-        process.fwliteInput.pathToTF         = cms.string("./root/transferFunctionsTEST.root"),
-        process.fwliteInput.pathToCP         = cms.string("./root/ControlPlotsTEST_reg.root"),
+        process.fwliteInput.pathToTF         = cms.string('./root/transferFunctionsTEST.root')
+        process.fwliteInput.pathToCP         = cms.string('./root/ControlPlotsTEST.root')
+
     process.fwliteInput.norm             = cms.untracked.int32(norm)
     process.fwliteInput.useME            = cms.int32(useME)
     process.fwliteInput.useJac           = cms.int32(useJac)
@@ -111,6 +113,8 @@ def submitMEAnalysisNew(type,
     process.fwliteInput.doCSVdown        = cms.untracked.int32(doCSVdown)
     process.fwliteInput.doJECup          = cms.untracked.int32(doJECup)
     process.fwliteInput.doJECdown        = cms.untracked.int32(doJECdown)
+    process.fwliteInput.doJERup          = cms.untracked.int32(doJERup)
+    process.fwliteInput.doJERdown        = cms.untracked.int32(doJERdown)
 
 
     out = open(jobName+'.py','w')
@@ -163,6 +167,8 @@ def submitFullMEAnalysisNew( type, analysis ):
     doCSVdown= 0
     doJECup  = 0
     doJECdown= 0
+    doJERup  = 0
+    doJERdown= 0
     
     if   re.search("csvUp",   analysis )!=None:
         doCSVup   = 1
@@ -172,177 +178,222 @@ def submitFullMEAnalysisNew( type, analysis ):
         doJECup   = 1
     elif re.search("JECDown", analysis )!=None:
         doJECdown = 1
+    elif re.search("JERUp",   analysis )!=None:
+        doJERup   = 1
+    elif re.search("JERDown", analysis )!=None:
+        doJERdown = 1
     else:
         print "Doing nominal analysis"
 
-   # TTJetsSemiLept --> 16749255
+
+    ###################################################### TTJets SL
+    ######################################################
+        
+    # TTJetsSemiLept --> 16749255
     sample  = 'TTJetsSemiLept'
     counter = 0
-    for i in range(300):   # ---> ~ 40/job
+    num_of_jobs =   1
+    evs_per_job =   1 
+    if doSL:
+        num_of_jobs =       150
+        evs_per_job =    112000  # ---> ~ 40*2/job
+    else:
+        #print "Do not process for DL"
+        num_of_jobs =         4
+        evs_per_job =   4250000  # ---> <~ 40/job
+    for i in range(num_of_jobs):
         counter = counter + 1
-        if doSL:
-            submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*56000+1, (i+1)*56000 )
-            
+        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
 
-    # TTJetsFullLept
+    ###################################################### TTJets FL
+    ######################################################
+
+    # TTJetsFullLept --> 8932897
     sample  = 'TTJetsFullLept'
     counter = 0
-    for i in range(12):
+    num_of_jobs =   1
+    evs_per_job =   1
+    if doSL:
+         num_of_jobs =     22
+         evs_per_job = 419000  # ---> ~ 40*2/job
+    else:
+         num_of_jobs =     23
+         evs_per_job = 404000  # ---> ~ 40/job
+    for i in range(num_of_jobs):
         counter = counter + 1
-        if doDL:
-            submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*20000+1, (i+1)*20000 )
+        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown, i*evs_per_job+1, (i+1)*evs_per_job )
 
-    # TTJetsFullLept
-    sample  = 'TTJetsFullLept'
-    counter = 0
-    for i in range(12):
-        counter = counter + 1
-        if doSL:
-            submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*30000+1, (i+1)*30000 )
+    ###################################################### TTH
+    ######################################################
 
     # TTH125 --> 194808
     sample  = 'TTH125'
     counter = 0
-    num_of_jobs = 1
-    evs_per_job = 100
+    num_of_jobs =   1
+    evs_per_job =   1
     if doSL:
-         num_of_jobs =  195
-         evs_per_job = 1000  # ---> ~ 40/job
+         num_of_jobs =   93
+         evs_per_job = 2100  # ---> ~ 40*2/job
     else:
          num_of_jobs =    10
          evs_per_job = 21000 # ---> ~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, i*evs_per_job+1, (i+1)*evs_per_job )
+        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown, i*evs_per_job+1, (i+1)*evs_per_job )
 
 
     if re.search("nominal",   analysis )==None:
         return
 
 
+    ###################################################### EWK
+    ######################################################
+
     # DYJets10to50
     sample  = 'DYJets10to50'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
     # DYJets50
     sample  = 'DYJets50'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
     # WJets 
     sample  = 'WJets'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
-    
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+
+    ###################################################### Single-top
+    ######################################################
+
     # TtW
     sample  = 'TtW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
         
    # Tt
     sample  = 'Tt'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Ts
     sample  = 'Ts'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # TbartW
     sample  = 'TbartW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Tbart
     sample  = 'Tbart'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Tbars
     sample  = 'Tbars'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+
+
+    ###################################################### Di-boson
+    ######################################################
+
 
    # WW
     sample  = 'WW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # WZ
     sample  = 'WZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # ZZ
     sample  = 'ZZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
-    
-    # TTZ
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+
+
+    ###################################################### TTZ
+    ######################################################
+
+    # TTZ   --> 112517
     sample  = 'TTZ'
     counter = 0
-    num_of_jobs = 1
-    evs_per_job = 1000
+    num_of_jobs =    1
+    evs_per_job =    1
     if doSL:
-         num_of_jobs = 7
-         evs_per_job = 3000
+         num_of_jobs =   15
+         evs_per_job = 8000     # ---> ~ 40/job
     else:
-         num_of_jobs = 3
-         evs_per_job = 500
+         num_of_jobs =     2
+         evs_per_job = 60000    # ---> ~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
 
    # TTW
     sample  = 'TTW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+
+    ######################################################
+    ######################################################
+
 
 ###########################################
 ###########################################
 
 
-analyses = ['nominal_v2',
-            #'csvUp_v1',
-            #'csvDown_v1',
-            #'JECUp_v1',
-            #'JECDown_v1',
+analyses = ['nominal',
+            #'csvUp',
+            #'csvDown',
+            #'JECUp',
+            #'JECDown',
+            #'JERUp',
+            #'JERDown',
             ]
 
 types = ['VType0',
-         'VType1',
-         'VType2',
-         'VType3',
+         ####'VType1',
+         #'VType2',
+         ####'VType3',
          ]
 
 for type in types:
     for analysis in analyses:
+        if useRegression:
+            analysis = analysis+'_reg'
+        else:
+            analysis = analysis+'_std'
         submitFullMEAnalysisNew(type, analysis)

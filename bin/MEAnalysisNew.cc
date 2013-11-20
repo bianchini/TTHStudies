@@ -167,12 +167,16 @@ int main(int argc, const char* argv[])
   // flag to discriminate data/MC
   bool isMC = true;
 
-  // upper and lower bounds to be processed
+  // upper and lower event bounds to be processed
   int evLow  = evLimits[0];
   int evHigh = evLimits[1];
 
-  // a clock to monitor the timing
+  // a clock to monitor the integration CPU time
   TStopwatch* clock = new TStopwatch();
+
+  // a clock to monitor the total job
+  TStopwatch* clock2 = new TStopwatch();
+  clock2->Start();
 
   // file with b-tag pdf
   TFile* fCP = TFile::Open(pathToCP.c_str(),"READ");
@@ -306,6 +310,7 @@ int main(int argc, const char* argv[])
   int nMassPoints_;
   // total number integration per event (nPermut*nMassPoints)
   int nTotInteg_,nTotInteg_alt_;
+
   // number of matches to higgs quarks among tagged jets
   int matchesH_;
   // number of matches to W quarks among un-tagged jets
@@ -328,6 +333,11 @@ int main(int argc, const char* argv[])
   int nSimBs_; //, nC_, nCTop_;
   // num of b-hadrons inside jets
   int nMatchSimBs_;
+  // gen top/higgs informations
+  float p4H_   [4];
+  float p4T_   [4];
+  float p4Tbar_[4];
+
   // type-dependent flags
   int flag_type0_;
   int flag_type1_;
@@ -457,7 +467,9 @@ int main(int argc, const char* argv[])
   tree->Branch("lheNj",        &lheNj_,         "lheNj/F");
   tree->Branch("trigger",      &trigger_,       "trigger/F");
   tree->Branch("triggerFlags", triggerFlags_,   "triggerFlags[70]/b");
-
+  tree->Branch("p4H",          p4H_,            "p4H[4]/F");
+  tree->Branch("p4T",          p4T_,            "p4T[4]/F");
+  tree->Branch("p4Tbar",       p4Tbar_,         "p4Tbar[4]/F");
 
   // marginalized over permutations (all <=> Sum_{p=0}^{nTotPermut}( mH=MH, mT=MT ) )
   tree->Branch(Form("p_%d_all_s",     int(MH)),   &probAtSgn_,           Form("p_%d_all_s/F",              int(MH)) );
@@ -700,8 +712,8 @@ int main(int argc, const char* argv[])
 
  
     /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-    /* @@@@@@@@@@@@@@@@@@@@@@@@@ EVENT LOOP @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-    
+    /* @@@@@@@@@@@@@@@@@@@@@@@@@ EVENT LOOP @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
+
     // loop over entries
     int counter = 0;
     Long64_t nentries = currentTree->GetEntries();
@@ -719,7 +731,7 @@ int main(int argc, const char* argv[])
 
       // print the processed event number
       if(i%500==0){
-	cout << i << " (" << float(i)/float(nentries) << " %)" << endl;
+	cout << i << " (" << float(i)/float(nentries)*100 << " %)" << endl;
       }
 
       // read event...
@@ -769,6 +781,13 @@ int main(int argc, const char* argv[])
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GEN PARTICLES @@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
+      // reset the gen top/Higgs 4-vector
+      for(int elem=0; elem<4; elem++){
+	p4T_   [elem] = -99.;
+	p4Tbar_[elem] = -99.;
+	p4H_   [elem] = -99.;
+      }
+
       // read top decay products from input files   
       TLorentzVector topBLV   (1,0,0,1);
       TLorentzVector topW1LV  (1,0,0,1); 
@@ -784,11 +803,19 @@ int main(int argc, const char* argv[])
 	topBLV.SetPtEtaPhiM(  genTop.bpt,genTop.beta,genTop.bphi,genTop.bmass );
 	topW1LV.SetPtEtaPhiM( genTop.wdau1pt,genTop.wdau1eta, genTop.wdau1phi,genTop.wdau1mass);
 	topW2LV.SetPtEtaPhiM( genTop.wdau2pt,genTop.wdau2eta, genTop.wdau2phi,genTop.wdau2mass);
+	p4T_[0] = (topBLV+topW1LV+topW2LV).Pt();
+	p4T_[1] = (topBLV+topW1LV+topW2LV).Eta();
+	p4T_[2] = (topBLV+topW1LV+topW2LV).Phi();
+	p4T_[3] = (topBLV+topW1LV+topW2LV).M();
       }
       if(genTbar.bmass>0){
 	atopBLV.SetPtEtaPhiM(  genTbar.bpt,genTbar.beta,genTbar.bphi,genTbar.bmass );
 	atopW1LV.SetPtEtaPhiM( genTbar.wdau1pt,genTbar.wdau1eta, genTbar.wdau1phi,genTbar.wdau1mass);
 	atopW2LV.SetPtEtaPhiM( genTbar.wdau2pt,genTbar.wdau2eta,genTbar.wdau2phi,genTbar.wdau2mass);
+	p4Tbar_[0] = (atopBLV+atopW1LV+atopW2LV).Pt();
+	p4Tbar_[1] = (atopBLV+atopW1LV+atopW2LV).Eta();
+	p4Tbar_[2] = (atopBLV+atopW1LV+atopW2LV).Phi();
+	p4Tbar_[3] = (atopBLV+atopW1LV+atopW2LV).M();
       }
       if(genB.mass>0 && (genB.momid==25 || genB.momid==23)){
 	genBLV.SetPtEtaPhiM(genB.pt,genB.eta ,genB.phi, genB.mass );
@@ -796,7 +823,13 @@ int main(int argc, const char* argv[])
       if(genBbar.mass>0 && (genBbar.momid==25 || genBbar.momid==23)){
 	genBbarLV.SetPtEtaPhiM(genBbar.pt,genBbar.eta ,genBbar.phi, genBbar.mass );
       }
-  
+      if( genBLV.Pt()>1 && genBbarLV.Pt()>1 ){
+	p4H_[0] = (genBLV+genBbarLV).Pt();
+	p4H_[1] = (genBLV+genBbarLV).Eta();
+	p4H_[2] = (genBLV+genBbarLV).Phi();
+	p4H_[3] = (genBLV+genBbarLV).M();
+      }
+
       // dummy cut (for the moment)
       bool properEventSL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
       bool properEventDL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
@@ -1159,10 +1192,12 @@ int main(int argc, const char* argv[])
       // fill arrays of jets
       std::vector<TLorentzVector>  jets_p4;
       std::vector<TLorentzVector>  jets_p4_reg;
+
       std::vector<double>          jets_csv;
       std::vector<double>          jets_csv_prob_b;
       std::vector<double>          jets_csv_prob_c;
       std::vector<double>          jets_csv_prob_j;
+
       int jetsAboveCut = 0;
 
       for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){
@@ -1177,39 +1212,8 @@ int main(int argc, const char* argv[])
 	if( p4.Pt()>40 ) jetsAboveCut++;
 	
 	// store jet p4...
-	jets_p4.push_back ( p4 );
-
-	// the jet four-vector (for regression)
-	TLorentzVector p4_reg;
-
-	// the regressed pt of the jet
-	float pt_reg;  
-
-	// call to the function that computes the regressed pt of the jet
-	if( useRegression )
-	  getRegressionEnergy(pt_reg,            // the regressed pt (passed by &reference)
-			      "BDTG",            // the TMVA method
-			      reader,            // the TMVA reader
-			      readerVars,        // arrays with input variables
-			      currentTree_reg,   // the tree under process
-			      i,                 // the event of currentTree_reg under process
-			      jet_map[jj].index ,// index of hJet/aJet collection to be read 
-			      jet_map[jj].shift, // a multiplicative variation of the input jet energy/pt 
-			      (debug>=3) );      // if 1, print the input and output values (debug)
-
-	// else, just copy the old jet
-	else
-	  pt_reg = p4.Pt();
-
-	// protect against negative/too small values
-	if( pt_reg < 20. ) 
-	  pt_reg = p4.Pt(); 
-
-	// set the jet (keep same direction as old jet)
-	p4_reg.SetPtEtaPhiM( pt_reg, p4.Eta(), p4.Phi(), p4.M()*(pt_reg/p4.Pt()) );
-
-	// push back the regressed jet
-	jets_p4_reg.push_back ( p4_reg );
+	jets_p4.push_back     ( p4 );
+	jets_p4_reg.push_back ( p4 );
 
 	// store csv
 	jets_csv.push_back( csv );
@@ -1613,6 +1617,49 @@ int main(int argc, const char* argv[])
 	  analyze_type0      || analyze_type1      || analyze_type2      || analyze_type3      || analyze_type6       || analyze_type7 ||
 	  analyze_type0_BTag || analyze_type1_BTag || analyze_type2_BTag || analyze_type3_BTag || analyze_type6_BTag){	
 	
+
+	// if the event has been accepted, then compute the regressed energy per jet
+	// avoid to do this for every event (speed up)
+	if( useRegression ){
+
+	  // empty the array (was filled with the standard jets)
+	  jets_p4_reg.clear();
+
+	  // loop over all jets
+	  for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){	  
+
+	    // the four-vector
+	    TLorentzVector p4 = jet_map[jj].p4; 
+	    
+	    // the regressed pt of the jet
+	    float pt_reg;  
+	    
+	    // call to the function that computes the regressed pt of the jet	 
+	    getRegressionEnergy(pt_reg,            // the regressed pt (passed by &reference)
+				"BDTG",            // the TMVA method
+				reader,            // the TMVA reader
+				readerVars,        // arrays with input variables
+				currentTree_reg,   // the tree under process
+				i,                 // the event of currentTree_reg under process
+				jet_map[jj].index ,// index of hJet/aJet collection to be read 
+				jet_map[jj].shift, // a multiplicative variation of the input jet energy/pt 
+				(debug>=3) );      // if 1, print the input and output values (debug)
+	    
+	    // protect against negative/too small values
+	    if( pt_reg < 20. ) 
+	      pt_reg = p4.Pt(); 
+	    
+	    // set the jet (keep same direction as old jet)
+	    TLorentzVector p4_reg; 
+	    p4_reg.SetPtEtaPhiM( pt_reg, p4.Eta(), p4.Phi(), p4.M()*(pt_reg/p4.Pt()) );
+	    
+	    // push back the regressed jet
+	    jets_p4_reg.push_back ( p4_reg );
+	  }
+	}
+
+
+
 	// find out which two untagged jets come from W->qq'
 	unsigned int ind1 = 999;
 	unsigned int ind2 = 999;
@@ -2517,11 +2564,18 @@ int main(int argc, const char* argv[])
   tree->Write("",TObject::kOverwrite );
   fout_tmp->Close();
 
+  // find out the total time needed for the job
+  clock2->Stop();
+  float totalTime = clock2->RealTime();
+  cout << "*******************" << endl;
+  cout << "Job done in " << totalTime/60. << " min." << endl;
+
   // delete MEIntegrator and other allocated objects
   cout << "Delete meIntegrator..." << endl;
   delete meIntegrator;
-  delete clock;
+  delete clock; delete clock2;
   cout << "Finished!!!" << endl;
+  cout << "*******************" << endl;
   
   // Done!!!
   return 0;
