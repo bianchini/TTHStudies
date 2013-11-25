@@ -718,6 +718,7 @@ int main(int argc, const char* argv[])
     int counter = 0;
     Long64_t nentries = currentTree->GetEntries();
     cout << "Total number of entries: " << nentries << endl;
+    cout << " -> This job will process events in the range [ " << evLow << ", " << evHigh << " ]" << endl;
 
     if( evHigh<0 ) evHigh = nentries;
     for (Long64_t i = 0; i < nentries ; i++){
@@ -798,8 +799,12 @@ int main(int argc, const char* argv[])
       TLorentzVector genBLV   (1,0,0,1);
       TLorentzVector genBbarLV(1,0,0,1);
 
+
       // set-up top decay products (if available from input file...)
-      if(genTop.bmass>0){
+      // N.B. upper limit needed to prevent from using unfilled branches (<=> filled with std::max) 
+      //      (casues many WARNINGS to be thrown) 
+
+      if(genTop.bmass>0 && genTop.bmass<10){
 	topBLV.SetPtEtaPhiM(  genTop.bpt,genTop.beta,genTop.bphi,genTop.bmass );
 	topW1LV.SetPtEtaPhiM( genTop.wdau1pt,genTop.wdau1eta, genTop.wdau1phi,genTop.wdau1mass);
 	topW2LV.SetPtEtaPhiM( genTop.wdau2pt,genTop.wdau2eta, genTop.wdau2phi,genTop.wdau2mass);
@@ -808,7 +813,7 @@ int main(int argc, const char* argv[])
 	p4T_[2] = (topBLV+topW1LV+topW2LV).Phi();
 	p4T_[3] = (topBLV+topW1LV+topW2LV).M();
       }
-      if(genTbar.bmass>0){
+      if(genTbar.bmass>0 && genTbar.bmass<10){
 	atopBLV.SetPtEtaPhiM(  genTbar.bpt,genTbar.beta,genTbar.bphi,genTbar.bmass );
 	atopW1LV.SetPtEtaPhiM( genTbar.wdau1pt,genTbar.wdau1eta, genTbar.wdau1phi,genTbar.wdau1mass);
 	atopW2LV.SetPtEtaPhiM( genTbar.wdau2pt,genTbar.wdau2eta,genTbar.wdau2phi,genTbar.wdau2mass);
@@ -817,10 +822,10 @@ int main(int argc, const char* argv[])
 	p4Tbar_[2] = (atopBLV+atopW1LV+atopW2LV).Phi();
 	p4Tbar_[3] = (atopBLV+atopW1LV+atopW2LV).M();
       }
-      if(genB.mass>0 && (genB.momid==25 || genB.momid==23)){
+      if(genB.mass>0 && genB.mass<10 && (genB.momid==25 || genB.momid==23)){
 	genBLV.SetPtEtaPhiM(genB.pt,genB.eta ,genB.phi, genB.mass );
       }
-      if(genBbar.mass>0 && (genBbar.momid==25 || genBbar.momid==23)){
+      if(genBbar.mass>0 && genBbar.mass<10 && (genBbar.momid==25 || genBbar.momid==23)){
 	genBbarLV.SetPtEtaPhiM(genBbar.pt,genBbar.eta ,genBbar.phi, genBbar.mass );
       }
       if( genBLV.Pt()>1 && genBbarLV.Pt()>1 ){
@@ -1036,6 +1041,7 @@ int main(int argc, const char* argv[])
 	properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
 	if( debug>=2 ){
+	  cout << "******** Event " << EVENT.event << endl;	
 	  cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
 	  cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
 	  cout << "Trigger: " <<  ((isMC ? 1 : trigVtype0) || (isMC ? 1 : trigVtype1)) << endl;
@@ -1080,7 +1086,7 @@ int main(int argc, const char* argv[])
 
       // continue if leptons do not satisfy cuts
       if( !(properEventSL || properEventDL) ){
-	if( debug>=2 ) cout << "Rejected by lepton selection" << endl;
+	if( debug>=2 ) cout << "Rejected by lepton selection" << endl << endl;
 	continue;
       }
 
@@ -1235,7 +1241,7 @@ int main(int argc, const char* argv[])
 
       // continue if not enough jets
       if( jetsAboveCut<4 ){
-	if( debug>=2 ) cout << "Rejected by min jet cut" << endl;
+	if( debug>=2 ) cout << "Rejected by min jet cut" << endl << endl;
 	continue;
       }
       

@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Types  as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-VType     = "_VType2"
+VType     = ""
 
 xsecTT_SL = 103.0
 xsecTT_FL = 24.8
@@ -179,7 +179,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTZJets_8TeV-madgraph'+VType),
+    name     = cms.string('TTZJets_8TeV-madgraph_v2'+VType),
     nickName = cms.string('TTZ'),
     color    = cms.int32(18),
     xSec     = cms.double(0.2057),
@@ -188,7 +188,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_SL),
@@ -196,11 +196,125 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsFullLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_FL),
     ),
+
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012AAug06EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012AAug06EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012AJul13EdmV42b'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012AJul13EdmV42b'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012BJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012BJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012CAug24RerecoEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CAug24RerecoEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012CPromptV2TopUpEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012CPromptv2EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CPromptv2EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleElectronRun2012D-PromptReco-v1_v3'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012D-PromptReco-v1_v3'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012AAug06EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012AAug06EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012AJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012AJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012BJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012BJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CAug24RerecoEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CAug24RerecoEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CPromptV2TopUpEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CPromptV2TopUpEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CPromptv2EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CPromptv2EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012D-PromptReco-v1'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012D-PromptReco-v1'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+   
     
     
     ),
@@ -258,6 +372,7 @@ process.fwliteInput = cms.PSet(
     doubleGaussianB  = cms.untracked.int32(1),
     useBtag          = cms.untracked.int32(1),
     selectByBTagShape= cms.untracked.int32(1),
+    useRegression    = cms.untracked.int32(0),
     
     printout     = cms.int32(0),
     debug        = cms.int32(0),   
