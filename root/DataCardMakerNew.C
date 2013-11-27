@@ -38,7 +38,7 @@
 
 typedef TMatrixT<double> TMatrixD;
 
-
+#define CREATEDATACARDS 1
 
 // function that interpolates quadratically around a global maximum
 
@@ -321,25 +321,31 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     // reset (needed because hTmp is filled with Fill()
     hTmp->Reset();
 
-    // if doing a mass analysis
-    if( analysis==0 ){
+    // if doing a mass analysis... ( 0 = scan over mH ; -1 = scan over mT )
+    if( analysis<=0 ){
+
+
+      // choose what scan to perform
+      int nPermut      = analysis==0 ? nPermut_s     : nPermut_b;
+      float* m_scan    = analysis==0 ? mH_scan       : mT_scan;
+      float* p_vsM     = analysis==0 ? p_vsMH_s      : p_vsMT_b;
 
       // reset the per-permutation mass-integrated probability
-      float perm_prob [nPermut_s];
-      for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){
+      float perm_prob [nPermut];
+      for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){
 	perm_prob [perm_it] = 0.;
       }
       
       // start the scan over the Higgs mass
       for(int mH_it = 0; mH_it<nMassPoints; mH_it++){
 
-	float mH =  mH_scan[mH_it];
+	float mH =  m_scan[mH_it];
 
 	// given mH, scan over the permutations
-	for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){	
+	for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){	
 
 	  // ME probability (undet ttH hypothesis)
-	  float ME_prob = p_vsMH_s[mH_it*nPermut_s + perm_it];
+	  float ME_prob = p_vsM[mH_it*nPermut + perm_it];
 
 	  // b-tagging prob. (under ttbb hypothesis)
 	  float bb_prob =  p_tt_bb[perm_it] ;
@@ -361,7 +367,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
       int   maxPerm = 0;
 
       // loop over the permutations
-      for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){	
+      for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){	
 	if(perm_prob [perm_it] > maxP ){
 	  maxP    = perm_prob [perm_it];
 	  maxPerm = perm_it;
@@ -372,8 +378,8 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
       // we get its mass scan...
       for(int mH_it = 0; mH_it<nMassPoints; mH_it++){
 	
-	float mH      =  mH_scan[mH_it];
-	float ME_prob = p_vsMH_s[mH_it*nPermut_s + maxPerm];
+	float mH      =  m_scan[mH_it];
+	float ME_prob = p_vsM[mH_it*nPermut + maxPerm];
 	float bb_prob =  p_tt_bb[maxPerm] ;
 	float norm    = xsec!=0 ? 1./xsec->Eval( mH ) : 1.0;	
 	double p =  ME_prob*bb_prob*norm;       
@@ -523,14 +529,19 @@ void produceNew(// secondary name of the input trees
 		){
 
   // main name of the trees
-  string name = "New_MHscan";
+  string name = "New";
+  //string name = "New_MHscan";
 
   // version of the input trees
-  string version = "_v2";
+  string version = "_v2_reg";
+  //string version = "_v2";
+
+  // cout the version
   cout << "Use trees " << name << " (version " << version << "): category " << category << endl;
 
   // input files path
-  TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov04_2013/mhscan/";
+  TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov21_2013/BTagLoose/";
+  //TString inputpath = "./";
 
   // selection cut
   string basecut = cut;
@@ -627,7 +638,7 @@ void produceNew(// secondary name of the input trees
   bool normalbinning = ( param.size()==3 || doMEM==0 );
 
   // output file with shapes
-  TFile* fout = new TFile(fname+"_New.root","UPDATE");
+  TFile* fout = new TFile(fname+"_"+name+version+".root","UPDATE");
 
   // directory for this particular category
   TDirectory* dir =  fout->GetDirectory( fname+"_"+category); 
@@ -668,11 +679,14 @@ void produceNew(// secondary name of the input trees
   }
 
   // master histogram (all other histograms are a clone of this one)
-  TH1F* h = new TH1F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", normalbinning ? nBins : nBins+1 ,  normalbinning ? bins.GetArray() : bins2.GetArray());
+  TH1F* h = new TH1F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
+		     normalbinning ? nBins : nBins+1 ,  
+		     normalbinning ? bins.GetArray() : bins2.GetArray());
  
   // the observable when doing the ME analysis for cat2 (workaround)
   TString var("");
-  var = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", fact1, (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)), (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) ));
+  var = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
+		     fact1, (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)), (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) ));
 
   if(doMEM)
     cout << "Variable = " << string(var.Data()) << endl;
@@ -690,7 +704,7 @@ void produceNew(// secondary name of the input trees
   samples.push_back("TTJetsBJ");
   samples.push_back("TTJetsJJ");
   samples.push_back("TTH125");
-  //samples.push_back("EWK");
+  samples.push_back("EWK");
 
   // list of names that will appear in datacards 
   // (N.B. same order as in samples)
@@ -780,10 +794,10 @@ void produceNew(// secondary name of the input trees
 
       if(doMEM){
 	// workaround due to bug in the trees on cat. 2
-	if( (string(category.Data())).find("cat2") != string::npos )
-	  draw( param, tree, var, h_tmp, sample_cut );
-	else
-	  fill( tree, h_tmp, sample_cut, 1, &param, xsec);
+	//if( (string(category.Data())).find("cat2") != string::npos )
+	//draw( param, tree, var, h_tmp, sample_cut );
+	//else
+	fill( tree, h_tmp, sample_cut, 1, &param, xsec);
       }
       else{
 	fill( tree, h_tmp, sample_cut, 0, &param, xsec);
@@ -888,9 +902,16 @@ void produceNew(// secondary name of the input trees
   // save data
   dir->cd();
   h_data->Write("data_obs", TObject::kOverwrite);
+
+  // return if you don't want to create the datadacards
+  if( CREATEDATACARDS==0 ){
+    fout->Close();
+    return;
+  }
+
  
   // the text file for the datacard
-  ofstream out(Form("%s_New.txt",(fname+"_"+category).Data()));
+  ofstream out(Form("%s_%s.txt",(fname+"_"+category).Data(), (name+version).c_str()));
   out.precision(8);
 
 
@@ -906,7 +927,7 @@ void produceNew(// secondary name of the input trees
   string line1("imax 1"); out << line1 << endl;
   string line2("jmax *"); out << line2 << endl;
   string line3("kmax *"); out << line3 << endl;
-  string line4(Form("shapes *  *    %s_New.root  $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC", fname.Data())); out << line4 << endl;
+  string line4(Form("shapes *  *    %s_%s.root  $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC", fname.Data(), (name+version).c_str())); out << line4 << endl;
   out<<endl;
   string line5(Form("observation %.0f", observation )); out << line5 << endl;
   out<<endl;
