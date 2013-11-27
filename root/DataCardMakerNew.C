@@ -497,7 +497,16 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
 
 // code that produces the datacards  for limit computation 
 
-void produceNew(// secondary name of the input trees
+void produceNew(// main name of the trees
+		string name = "New",
+		
+		// version of the input trees
+		string version = "_v2_reg",
+
+		// extra name (appended at the end of the .root/.txt out files
+		string extraname = "",
+
+		// secondary name of the input trees
 		TString fname = "SL", 
 
 		// selection cut
@@ -528,13 +537,6 @@ void produceNew(// secondary name of the input trees
 		TF1* xsec = 0
 		){
 
-  // main name of the trees
-  string name = "New";
-  //string name = "New_MHscan";
-
-  // version of the input trees
-  string version = "_v2_reg";
-  //string version = "_v2";
 
   // cout the version
   cout << "Use trees " << name << " (version " << version << "): category " << category << endl;
@@ -638,7 +640,7 @@ void produceNew(// secondary name of the input trees
   bool normalbinning = ( param.size()==3 || doMEM==0 );
 
   // output file with shapes
-  TFile* fout = new TFile(fname+"_"+name+version+".root","UPDATE");
+  TFile* fout = new TFile("datacards/"+fname+"_"+name+version+extraname+".root","UPDATE");
 
   // directory for this particular category
   TDirectory* dir =  fout->GetDirectory( fname+"_"+category); 
@@ -911,7 +913,7 @@ void produceNew(// secondary name of the input trees
 
  
   // the text file for the datacard
-  ofstream out(Form("%s_%s.txt",(fname+"_"+category).Data(), (name+version).c_str()));
+  ofstream out(Form("datacards/%s_%s.txt",(fname+"_"+category).Data(), (name+version+extraname).c_str()));
   out.precision(8);
 
 
@@ -927,7 +929,7 @@ void produceNew(// secondary name of the input trees
   string line1("imax 1"); out << line1 << endl;
   string line2("jmax *"); out << line2 << endl;
   string line3("kmax *"); out << line3 << endl;
-  string line4(Form("shapes *  *    %s_%s.root  $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC", fname.Data(), (name+version).c_str())); out << line4 << endl;
+  string line4(Form("shapes *  *    %s_%s.root  $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC", fname.Data(), (name+version+extraname).c_str())); out << line4 << endl;
   out<<endl;
   string line5(Form("observation %.0f", observation )); out << line5 << endl;
   out<<endl;
@@ -1194,6 +1196,7 @@ void produceNew(// secondary name of the input trees
   cout << "Recap: " << endl;
   cout << " > Tag = " << name << endl;
   cout << " > Version = " <<  version << endl;
+  cout << " > Extra Name = " << extraname << endl;
   cout << " > Inputpath = " << string(inputpath.Data()) << endl;
   cout << " > Category = " << category << endl;
   cout << " > Cut = (" << cut  << ")" << endl;
@@ -1207,7 +1210,8 @@ void produceNew(// secondary name of the input trees
 }
 
 
-void produceAllNew( float LumiScale = 19.5/12.1, int doMEM = 1 ){
+void produceAllNew(string name = "New", string version = "_v2_reg",  string extraname = "", 
+		   float LumiScale = 19.5/12.1, int doMEM = 1 ){
 
   vector<float> binvec;
   binvec.push_back( 55.);
@@ -1223,18 +1227,52 @@ void produceAllNew( float LumiScale = 19.5/12.1, int doMEM = 1 ){
   xsec = 0;
 
   if(doMEM){
-    produceNew("SL", "type==0",                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
-    produceNew("SL", "type==1",                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew("SL", "type==2 && flag_type2>0",                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew("SL", "type==2 && flag_type2<=0",                 "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew("SL", "type==3 && flag_type3>0 && p_125_all_s>0", "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
-    produceNew("DL", "type==6",                                  "cat6", doMEM, 1.5, 0.0, 0.1 , LumiScale*2 , 5,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f",  0.975),                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f",  0.975),                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f",  0.980),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", 0.990),                  "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f", 0.975),                                   "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
+    //produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f", 0.950),                                   "cat6", doMEM, 1.5, 0.0, 0.1 , LumiScale*2 , 5,  1);
   }
   else{
-    produceNew("SL", "type==0",                                  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
-    produceNew("SL", "type==2",                                  "cat2", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
-    produceNew("SL", "type==3 && flag_type3>0 && p_125_all_s>0", "cat3", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
-    produceNew("DL", "type==6",                                  "cat4", doMEM, 0.0, 0.0, 0.0 , LumiScale*2 , binvec.size()-1,  0, &binvec);
+    produceNew( name, version, extraname,  "SL", "type==0",                                  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
+    produceNew( name, version, extraname,  "SL", "type==2",                                  "cat2", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
+    produceNew( name, version, extraname,  "SL", "type==3 && flag_type3>0 && p_125_all_s>0", "cat3", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
+    produceNew( name, version, extraname,  "DL", "type==6",                                  "cat4", doMEM, 0.0, 0.0, 0.0 , LumiScale*2 , binvec.size()-1,  0, &binvec);
   }
+
+}
+
+
+void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",  string extraname = "", 
+				float LumiScale = 19.5/12.1){
+  
+  int doMEM = 1;
+
+  vector<float> btag_LRs;
+  btag_LRs.push_back(0.950);
+  btag_LRs.push_back(0.970);
+  btag_LRs.push_back(0.975);
+  btag_LRs.push_back(0.980);
+  btag_LRs.push_back(0.985);
+  btag_LRs.push_back(0.990);
+  btag_LRs.push_back(0.995);
+
+  for(int it = 0; it<btag_LRs.size() ; it++){    
+    if(it<6) continue;
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==0 && btag_LR>=%f", btag_LRs[it]),                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==1 && btag_LR>=%f", btag_LRs[it]),                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", btag_LRs[it]),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", btag_LRs[it]),                 "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && flag_type3>0 && p_125_all_s>0 && btag_LR>=%f", btag_LRs[it]), "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", btag_LRs[it]),                                  "cat6", doMEM, 1.5, 0.0, 0.1 , LumiScale*2 , 5,  1);
+  }
+
+  // cat1 0.975
+  // cat2 0.975
+  // cat3 0.980
+  // cat4 0.990
+  // cat5 0.975
+  // cat6 0.950
 
 }
