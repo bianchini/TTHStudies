@@ -39,6 +39,8 @@
 
 typedef TMatrixT<double> TMatrixD;
 
+#define RUNONDATA 1
+
 
 
 pair<double,double> getMaxValue( TH1F* hMassProb){
@@ -179,7 +181,11 @@ pair<double,double> getMaxValue( TH1F* hMassProb){
 void plot_category(string type = "SL", 
 		   string cat  = "cat1",
 		   string header = "Cat 1",
-		   string fname  = ""
+		   string fname  = "",
+		   int    drawseparation = 1,
+		   float  rescaleTTbb = 1.,
+		   float  rescaleTTb  = 1.,
+		   float  rescaleTTjj = 1.
 		   ){
   
   gStyle->SetOptStat(0);
@@ -219,6 +225,7 @@ void plot_category(string type = "SL",
     samples.push_back("TTJetsHFb");
     samples.push_back("TTJetsLF");
     samples.push_back("TTH125");
+    if(RUNONDATA)  samples.push_back("data_obs");
   }
   if( type.find("DL")!=string::npos ){
     samples.push_back("SingleT");
@@ -227,10 +234,12 @@ void plot_category(string type = "SL",
     samples.push_back("TTJetsHFb");
     samples.push_back("TTJetsLF");
     samples.push_back("TTH125");
+    if(RUNONDATA)  samples.push_back("data_obs");
   }
 
-  TH1F* hS = 0;
-  TH1F* hErr = 0;
+  TH1F* hS    = 0;
+  TH1F* hData = 0;
+  TH1F* hErr  = 0;
 
   TFile* f = TFile::Open(("datacards/"+type+"_New_v2_reg.root").c_str());
   if(f==0 || f->IsZombie() ) return;
@@ -246,15 +255,6 @@ void plot_category(string type = "SL",
       continue;
     }
     cout << "Events = $" << h->Integral() << " \\pm " << (h->GetEntries()>0 ? sqrt(h->GetEntries())*h->Integral()/h->GetEntries() : 0.0 ) << " $" << endl;
-
-    if(samples[sample].find("TTH125") == string::npos){
-      if( hErr==0 ){
-	hErr = (TH1F*)h->Clone("hErr");
-	hErr->Reset();
-	leg->AddEntry(hErr, "MC unc. (stat.)", "L");
-      }
-      hErr->Add( h, 1.0);
-    }
    
     if( samples[sample].find("TTH125") != string::npos ){
       hS = (TH1F*)h->Clone("hS");
@@ -271,16 +271,19 @@ void plot_category(string type = "SL",
     }
     if( samples[sample].find("TTJetsHFbb") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + bb", "F");
+      h->Scale( rescaleTTbb );
       h->SetLineColor( 16 );
       h->SetFillColor( 16 );
     }
     else if( samples[sample].find("TTJetsHFb") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + b", "F");
+      h->Scale( rescaleTTb );
       h->SetLineColor( 17 );
       h->SetFillColor( 17 );
     }
     if( samples[sample].find("TTJetsLF") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + jj", "F");
+      h->Scale( rescaleTTjj );
       h->SetLineColor( 18 );
       h->SetFillColor( 18 );
     }    
@@ -304,24 +307,48 @@ void plot_category(string type = "SL",
       h->SetFillColor( 30 );
       leg->AddEntry(h, "t#bar{t}V", "F");
     }
+    if( samples[sample].find("data_obs") != string::npos && RUNONDATA){
+      hData = (TH1F*)h->Clone("hData");
+      //cout <<  hData->GetNbinsX() << endl;
+      hData->Sumw2();
+      hData->SetMarkerStyle(kFullCircle);
+      hData->SetMarkerSize(1.8);
+      hData->SetMarkerColor(kBlack);
+      //hData->SetBinContent( hData->GetNbinsX()   , 0.);
+      //hData->SetBinContent( hData->GetNbinsX()-1 , 0.);
+      //hData->SetBinContent( hData->GetNbinsX()-2 , 0.);
+      //hData->SetBinError( hData->GetNbinsX()   , 0.);
+      //hData->SetBinError( hData->GetNbinsX()-1 , 0.);
+      //hData->SetBinError( hData->GetNbinsX()-2 , 0.);
+      leg->AddEntry(hData, "data", "P");
+    }
 
+    if( !(samples[sample].find("TTH125")!=string::npos || samples[sample].find("data_obs")!=string::npos) ){
+      if( hErr==0 ){
+	hErr = (TH1F*)h->Clone("hErr");
+	hErr->Reset();
+	hErr->SetFillStyle(0);
+	hErr->SetLineColor(kBlack);
+	leg->AddEntry(hErr, "MC unc. (stat.)", "L");
+      }
+      hErr->Add( h, 1.0);
+    }
 
-    aStack->Add( h );
+    if( samples[sample].find("data_obs") == string::npos )
+      aStack->Add( h );
   }
 
   if(hErr==0 || hS==0) return;
 
   hErr->GetYaxis()->SetTitle("Events");
   if(type.find("SL")!=string::npos) 
-    //hErr->GetXaxis()->SetTitle("f_{ttH} / ( f_{ttH} + f_{ttbb} + f_{ttjj} )");
     hErr->GetXaxis()->SetTitle("P_{s/b}(y)");
   else
-    //hErr->GetXaxis()->SetTitle("f_{ttH} / ( f_{ttH} + f_{ttbb} )");
     hErr->GetXaxis()->SetTitle("P_{s/b}(y)");
   hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
   hErr->SetTitleSize  (0.04,"X");
   hErr->SetTitleOffset(0.95,"X");
-  float max =  hErr->GetMaximum()*1.35;
+  float max =  TMath::Max(float(hErr->GetMaximum()*1.35),(hData!=0 ? hData->GetMaximum()*1.35 : -1.));
   hErr->GetYaxis()->SetRangeUser(0., max );
   hErr->SetLineColor(kBlack);
   hErr->Draw("HISTE1");
@@ -330,6 +357,7 @@ void plot_category(string type = "SL",
   leg->AddEntry(hS, "signal x 5", "L");
   hS->Draw("HISTSAME");
   hErr->Draw("HISTE1SAME");
+  if(hData!=0) hData->Draw("ESAME");
   leg->Draw();
 
   TLine* line = new TLine(hErr->GetBinLowEdge(3), max , hErr->GetBinLowEdge(3), 0.);
@@ -337,7 +365,7 @@ void plot_category(string type = "SL",
   line->SetLineStyle(kSolid);
   line->SetLineColor(kBlack);
   //if(type.find("SL")!=string::npos) 
-  line->Draw("SAME");
+  if(drawseparation) line->Draw("SAME");
 
   TPaveText *pt1 = new TPaveText(0.101, 0.839161, 0.198142, 0.895105,"brNDC");
   pt1->SetFillStyle(1001);
@@ -354,8 +382,8 @@ void plot_category(string type = "SL",
   pt2->AddText("P_{b/j}>0.5");
  
   //if(   type.find("SL")!=string::npos ){
-  pt1->Draw();
-  pt2->Draw();
+  if(drawseparation) pt1->Draw();
+  if(drawseparation) pt2->Draw();
   //}
 
   cout << "Signal = " << hS->Integral()/5. << endl;
