@@ -232,7 +232,7 @@ void plot_category(string type = "SL",
   TH1F* hS = 0;
   TH1F* hErr = 0;
 
-  TFile* f = TFile::Open((type+"_New.root").c_str());
+  TFile* f = TFile::Open(("datacards/"+type+"_New_v2_reg.root").c_str());
   if(f==0 || f->IsZombie() ) return;
 
   for(unsigned int sample = 0; sample < samples.size(); sample++){
@@ -418,7 +418,7 @@ void plotAll(){
 
 
 
-void plot_limit(){
+void plot_limit(string version = "_New"){
 
   gStyle->SetPaintTextFormat("g");
 
@@ -448,22 +448,22 @@ void plot_limit(){
 
 
   vector<string> categories;        vector<string> names;
-  categories.push_back("SL_cat1");  names.push_back("Cat 1");
-  categories.push_back("SL_cat2");  names.push_back("Cat 2");
-  categories.push_back("SL_cat3");  names.push_back("Cat 3");
-  categories.push_back("SL_cat4");  names.push_back("Cat 4");
-  categories.push_back("SL_cat5");  names.push_back("Cat 5");
-  categories.push_back("DL_cat6");  names.push_back("Cat 6"); 
-  categories.push_back("SL");       names.push_back("SL comb.");
+  categories.push_back("SL_cat1"+version);  names.push_back("Cat 1");
+  categories.push_back("SL_cat2"+version);  names.push_back("Cat 2");
+  categories.push_back("SL_cat3"+version);  names.push_back("Cat 3");
+  categories.push_back("SL_cat4"+version);  names.push_back("Cat 4");
+  categories.push_back("SL_cat5"+version);  names.push_back("Cat 5");
+  categories.push_back("DL_cat6"+version);  names.push_back("Cat 6"); 
+  categories.push_back("SL"+version);       names.push_back("SL comb.");
   //categories.push_back("DL_cat7");names.push_back();
-  categories.push_back("DL");       names.push_back("DL comb."); 
-  categories.push_back("COMB");     names.push_back("All comb.");
+  categories.push_back("DL"+version);       names.push_back("DL comb."); 
+  categories.push_back("COMB"+version);     names.push_back("All comb.");
 
   int nBins = categories.size();
 
   for( int b = 0; b < nBins; b++){
 
-    TFile* f = TFile::Open(("higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
+    TFile* f = TFile::Open(("datacards/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
     if( f==0 ) continue;
     
     Double_t r;
@@ -612,8 +612,8 @@ void plot_limit(){
   //del2_->Draw("SAME");
 
   if(1){
-    c1->SaveAs("Limits.png");
-    c1->SaveAs("Limits.pdf");
+    c1->SaveAs("datacards/Limits"+TString(version.c_str())+".png");
+    //c1->SaveAs("datacards/Limits"+TString(version.c_str())+".pdf");
   }
 
 }
@@ -869,18 +869,23 @@ void plot_BTag( TString extraname = "",
   
   float xM[3], yM[3];
 
+  int oldFiles = 0;
   vector<string> files;
+  string path = oldFiles ? "~/public/BTagging/Nov04_2013/" : "~/public/BTagging/Nov21_2013/";
+  string name =  "New" ;
+  string jets =  "J" ;
+
   if(flag<3){
-    files.push_back("../bin/root/MEAnalysisNew_TTH_6J.root");
-    files.push_back("../bin/root/MEAnalysisNew_TTJETS_6J.root");
+    files.push_back(path+"MEAnalysis"+name+"_TTH_6"+jets+".root");
+    files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_6"+jets+".root");
   }
   else if(flag>=3 && flag<6){
-    files.push_back("../bin/root/MEAnalysisNew_TTH_5J.root");
-    files.push_back("../bin/root/MEAnalysisNew_TTJETS_5J.root");
+    files.push_back(path+"MEAnalysis"+name+"_TTH_5"+jets+".root");
+    files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_5"+jets+".root");
   }
   else if(flag>=6 && flag<9){
-    files.push_back("../bin/root/MEAnalysisNew_TTH_4J.root");
-    files.push_back("../bin/root/MEAnalysisNew_TTJETS_4J.root");
+    files.push_back(path+"MEAnalysis"+name+"_TTH_4"+jets+".root");
+    files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_4"+jets+".root");
   }
 
   for(int j = 0; j<files.size(); j++){
@@ -982,7 +987,7 @@ void plot_BTag( TString extraname = "",
     float intB = hB->Integral(b,hS->GetNbinsX())/hB->Integral();
     x[b-1] = intS;
     y[b-1] = intB;				
-    cout << "At x>" << hS->GetBinCenter(b) << " => Eff.=" << intS << " -- vs -- FkR.=" << intB << endl;
+    if((b%2)==0) cout << "At x>" << hS->GetBinCenter(b) << " => Eff.=" << intS << " -- vs -- FkR.=" << intB << endl;
   }
   x[nmax]=0.00;
   y[nmax]=0.00;
@@ -2370,3 +2375,151 @@ void plot_massAll( int analysis = 0 ){
 }
 
 
+
+
+void plot_comp(TString file_1 = "",
+	       TString file_2 = "",
+	       TString cat_1  = "cat1",
+	       TString cat_2  = "cat1",
+	       TString proc_1 = "TTH125",
+	       TString proc_2 = "TTH125",
+	       TString syst_1 = "nominal",
+	       TString syst_2 = "nominal",
+	       TString header_1 = "",
+	       TString header_2 = "",
+	       TString header = "",
+	       TString fname  = ""
+	       ){
+  
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.1);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TLegend* leg = new TLegend(0.35913,0.695804,0.609907,0.884615,NULL,"brNDC");
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.04); 
+
+
+  TH1F* h_1 = 0;
+  TFile* f_1 = TFile::Open(file_1);
+  if(f_1==0 || f_1->IsZombie() ){
+    cout << "Could not open file1=" << string(file_1.Data()) << endl;
+    return;
+  }
+  TString syst_1_nickname = string(syst_1.Data()).find("nominal")!=string::npos ? "" : "_"+syst_1;
+  h_1 = (TH1F*)f_1->Get(cat_1+"/"+proc_1+syst_1_nickname);
+  h_1->SetLineWidth(3);
+  h_1->SetLineStyle(kDashed);
+  h_1->SetLineColor(kBlack);
+  leg->AddEntry( h_1, header_1 , "L");
+
+
+  TH1F* h_2 = 0;
+  TFile* f_2 = TFile::Open(file_2);
+  if(f_2==0 || f_2->IsZombie() ){
+    cout << "Could not open file1=" << string(file_2.Data()) << endl;
+    return;
+  }
+  TString syst_2_nickname = string(syst_2.Data()).find("nominal")!=string::npos ? "" : "_"+syst_2;
+  h_2 = (TH1F*)f_2->Get(cat_2+"/"+proc_2+syst_2_nickname);
+  h_2->SetLineWidth(3);
+  h_2->SetLineColor(kRed);
+  leg->AddEntry( h_2, header_2 , "L");
+
+
+  h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.3 );
+  h_1->SetMinimum(0);
+  h_1->Draw("HISTE");
+  h_2->Draw("HISTESAME");
+
+  cout << "*********" << endl;
+  cout << "h_1 := " << h_1->Integral() << ", mu = " << h_1->GetMean() << endl;
+  cout << "h_2 := " << h_2->Integral() << ", mu = " << h_2->GetMean() << endl;
+  cout << "*********" << endl;
+
+  leg->SetHeader( header );
+  leg->Draw();
+
+  if(1){
+    c1->SaveAs("Plots/Plot_Comp_"+fname+".png");
+  }
+
+}
+
+
+void plot_compAll(){
+
+
+  for(int cat = 1; cat<7 ; cat++){
+
+    plot_comp(Form("SL_VType%d_New_std.root", cat<6 ? 2 : 0), Form("SL_VType%d_New_reg.root",  cat<6 ? 2 : 0), 
+	      Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTH125", "TTH125", 
+	      "nominal", "nominal", 
+	      "Nov21 standard", "Nov21 regression",
+	      Form("ttH, Cat. %d", cat),
+	      Form("TTH_cat%d_std_vs_reg", cat));
+
+    plot_comp(Form("~/public/Nov04_2013/mem/%sL_New.root", cat<6 ? "S" : "D" ) , Form("SL_VType%d_New_std.root",  cat<6 ? 2 : 0), 
+	      Form("%sL_cat%d", cat<6 ? "S" : "D", cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTH125", "TTH125", 
+	      "nominal", "nominal", 
+	      "Nov04", "Nov21",
+	      Form("ttH, Cat. %d", cat),
+	      Form("TTH_cat%d_old_vs_new", cat));
+
+
+    plot_comp(Form("SL_VType%d_New_std.root", cat<6 ? 2 : 0), Form("SL_VType%d_New_reg.root",  cat<6 ? 2 : 0), 
+	      Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTJetsHFbb", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "Nov21 standard", "Nov21 regression",
+	      Form("ttbb, Cat. %d", cat),
+	      Form("TTbb_cat%d_std_vs_reg", cat));
+
+    plot_comp(Form("~/public/Nov04_2013/mem/%sL_New.root", cat<6 ? "S" : "D" ) , Form("SL_VType%d_New_std.root",  cat<6 ? 2 : 0), 
+	      Form("%sL_cat%d", cat<6 ? "S" : "D", cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTJetsHFbb", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "Nov04", "Nov21",
+	      Form("ttbb, Cat. %d", cat),
+	      Form("TTbb_cat%d_old_vs_new", cat)); 
+
+    plot_comp(Form("SL_VType%d_New_std.root", cat<6 ? 2 : 0), Form("SL_VType%d_New_reg.root",  cat<6 ? 2 : 0), 
+	      Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTJetsLF", "TTJetsLF", 
+	      "nominal", "nominal", 
+	      "Nov21 standard", "Nov21 regression",
+	      Form("ttjj, Cat. %d", cat),
+	      Form("TTjj_cat%d_std_vs_reg", cat));
+
+    plot_comp(Form("~/public/Nov04_2013/mem/%sL_New.root", cat<6 ? "S" : "D" ) , Form("SL_VType%d_New_std.root",  cat<6 ? 2 : 0), 
+	      Form("%sL_cat%d", cat<6 ? "S" : "D", cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
+	      "TTJetsLF", "TTJetsLF", 
+	      "nominal", "nominal", 
+	      "Nov04", "Nov21",
+	      Form("ttjj, Cat. %d", cat),
+	      Form("TTjj_cat%d_old_vs_new", cat));    
+
+  }
+
+
+}

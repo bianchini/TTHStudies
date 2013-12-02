@@ -1227,12 +1227,12 @@ void produceAllNew(string name = "New", string version = "_v2_reg",  string extr
   xsec = 0;
 
   if(doMEM){
-    //produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f",  0.975),                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f",  0.975),                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f",  0.980),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", 0.990),                  "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f", 0.975),                                   "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
-    //produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f", 0.950),                                   "cat6", doMEM, 1.5, 0.0, 0.1 , LumiScale*2 , 5,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f",                  0.975), "cat1", doMEM, 2.2, 0.00, 0.2 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f",                  0.975), "cat2", doMEM, 1.7, 0.15, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0  && btag_LR>=%f", 0.986), "cat3", doMEM, 2.2, 0.00, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", 0.990), "cat4", doMEM, 2.0, 0.30, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f",                  0.975), "cat5", doMEM, 5.5, 0.00, 0.5 , LumiScale   , 7,  1);
+    produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f",                  0.953), "cat6", doMEM, 2.2, 0.00, 0.1 , LumiScale*2 , 5,  1);
   }
   else{
     produceNew( name, version, extraname,  "SL", "type==0",                                  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
@@ -1250,22 +1250,22 @@ void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",
   int doMEM = 1;
 
   vector<float> btag_LRs;
+  btag_LRs.push_back(0.946);
+  btag_LRs.push_back(0.948);
   btag_LRs.push_back(0.950);
-  btag_LRs.push_back(0.970);
-  btag_LRs.push_back(0.975);
-  btag_LRs.push_back(0.980);
-  btag_LRs.push_back(0.985);
-  btag_LRs.push_back(0.990);
-  btag_LRs.push_back(0.995);
+  btag_LRs.push_back(0.952);
+  btag_LRs.push_back(0.954);
+  btag_LRs.push_back(0.956);
+  btag_LRs.push_back(0.958);
 
   for(int it = 0; it<btag_LRs.size() ; it++){    
-    if(it<6) continue;
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==0 && btag_LR>=%f", btag_LRs[it]),                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==1 && btag_LR>=%f", btag_LRs[it]),                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", btag_LRs[it]),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", btag_LRs[it]),                 "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && flag_type3>0 && p_125_all_s>0 && btag_LR>=%f", btag_LRs[it]), "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
-    produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", btag_LRs[it]),                                  "cat6", doMEM, 1.5, 0.0, 0.1 , LumiScale*2 , 5,  1);
+    //if(it<6) continue;
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==0 && btag_LR>=%f", btag_LRs[it]),                                  "cat1", doMEM, 1.0, 0.0, 0.2 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==1 && btag_LR>=%f", btag_LRs[it]),                                  "cat2", doMEM, 1.7, 0.0, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", btag_LRs[it]),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", btag_LRs[it]),                 "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && flag_type3>0 && p_125_all_s>0 && btag_LR>=%f", btag_LRs[it]), "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
+    produceNew( name, "_v3_reg" , extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", btag_LRs[it]),                                 "cat6", doMEM, 2.2, 0.0, 0.1 , LumiScale*2 , 5,  1);
   }
 
   // cat1 0.975
@@ -1274,5 +1274,145 @@ void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",
   // cat4 0.990
   // cat5 0.975
   // cat6 0.950
+
+}
+
+
+
+void optimize_mem_category_rel(string name = "New", string version = "_v2_reg",  string extraname = "", 
+			       float LumiScale = 19.5/12.1){
+  
+  int doMEM = 1;
+
+  vector<float> rels;
+  rels.push_back(1.0);
+  rels.push_back(1.40);
+  rels.push_back(1.80);
+  rels.push_back(2.20);
+  rels.push_back(2.60);
+  rels.push_back(3.00);
+  rels.push_back(3.40);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==0 && btag_LR>=%f", 0.975 ), "cat1", doMEM, rels[it] , 0.0, 0.2 , LumiScale   , 6,  1);
+  }
+
+  rels.clear();
+  rels.push_back(0.95);
+  rels.push_back(1.20);
+  rels.push_back(1.45);
+  rels.push_back(1.70);
+  rels.push_back(1.95);
+  rels.push_back(2.20);
+  rels.push_back(2.45);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==1 && btag_LR>=%f", 0.975 ), "cat2", doMEM, rels[it] , 0.0, 0.5 , LumiScale   , 6,  1);
+  }
+
+
+  rels.clear();
+  rels.push_back(1.45);
+  rels.push_back(1.70);
+  rels.push_back(1.95);
+  rels.push_back(2.20);
+  rels.push_back(2.45);
+  rels.push_back(2.70);
+  rels.push_back(2.95);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", 0.980 ), "cat3", doMEM, rels[it] , 0.0, 0.5 , LumiScale   , 6,  1);
+  }
+
+
+  rels.clear();
+  rels.push_back(0.80);
+  rels.push_back(1.20);
+  rels.push_back(1.60);
+  rels.push_back(2.00);
+  rels.push_back(2.40);
+  rels.push_back(2.80);
+  rels.push_back(3.20);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", 0.990 ), "cat4", doMEM, rels[it] , 0.0, 0.5 , LumiScale   , 6,  1);
+  }
+
+
+  rels.clear();
+  rels.push_back(4.00);
+  rels.push_back(4.50);
+  rels.push_back(5.00);
+  rels.push_back(5.50);
+  rels.push_back(6.00);
+  rels.push_back(6.50);
+  rels.push_back(7.00);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && btag_LR>=%f", 0.975 ), "cat5", doMEM, rels[it] , 0.0, 0.5 , LumiScale   , 7,  1);
+  }
+
+  rels.clear();
+  rels.push_back(0.30);
+  rels.push_back(0.70);
+  rels.push_back(1.10);
+  rels.push_back(1.50);
+  rels.push_back(1.90);
+  rels.push_back(2.30);
+  rels.push_back(2.70);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", 0.950 ), "cat6", doMEM, rels[it] , 0.0, 0.1 , LumiScale*2   , 5,  1);
+  }
+
+
+  // cat1 0.975
+  // cat2 0.975
+  // cat3 0.980
+  // cat4 0.990
+  // cat5 0.975
+  // cat6 0.950
+
+}
+
+
+
+void optimize_mem_category_rel_bbjj(string name = "New", string version = "_v2_reg",  string extraname = "", 
+				    float LumiScale = 19.5/12.1){
+  
+  int doMEM = 1;
+
+  vector<float> rels;
+  rels.push_back(-0.45);
+  rels.push_back(-0.30);
+  rels.push_back(-0.15);
+  rels.push_back(0.0);
+  rels.push_back(0.15);
+  rels.push_back(0.30);
+  rels.push_back(0.45);
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==0 && btag_LR>=%f", 0.975 ), "cat1", doMEM, 2.2 , rels[it], 0.2 , LumiScale   , 6,  1);
+  }
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==1 && btag_LR>=%f", 0.975 ), "cat2", doMEM, 1.7, rels[it] , 0.5 , LumiScale   , 6,  1);
+  }
+
+  for(int it = 0; it<rels.size() ; it++){    
+    //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", 0.986 ), "cat3", doMEM, 2.2, rels[it] , 0.5 , LumiScale   , 6,  1);
+  }
+
+  for(int it = 0; it<rels.size() ; it++){    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", 0.990 ), "cat4", doMEM, 2.0, rels[it], 0.5 , LumiScale   , 6,  1);
+  }
+
+  for(int it = 0; it<rels.size() ; it++){    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && btag_LR>=%f", 0.975 ), "cat5", doMEM, 5.5 , rels[it], 0.5 , LumiScale   , 7,  1);
+  }
+
+  for(int it = 0; it<rels.size() ; it++){    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", 0.950 ), "cat6", doMEM, 2.2 , rels[it], 0.1 , LumiScale*2   , 5,  1);
+  }
 
 }
