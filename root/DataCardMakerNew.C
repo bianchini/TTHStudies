@@ -42,7 +42,7 @@
 typedef TMatrixT<double> TMatrixD;
 
 #define CREATEDATACARDS 1
-#define RUNONDATA       1
+#define RUNONDATA       0
 
 
 // function that interpolates quadratically around a global maximum
@@ -579,8 +579,8 @@ void produceNew(// main name of the trees
   cout << "FOM index = " << doMEM << endl;
 
   // input files path
-  TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov21_2013/BTagLoose/";
-  //TString inputpath = "./";
+  //TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov21_2013/BTagLoose/";
+  TString inputpath = "./";
 
   // selection cut
   string basecut = cut;
@@ -831,10 +831,10 @@ void produceNew(// main name of the trees
     // provided only for tt+jets and ttH at the moment
     if(  sample.find("TTH")!=string::npos ||  sample.find("TTJets")!=string::npos ){
       systematics.push_back("nominal");
-      systematics.push_back("csvUp");
-      systematics.push_back("csvDown");
-      systematics.push_back("JECUp");
-      systematics.push_back("JECDown");
+      //systematics.push_back("csvUp");
+      //systematics.push_back("csvDown");
+      //systematics.push_back("JECUp");
+      //systematics.push_back("JECDown");
     }
     else{
       systematics.push_back("nominal");
@@ -1320,7 +1320,7 @@ void produceNew(// main name of the trees
 
 
 void produceAllNew(string name = "New", string version = "_v2_reg",  string extraname = "", 
-		   float LumiScale = 19.5/12.1, int doMEM = 3 ){
+		   float LumiScale = 19.5/12.1, int doMEM = 2 ){
 
   vector<float> binvec;
   binvec.push_back( 55.);
@@ -1336,12 +1336,12 @@ void produceAllNew(string name = "New", string version = "_v2_reg",  string extr
   xsec = 0;
 
   if(doMEM){
-    produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", doMEM, 2.2, 0.00, 0.2 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2", doMEM, 1.7, 0.15, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3", doMEM, 2.2, 0.00, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4", doMEM, 2.0, 0.30, 0.5 , LumiScale   , 6,  1);
-    produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5", doMEM, 5.5, 0.00, 0.5 , LumiScale   , 7,  1);
-    //produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f",                  0.953), "cat6", doMEM, 2.2, 0.00, 0.1 , LumiScale*2 , 5,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", doMEM, 2.2, 0.00, 0.2 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2", doMEM, 1.7, 0.15, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3", doMEM, 2.2, 0.00, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4", doMEM, 2.0, 0.30, 0.5 , LumiScale   , 6,  1);
+    //produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5", doMEM, 5.5, 0.00, 0.5 , LumiScale   , 7,  1);
+    produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f",                  0.953), "cat6", doMEM, 2.2, 0.00, 0.1 , LumiScale*2 , 5,  1);
   }
   else{
     produceNew( name, version, extraname,  "SL", "type==0",                                  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);

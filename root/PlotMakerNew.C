@@ -39,7 +39,7 @@
 
 typedef TMatrixT<double> TMatrixD;
 
-#define RUNONDATA 1
+#define RUNONDATA 0
 
 
 
@@ -201,6 +201,7 @@ void plot_category(string type = "SL",
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleOffset(1.3,"y");
 
+  string tag = "New_v1_gen_std";
 
   TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
   c1->SetGrid(0,0);
@@ -241,7 +242,7 @@ void plot_category(string type = "SL",
   TH1F* hData = 0;
   TH1F* hErr  = 0;
 
-  TFile* f = TFile::Open(("datacards/"+type+"_New_v2_reg.root").c_str());
+  TFile* f = TFile::Open(("datacards/"+type+"_"+tag+".root").c_str());
   if(f==0 || f->IsZombie() ) return;
 
   for(unsigned int sample = 0; sample < samples.size(); sample++){
@@ -388,9 +389,8 @@ void plot_category(string type = "SL",
 
   cout << "Signal = " << hS->Integral()/5. << endl;
 
-  if(0){
-    c1->SaveAs(  (fname+"_AN"+"_New.png").c_str() );
-    c1->SaveAs(  (fname+"_AN"+"_New.pdf").c_str() );
+  if(1){
+    c1->SaveAs(  ("Plots/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
   }
 
 }
@@ -2486,7 +2486,7 @@ void plot_comp(TString file_1 = "",
   leg->SetHeader( header );
   leg->Draw();
 
-  if(1){
+  if(0){
     c1->SaveAs("Plots/Plot_Comp_"+fname+".png");
   }
 
