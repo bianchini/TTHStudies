@@ -65,6 +65,9 @@
 // if one, MC jets are already corrected for JER
 #define JERCORRECTED 1
 
+// a global flag to select RECO or GEN+SMEAR analysis
+#define DOGENLEVELANALYSIS 1
+
 
 using namespace std;
 
@@ -157,8 +160,19 @@ int main(int argc, const char* argv[])
   vector<string> functions(in.getParameter<vector<string> > ("functions"));
   vector<int>    evLimits (in.getParameter<vector<int> >    ("evLimits"));
 
+  // RECO or GEN ?
+  int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
+
   int   print            ( in.getParameter<int>             ("printout")   );
   int   debug            ( in.getParameter<int>             ("debug")      );
+
+
+  /////////////////////////////////////////////////////////////////////////////
+  
+  if(DOGENLEVELANALYSIS!=doGenLevelAnalysis){
+    cout << "ATTENTION: inconsistency between analysis-levels... exit" << endl;
+    return 0;
+  }
 
 
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -170,6 +184,12 @@ int main(int argc, const char* argv[])
   // upper and lower event bounds to be processed
   int evLow  = evLimits[0];
   int evHigh = evLimits[1];
+
+  // a random engine (needed for GEN+SMEAR analysis)
+  TRandom3* ran = 0;
+
+  // the transfer functions
+  TF1* jet_smear = 0;
 
   // a clock to monitor the integration CPU time
   TStopwatch* clock = new TStopwatch();
@@ -186,6 +206,10 @@ int main(int argc, const char* argv[])
 
   // b-tag pdf for b-quark ('b'), c-quark ('c'), and light jets ('l')
   map<string,TH1F*> btagger; 
+
+  // a map between gen-jets and energy TF
+  map<string, TF1*> transferfunctions;
+
   if( useBtag && fCP!=0 ){
 
     // load the correct histogram
@@ -210,6 +234,63 @@ int main(int argc, const char* argv[])
     cout << "Cound not find " << pathToCP << ": exit" << endl;
     return 0;
   } 
+
+  if( doGenLevelAnalysis && fCP!=0 ){
+
+    ran = new TRandom3();
+    ran->SetSeed( 65539 );
+    
+    jet_smear = new TF1("jet_smear", 
+			Form("[0]*exp(-0.5*((x-[1])**2)/[2]/[2]) + (1-[0])*exp(-0.5*((x-[3])**2)/[4]/[4])"), 
+			0, 4000);
+    
+
+
+    // load the correct histogram
+    TH1F* histo = 0;
+    
+    histo = (TH1F*)fCP->Get("respG1HeavyBin0") ;
+    if(histo!=0) transferfunctions["b_G1_m_Bin0"] = histo->GetFunction("meanG1HeavyBin0")  != 0 ? histo->GetFunction("meanG1HeavyBin0")  : 0;
+    histo = (TH1F*)fCP->Get("resolG1HeavyBin0") ;
+    if(histo!=0) transferfunctions["b_G1_s_Bin0"] = histo->GetFunction("sigmaG1HeavyBin0") != 0 ? histo->GetFunction("sigmaG1HeavyBin0") : 0;
+    histo = (TH1F*)fCP->Get("respG2HeavyBin0") ;
+    if(histo!=0) transferfunctions["b_G2_m_Bin0"] = histo->GetFunction("meanG2HeavyBin0")  != 0 ? histo->GetFunction("meanG2HeavyBin0")  : 0;
+    histo = (TH1F*)fCP->Get("resolG2HeavyBin0") ;
+    if(histo!=0) transferfunctions["b_G2_s_Bin0"] = histo->GetFunction("sigmaG2HeavyBin0") != 0 ? histo->GetFunction("sigmaG2HeavyBin0") : 0;
+    histo = (TH1F*)fCP->Get("respG1HeavyBin1") ;
+    if(histo!=0) transferfunctions["b_G1_m_Bin1"] = histo->GetFunction("meanG1HeavyBin1")  != 0 ? histo->GetFunction("meanG1HeavyBin1")  : 0;
+    histo = (TH1F*)fCP->Get("resolG1HeavyBin1") ;
+    if(histo!=0) transferfunctions["b_G1_s_Bin1"] = histo->GetFunction("sigmaG1HeavyBin1") != 0 ? histo->GetFunction("sigmaG1HeavyBin1") : 0;
+    histo = (TH1F*)fCP->Get("respG2HeavyBin1") ;
+    if(histo!=0) transferfunctions["b_G2_m_Bin1"] = histo->GetFunction("meanG2HeavyBin1")  != 0 ? histo->GetFunction("meanG2HeavyBin1")  : 0;
+    histo = (TH1F*)fCP->Get("resolG2HeavyBin1") ;
+    if(histo!=0) transferfunctions["b_G2_s_Bin1"] = histo->GetFunction("sigmaG2HeavyBin1") != 0 ? histo->GetFunction("sigmaG2HeavyBin1") : 0;
+
+    histo = (TH1F*)fCP->Get("respLightBin0") ;
+    if(histo!=0) transferfunctions["l_G1_m_Bin0"] = histo->GetFunction("meanLightBin0")   != 0 ? histo->GetFunction("meanLightBin0")  : 0;
+    histo = (TH1F*)fCP->Get("resolLightBin0") ;
+    if(histo!=0) transferfunctions["l_G1_s_Bin0"] = histo->GetFunction("sigmaLightBin0")  != 0 ? histo->GetFunction("sigmaLightBin0") : 0;
+    histo = (TH1F*)fCP->Get("respLightBin1") ;
+    if(histo!=0) transferfunctions["l_G1_m_Bin1"] = histo->GetFunction("meanLightBin1")   != 0 ? histo->GetFunction("meanLightBin1")  : 0;
+    histo = (TH1F*)fCP->Get("resolLightBin1") ;
+    if(histo!=0) transferfunctions["l_G1_s_Bin1"] = histo->GetFunction("sigmaLightBin1")  != 0 ? histo->GetFunction("sigmaLightBin1") : 0;
+ 
+    // check that all histograms have been found
+    int countFailures = 0;
+    for(map<string,TF1*>::iterator it_b = transferfunctions.begin() ; it_b != transferfunctions.end() ; it_b++){
+      if( it_b->second == 0){
+	cout << "Could not find " << it_b->first << endl;
+	countFailures++;
+      }
+    }
+    if( countFailures>0 )  return 0;
+
+  }
+  else if( doGenLevelAnalysis && fCP==0 ){
+    cout << "Cound not find " << pathToCP << ": exit" << endl;
+    return 0;
+  }
+
 
   // Higgs mass values for scan
   const int nHiggsMassPoints  = massesH.size();
@@ -411,6 +492,10 @@ int main(int argc, const char* argv[])
   float MET_phi_;
   float MET_sumEt_;
 
+  // invisible particles kinematic
+  float Nus_pt_;
+  float Nus_phi_;
+
   // jet kinematics (as passed via **jets** collection)
   int nJet_;
   float jet_pt_  [NMAXJETS];
@@ -514,6 +599,10 @@ int main(int argc, const char* argv[])
   tree->Branch("MET_phi",                 &MET_phi_,   "MET_phi/F");
   tree->Branch("MET_sumEt",               &MET_sumEt_, "MET_sumEt/F");
 
+  // Invisible particles kinematics
+  tree->Branch("Nus_pt",                  &Nus_pt_,    "Nus_pt/F");
+  tree->Branch("Nus_phi",                 &Nus_phi_,   "Nus_phi/F");
+
   // jet kinematics
   tree->Branch("nJet",                    &nJet_,      "nJet/I");
   tree->Branch("jet_pt",                  jet_pt_,     "jet_pt[nJet]/F");
@@ -583,7 +672,7 @@ int main(int argc, const char* argv[])
     
     string currentName       = mySampleFiles[sample];
 
-    if(currentName.find("Data")!=string::npos) isMC = false;
+    if(currentName.find("Run2012")!=string::npos) isMC = false;
 
     mySamples->OpenFile( currentName );
     cout << "Opening file " << currentName << endl;
@@ -606,12 +695,16 @@ int main(int argc, const char* argv[])
     Float_t vLepton_pt        [2];
     Float_t vLepton_eta       [2];
     Float_t vLepton_phi       [2];
+    Float_t vLepton_genPt     [2];
+    Float_t vLepton_genEta    [2];
+    Float_t vLepton_genPhi    [2];
     Float_t vLepton_charge    [2];
     Float_t vLepton_pfCorrIso [2];
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
     Float_t hJet_phi          [999];
     Float_t hJet_e            [999];
+    Float_t hJet_flavour      [999];
     Float_t hJet_puJetIdL     [999];
     Float_t hJet_csv_nominal  [999];
     Float_t hJet_csv_upBC     [999];
@@ -626,6 +719,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_eta          [999];
     Float_t aJet_phi          [999];
     Float_t aJet_e            [999];
+    Float_t aJet_flavour      [999];
     Float_t aJet_puJetIdL     [999];
     Float_t aJet_csv_nominal  [999];
     Float_t aJet_csv_upBC     [999];
@@ -640,12 +734,7 @@ int main(int argc, const char* argv[])
     float SimBspt             [999];
     float SimBseta            [999];
     float SimBsphi            [999];
-    //int nSvs;
-    //float SvmassSv [999];
-    //float Svpt     [999];
-    //float Sveta    [999];
-    //float Svphi    [999];
-  
+   
     currentTree->SetBranchAddress("EVENT",            &EVENT);
     currentTree->SetBranchAddress("PUweight",         &PUweight);
     currentTree->SetBranchAddress("PUweightP",        &PUweightP);
@@ -669,13 +758,17 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("vLepton_pt"    ,   vLepton_pt);
     currentTree->SetBranchAddress("vLepton_eta"   ,   vLepton_eta);
     currentTree->SetBranchAddress("vLepton_phi"   ,   vLepton_phi);
+    currentTree->SetBranchAddress("vLepton_genPt" ,   vLepton_genPt);
+    currentTree->SetBranchAddress("vLepton_genEta",   vLepton_genEta);
+    currentTree->SetBranchAddress("vLepton_genPhi",   vLepton_genPhi);
     currentTree->SetBranchAddress("vLepton_charge",   vLepton_charge);
     currentTree->SetBranchAddress("vLepton_pfCorrIso",vLepton_pfCorrIso);
     currentTree->SetBranchAddress("vLepton_type",     vLepton_type);
     currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
     currentTree->SetBranchAddress("hJet_eta",         hJet_eta);    
     currentTree->SetBranchAddress("hJet_phi",         hJet_phi);    
-    currentTree->SetBranchAddress("hJet_e",           hJet_e);    
+    currentTree->SetBranchAddress("hJet_e",           hJet_e); 
+    currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
     currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
     currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
     currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
@@ -690,6 +783,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_eta",         aJet_eta);    
     currentTree->SetBranchAddress("aJet_phi",         aJet_phi);    
     currentTree->SetBranchAddress("aJet_e",           aJet_e);    
+    currentTree->SetBranchAddress("aJet_flavour",     aJet_flavour);    
     currentTree->SetBranchAddress("aJet_puJetIdL",    aJet_puJetIdL);
     currentTree->SetBranchAddress("aJet_csv_nominal", aJet_csv_nominal);
     currentTree->SetBranchAddress("aJet_csv_upBC",    aJet_csv_upBC);
@@ -700,16 +794,10 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_genPt",       aJet_genPt);
     currentTree->SetBranchAddress("aJet_genEta",      aJet_genEta);
     currentTree->SetBranchAddress("aJet_genPhi",      aJet_genPhi);
-    currentTree->SetBranchAddress("SimBs_mass",   SimBsmass);
-    currentTree->SetBranchAddress("SimBs_pt",     SimBspt);
-    currentTree->SetBranchAddress("SimBs_eta",    SimBseta);
-    currentTree->SetBranchAddress("SimBs_phi",    SimBsphi);
-    //currentTree->SetBranchAddress("nSvs",        &nSvs);
-    //currentTree->SetBranchAddress("Sv_massSv",   SvmassSv);
-    //currentTree->SetBranchAddress("Sv_pt",       Svpt);
-    //currentTree->SetBranchAddress("Sv_eta",      Sveta);
-    //currentTree->SetBranchAddress("Sv_phi",      Svphi);
-
+    currentTree->SetBranchAddress("SimBs_mass",       SimBsmass);
+    currentTree->SetBranchAddress("SimBs_pt",         SimBspt);
+    currentTree->SetBranchAddress("SimBs_eta",        SimBseta);
+    currentTree->SetBranchAddress("SimBs_phi",        SimBsphi);
  
     /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
     /* @@@@@@@@@@@@@@@@@@@@@@@@@ EVENT LOOP @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
@@ -857,7 +945,17 @@ int main(int argc, const char* argv[])
       HIGGSB1.SetPtEtaPhiM( genBLV.Pt(),    genBLV.Eta(),    genBLV.Phi(),    genBLV.M());
       HIGGSB2.SetPtEtaPhiM( genBbarLV.Pt(), genBbarLV.Eta(), genBbarLV.Phi(), genBbarLV.M());
 
-      if( abs(genTop.wdau1id)>6 && abs(genTbar.wdau1id)<6){
+      /* ////// PDG numbering: ///////
+	d  1      e-   11
+	u  2      ve   12
+	s  3      m-   13
+	c  4      vmu  14
+	b  5      tau- 15
+	t  6      vtau 16
+      */ /////////////////////////////
+
+      // 1st case: t -> blv, t~ -> b~ud
+      if( abs(genTop.wdau1id)>6 && abs(genTop.wdau1id)<=16 && abs(genTbar.wdau1id)<6 && abs(genTbar.wdau1id)>=1 ){
 	TOPHADW1.SetPxPyPzE( atopW1LV.Px(), atopW1LV.Py(), atopW1LV.Pz(), atopW1LV.E());
 	TOPHADW2.SetPxPyPzE( atopW2LV.Px(), atopW2LV.Py(), atopW2LV.Pz(), atopW2LV.E());
 	TOPHADB.SetPxPyPzE( atopBLV.Px(),  atopBLV.Py(),   atopBLV.Pz(),  atopBLV.E());
@@ -871,7 +969,9 @@ int main(int argc, const char* argv[])
 	}
 	TOPLEPB.SetPxPyPzE(  topBLV.Px(),  topBLV.Py(),   topBLV.Pz(), topBLV.E());
       }
-      else if(abs(genTop.wdau1id)<6 && abs(genTbar.wdau1id)>6){
+
+      // 2nd case: t -> bud, t~ -> b~lv
+      else if(abs(genTop.wdau1id)<6 && abs(genTop.wdau1id)>=1 && abs(genTbar.wdau1id)>6 && abs(genTbar.wdau1id)<=16){
 	TOPHADW1.SetPxPyPzE( topW1LV.Px(), topW1LV.Py(), topW1LV.Pz(), topW1LV.E());
 	TOPHADW2.SetPxPyPzE( topW2LV.Px(), topW2LV.Py(), topW2LV.Pz(), topW2LV.E());
 	TOPHADB.SetPxPyPzE( topBLV.Px(),  topBLV.Py(),   topBLV.Pz(),  topBLV.E());
@@ -885,7 +985,9 @@ int main(int argc, const char* argv[])
 	}
 	TOPLEPB.SetPxPyPzE( atopBLV.Px(),  atopBLV.Py(),   atopBLV.Pz(),  atopBLV.E());
       }      
-      else if(abs(genTop.wdau1id)>6 && abs(genTbar.wdau1id)>6){
+
+      // 3rd case: t -> blv, t~ -> b~lv
+      else if(abs(genTop.wdau1id)>6 && abs(genTop.wdau1id)<=16 && abs(genTbar.wdau1id)>6 && abs(genTbar.wdau1id)<=16){
 	if( abs(genTop.wdau1id)==11 || abs(genTop.wdau1id)==13 || abs(genTop.wdau1id)==15 ){
 	  TOPHADW1.SetPxPyPzE  ( topW1LV.Px(), topW1LV.Py(), topW1LV.Pz(), topW1LV.E());
 	  TOPHADW2.SetPxPyPzE  ( topW2LV.Px(), topW2LV.Py(), topW2LV.Pz(), topW2LV.E());
@@ -904,8 +1006,43 @@ int main(int argc, const char* argv[])
 	  TOPLEPW2.SetPxPyPzE  ( atopW1LV.Px(), atopW1LV.Py(), atopW1LV.Pz(), atopW1LV.E());
 	}
 	TOPLEPB.SetPxPyPzE( atopBLV.Px(),  atopBLV.Py(),   atopBLV.Pz(),  atopBLV.E());
-      }      
+      }  
+
+      // all the rest...
       else{}
+
+
+
+      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ NUs from top @@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+
+
+      // search for neutrinos in t and t~ separately (this way, also single-top events will be filled properly)
+      TLorentzVector INVISIBLE(0,0,0,0);
+
+      //  t -> blv
+      if( abs(genTop.wdau1id)>6 && abs(genTop.wdau1id)<=16 ){
+
+	TLorentzVector INVISIBLE_tmp;
+	if( abs(genTop.wdau1id)==11 || abs(genTop.wdau1id)==13 || abs(genTop.wdau1id)==15 ) 
+	  INVISIBLE_tmp.SetPxPyPzE( topW2LV.Px(), topW2LV.Py(), topW2LV.Pz(), topW2LV.E());
+	else
+	  INVISIBLE_tmp.SetPxPyPzE( topW1LV.Px(), topW1LV.Py(), topW1LV.Pz(), topW1LV.E());
+
+	INVISIBLE += INVISIBLE_tmp;
+      }
+
+      // t~ -> blv
+      if( abs(genTbar.wdau1id)>6 && abs(genTbar.wdau1id)<=16 ){
+
+	TLorentzVector INVISIBLE_tmp;
+	if( abs(genTbar.wdau1id)==11 || abs(genTbar.wdau1id)==13 || abs(genTbar.wdau1id)==15 ) 
+	  INVISIBLE_tmp.SetPxPyPzE( atopW2LV.Px(), atopW2LV.Py(), atopW2LV.Pz(), atopW2LV.E());
+	else
+	  INVISIBLE_tmp.SetPxPyPzE( atopW1LV.Px(), atopW1LV.Py(), atopW1LV.Pz(), atopW1LV.E());
+
+	INVISIBLE += INVISIBLE_tmp;
+      }
 
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -967,7 +1104,14 @@ int main(int argc, const char* argv[])
       if( nvlep==1 && (Vtype==2 || Vtype==3) ){
 
 	// first lepton...
-	leptonLV.SetPtEtaPhiM(vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);      
+	leptonLV.SetPtEtaPhiM(vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);    
+
+	if(doGenLevelAnalysis){
+	  if( vLepton_genPt[0]>5.) 
+	    leptonLV.SetPtEtaPhiM(vLepton_genPt[0], vLepton_genEta[0], vLepton_genPhi[0], (vLepton_type[0]==13 ? 0.113 : 0.0005 )  ); 
+	  else 
+	    leptonLV.SetPtEtaPhiM( 5., 0., 0., 0. );	  
+	}
 
 	// cut on lepton (SL)
 	int lepSelVtype2 =  (Vtype==2 && vLepton_type[0]==13 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.1 && vLepton_pfCorrIso[0]<0.10);
@@ -976,8 +1120,12 @@ int main(int argc, const char* argv[])
 	// OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
 	int trigVtype2 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
 
-	// OR of one trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*"
-	int trigVtype3 =  (Vtype==3 && ( triggerFlags[3]>0 ) );
+	// OR of two trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*", "HLT_Ele27_WP80_v.*"
+	int trigVtype3 =  (Vtype==3 && ( triggerFlags[3]>0 || triggerFlags[44]>0 ) );
+
+	// for the moment, don't cut on trigger bit (save and cut offline)
+	trigVtype2 = 1; 
+	trigVtype3 = 1;
 
 	// ID && trigger
 	properEventSL = (lepSelVtype2 && (isMC ? 1 : trigVtype2)) || (lepSelVtype3 && (isMC ? 1 : trigVtype3));	 
@@ -1016,6 +1164,18 @@ int main(int argc, const char* argv[])
 	// second lepton...
 	leptonLV2.SetPtEtaPhiM(vLepton_pt[1],vLepton_eta[1],vLepton_phi[1],vLepton_mass[1]);
 
+	if(doGenLevelAnalysis){
+	  if( vLepton_genPt[0]>5.) 
+	    leptonLV. SetPtEtaPhiM(vLepton_genPt[0], vLepton_genEta[0], vLepton_genPhi[0], (vLepton_type[0]==13 ? 0.113 : 0.0005 )  ); 
+	  else 
+	    leptonLV. SetPtEtaPhiM( 5., 0., 0., 0. );
+	  if( vLepton_genPt[1]>5.) 
+	    leptonLV2.SetPtEtaPhiM(vLepton_genPt[1], vLepton_genEta[1], vLepton_genPhi[1], (vLepton_type[1]==13 ? 0.113 : 0.0005 )  ); 
+	  else 
+	    leptonLV2.SetPtEtaPhiM( 5., 0., 0., 0. );	  
+	}
+
+
 	// cut on leptons (DL)
 	int lepSelVtype0 = ( Vtype==0 && vLepton_type[0]==13 && vLepton_type[1]==13 && 
 			    ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
@@ -1037,6 +1197,10 @@ int main(int argc, const char* argv[])
 	// OR of two trigger paths:    "HLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_v.*", "HLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_v.*"     
 	int trigVtype1 =  (Vtype==1 && ( triggerFlags[5]>0 || triggerFlags[6]>0 ) );		 
 			
+	// for the moment, don't cut on trigger bit (save and cut offline)
+	trigVtype0 = 1; 
+	trigVtype1 = 1;
+
 	// ID && trigger
 	properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
@@ -1084,6 +1248,10 @@ int main(int argc, const char* argv[])
       MET_phi_   = neutrinoLV.Phi();
       MET_sumEt_ = METtype1p2corr.sumet; 
 
+      // save invisible particles kinematics into the tree...
+      Nus_pt_    = INVISIBLE.Pt();
+      Nus_phi_   = INVISIBLE.Phi();
+
       // continue if leptons do not satisfy cuts
       if( !(properEventSL || properEventDL) ){
 	if( debug>=2 ) cout << "Rejected by lepton selection" << endl << endl;
@@ -1097,87 +1265,241 @@ int main(int argc, const char* argv[])
       // this container will hold the jets
       std::vector<JetObservable> jet_map;
 
-      // loop over jet collections
-      for(int coll = 0 ; coll < 2 ; coll++){
+      // for the MET
+      float deltaPx = 0.;
+      float deltaPy = 0.;
 
-	// loop over jets
-	for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+      // if doing the gen level analysis, read gen-jets
+      if( doGenLevelAnalysis==0 ){
 
-	  float ptGen = -99.;
-	  if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
-	  if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
-
-	  float pt     = (coll==0) ? hJet_pt [hj]  : aJet_pt [hj];
-	  float eta    = (coll==0) ? hJet_eta[hj]  : aJet_eta[hj];
-	  float phi    = (coll==0) ? hJet_phi[hj]  : aJet_phi[hj];
-	  float e      = (coll==0) ? hJet_e  [hj]  : aJet_e  [hj];
-	  float m2     = e*e - pt*pt*TMath::CosH(eta)*TMath::CosH(eta);
-	  if(m2<0) m2 = 0.; 
-	  float m      = TMath::Sqrt( m2 ); 
-
-	  int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
-	  float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
-
-	  // for JEC/JER systematics (N.B. this assumes that the jets are already corrected)
-	  float shift     = 1.0;
-	  if     ( doJECup   )  shift *= (1+JECUnc);
-	  else if( doJECdown )  shift *= (1-JECUnc);
-	  else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-	  else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-	  else{}
-
-	  // if correct for bias in jet resolution (for sanity, enforce isMC)
-	  if( isMC && doJERbias && !doJERup && !doJERdown) 
-	    shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-
-	  // change energy/mass by shift
-	  pt *= shift;
-	  m  *= shift;
-
-	  // only jets in acceptance...
-	  if( TMath::Abs(eta)> 2.5 ) continue;
-
-	  // only jets passing ID...
-	  if( id < 0.5 ) continue;	
-
-	  // only jets above pt cut...
-	  if( pt < 30  ) continue;	  
-
-	  // the jet four-vector
-	  TLorentzVector p4;
-	  p4.SetPtEtaPhiM( pt, eta, phi, m );
-	  	
-	  // for csv systematics
-	  float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
-	  float csv_upBC    =  (coll==0) ? hJet_csv_upBC   [hj] : aJet_csv_upBC   [hj];
-	  float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
-	  float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
-	  float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
-	  float csv = csv_nominal;
-	  if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
-	  else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
-	  else{}
-
-	  // the b-tagger output 
-	  //  ==> Min needed because in csvUp, csv can exceed 1..., 
-	  //      Max needed because we crunch  [-inf,0[ -> {0.}
-	  csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
-
-	  // the jet observables (p4 and csv)
-	  JetObservable myJet;
-	  myJet.p4    = p4;
-	  myJet.csv   = csv; 
-	  myJet.index = (coll==0 ? hj : -hj-1);
-	  myJet.shift = shift;
-
-	  // push back the jet...
-	  jet_map.push_back    ( myJet );
-
-	  if( debug>=3 ){
-	    cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
-	  }
+	// loop over jet collections
+	for(int coll = 0 ; coll < 2 ; coll++){
 	  
+	  // loop over jets
+	  for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	    
+	    float ptGen = -99.;
+	    if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
+	    if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
+	    
+	    float pt     = (coll==0) ? hJet_pt [hj]  : aJet_pt [hj];
+	    float eta    = (coll==0) ? hJet_eta[hj]  : aJet_eta[hj];
+	    float phi    = (coll==0) ? hJet_phi[hj]  : aJet_phi[hj];
+	    float e      = (coll==0) ? hJet_e  [hj]  : aJet_e  [hj];
+	    float m2     = e*e - pt*pt*TMath::CosH(eta)*TMath::CosH(eta);
+	    if(m2<0) m2 = 0.; 
+	    float m      = TMath::Sqrt( m2 ); 
+	    
+	    int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
+	    float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
+	    
+	    // for JEC/JER systematics (N.B. this assumes that the jets are already corrected)
+	    float shift     = 1.0;
+	    if     ( doJECup   )  shift *= (1+JECUnc);
+	    else if( doJECdown )  shift *= (1-JECUnc);
+	    else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	    else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	    else{}
+	    
+	    // if correct for bias in jet resolution (for sanity, enforce isMC)
+	    if( isMC && doJERbias && !doJERup && !doJERdown) 
+	      shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	    
+	    // change energy/mass by shift
+	    pt *= shift;
+	    m  *= shift;
+	    
+	    // only jets in acceptance...
+	    if( TMath::Abs(eta)> 2.5 ) continue;
+	    
+	    // only jets passing ID...
+	    if( id < 0.5 ) continue;	
+	    
+	    // only jets above pt cut...
+	    if( pt < 30  ) continue;	  
+	    
+	    // the jet four-vector
+	    TLorentzVector p4;
+	    p4.SetPtEtaPhiM( pt, eta, phi, m );
+	    
+	    // for csv systematics
+	    float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
+	    float csv_upBC    =  (coll==0) ? hJet_csv_upBC   [hj] : aJet_csv_upBC   [hj];
+	    float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
+	    float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
+	    float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
+	    float csv = csv_nominal;
+	    if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
+	    else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
+	    else{}
+	    
+	    // the b-tagger output 
+	    //  ==> Min needed because in csvUp, csv can exceed 1..., 
+	    //      Max needed because we crunch  [-inf,0[ -> {0.}
+	    csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
+	    
+	    // the jet observables (p4 and csv)
+	    JetObservable myJet;
+	    myJet.p4    = p4;
+	    myJet.csv   = csv; 
+	    myJet.index = (coll==0 ? hj : -hj-1);
+	    myJet.shift = shift;
+	    
+	    // push back the jet...
+	    jet_map.push_back    ( myJet );
+	    
+	    if( debug>=3 ){
+	      cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+	    }
+	    
+	  }
 	}
+      }
+          
+      // if doing the gen level analysis, read gen-jets
+      else{
+
+	// reset everything
+	jet_map.clear();
+
+	// reset the sumEt
+	MET_sumEt_ = 0.;
+	
+	// loop over jet collections
+	for(int coll = 0 ; coll < 2 ; coll++){
+	  
+	  // loop over jets
+	  for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	    
+	    float ptGen = -99.;
+	    if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
+	    if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
+
+	    float pt     = (coll==0) ? hJet_genPt [hj]  : aJet_genPt [hj];
+	    float eta    = (coll==0) ? hJet_genEta[hj]  : aJet_genEta[hj];
+	    float phi    = (coll==0) ? hJet_genPhi[hj]  : aJet_genPhi[hj];
+	    float e      = (coll==0) ? hJet_genPt [hj]*TMath::CosH(hJet_genEta[hj]) : aJet_genPt [hj]*TMath::CosH(aJet_genEta[hj]);
+	    float m      = 0.; 
+
+	    float flavor = (coll==0) ? hJet_flavour [hj] : aJet_flavour [hj];
+
+	    // only jets in acceptance
+	    // (this is needed because the TF and csv shapes are valid only in the acceptance) 
+	    if( TMath::Abs(eta) > 2.5 ) continue;
+
+	    if( debug>=3 ){
+	      cout << "Gen-Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m  << "), flavor=" << flavor << endl;
+	    }	   
+
+	    // keep track of the per-jet smearing (for the MET...)
+	    deltaPx -= ( pt*TMath::Cos(phi) );
+	    deltaPy -= ( pt*TMath::Sin(phi) );
+
+	    // needed to find appropriate PDF
+	    string bin = "";
+	    if( TMath::Abs( eta ) <= 1.0 ) 
+	      bin = "Bin0";
+	    if( TMath::Abs( eta ) >  1.0 ) 
+	      bin = "Bin1";
+
+	    // needed to find appropriate flavor
+	    string fl = "";
+	    if(abs(flavor)==5)
+	      fl = "b";
+	    else
+	      fl = "l";
+	    
+	    // set-up the TF parameters for the appropriate bin and flavor
+	    jet_smear->SetParameter(0, fl == "b" ? 0.65 : 1.0);
+	    jet_smear->SetParameter(1, transferfunctions[fl+"_G1_m_"+bin]->Eval( e ));
+	    jet_smear->SetParameter(2, transferfunctions[fl+"_G1_s_"+bin]->Eval( e ));
+	    jet_smear->SetParameter(3, fl == "b" ? transferfunctions[fl+"_G2_m_"+bin]->Eval( e ) : e);
+	    jet_smear->SetParameter(4, fl == "b" ? transferfunctions[fl+"_G2_s_"+bin]->Eval( e ) : 1.0);
+
+	    // consider the range [0.2,2.0]*e, and evaluate every s1/5 GeV, s1 = width of the narrower gaussian
+	    jet_smear->SetRange(e*0.2, e*2.0);
+	    jet_smear->SetNpx( TMath::Min( TMath::Max( int( (1.8*e)/( jet_smear->GetParameter(2)/5 ) ), int(4)), 200 ) );
+	    
+	    // the smeared energy
+	    float e_smear = TMath::Max( float(jet_smear->GetRandom()), float(0.) );
+
+	    // for c-quarks, we have a dedicated csv probability (but not a TF)
+	    if(abs(flavor)==4)
+	      fl = "c";
+
+	    // the random csv value
+	    float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
+
+	    // smear the jets
+	    pt *= (e_smear/e);
+
+	    // add the jet transverse energy to the sumEt
+	    MET_sumEt_ += pt;
+
+	    if( debug>=3 ){
+	      cout << "Gen-Jet (smear)" << " => (" << pt << "," << eta << "," << phi << "," << m  << ")" << ", csv=" << csv  << endl;
+	      cout << "jet_smear (" << jet_smear->GetNpx() << " points): " << string(Form("%.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2) + %.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2)",
+						   jet_smear->GetParameter(0), jet_smear->GetParameter(1),jet_smear->GetParameter(2),
+						   (1-jet_smear->GetParameter(0)), jet_smear->GetParameter(3), jet_smear->GetParameter(4)
+						   )) 
+		   << " => ran : " << e << " --> " << e_smear << endl;
+	    }
+
+	    // keep track of the per-jet smearing (for the MET...)
+	    deltaPx += ( pt*TMath::Cos(phi) );
+	    deltaPy += ( pt*TMath::Sin(phi) );
+
+	    // only jets above pt cut...
+	    if( pt < 30 ) continue;	  
+
+	    // the jet four-vector
+	    TLorentzVector p4;
+	    p4.SetPtEtaPhiM( pt, eta, phi, m );
+
+	    // the jet observables (p4 and csv)
+	    JetObservable myJet;
+	    myJet.p4    = p4;
+	    myJet.csv   = csv; 
+	    myJet.index = (coll==0 ? hj : -hj-1);
+	    myJet.shift = 1.0;
+	    
+	    // push back the jet...
+	    jet_map.push_back    ( myJet );
+	    
+	  }
+
+	}
+
+
+	// assume 16 average PU
+	int nPU_ran        = ran->Poisson(16);
+
+	// assume each PU gives 50 GeV of sumEt
+	float sumEt_PU_ran = nPU_ran*50.;
+
+	// add the extra smear
+	MET_sumEt_ += sumEt_PU_ran;
+	deltaPx    += ran->Gaus(0.,0.5*TMath::Sqrt(sumEt_PU_ran));
+	deltaPy    += ran->Gaus(0.,0.5*TMath::Sqrt(sumEt_PU_ran));
+	
+	// add to invisble particles pt the extra smearing coming from jets
+	float metPx = (INVISIBLE.Px() - deltaPx);
+	float metPy = (INVISIBLE.Py() - deltaPy);
+	neutrinoLV.SetPxPyPzE( metPx , metPy , 0., TMath::Sqrt( metPx*metPx + metPy*metPy) );
+	
+	if( debug>=3 ){
+	  cout << "MET (from invisible) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
+	}
+
+	// save smeared MET kinematics into the tree...
+	MET_pt_    = neutrinoLV.Pt();
+	MET_phi_   = neutrinoLV.Phi();
+
+	if( debug>=3 ){
+	  cout << "MET (smear) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
+	}
+
+
       }
 
 
@@ -2082,7 +2404,7 @@ int main(int argc, const char* argv[])
 	meIntegrator->setJets(&jets);	
 
 	// init MET stuff
-	meIntegrator->setSumEt( METtype1p2corr.sumet );
+	meIntegrator->setSumEt( MET_sumEt_ );
 	meIntegrator->setMEtCov(-99,-99,0);
 	
 	// specify if topLep has pdgid +6 or -6
@@ -2580,6 +2902,8 @@ int main(int argc, const char* argv[])
   cout << "Delete meIntegrator..." << endl;
   delete meIntegrator;
   delete clock; delete clock2;
+  if(ran!=0)       delete ran;
+  if(jet_smear!=0) delete jet_smear;
   cout << "Finished!!!" << endl;
   cout << "*******************" << endl;
   

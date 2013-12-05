@@ -144,7 +144,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -179,7 +179,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTZJets_8TeV-madgraph'+VType),
+    name     = cms.string('TTZJets_8TeV-madgraph_v2'+VType),
     nickName = cms.string('TTZ'),
     color    = cms.int32(18),
     xSec     = cms.double(0.2057),
@@ -187,7 +187,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -201,7 +201,182 @@ process.fwliteInput = cms.PSet(
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_FL),
     ),
-    
+
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'+VType),
+    nickName = cms.string('Run2012_DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectronRun2012CAug24RerecoEdmV42'+VType),
+    nickName = cms.string('Run2012_DoubleElectronRun2012CAug24RerecoEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectronRun2012D'+VType),
+    nickName = cms.string('Run2012_DoubleElectronRun2012D'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED'+VType),
+    nickName = cms.string('Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2'+VType),
+    nickName = cms.string('Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED'+VType),
+    nickName = cms.string('Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1'+VType),
+    nickName = cms.string('Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2'+VType),
+    nickName = cms.string('Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+
+
+
+    cms.PSet(
+    skip     = cms.bool(True),  # 148139
+    name     = cms.string('SingleElectronRun2012AAug06EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012AAug06EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 1551019
+    name     = cms.string('SingleElectronRun2012AJul13EdmV42b'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012AJul13EdmV42b'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 9351330
+    name     = cms.string('SingleElectronRun2012BJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012BJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 263593
+    name     = cms.string('SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 1064158
+    name     = cms.string('SingleElectronRun2012CAug24RerecoEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CAug24RerecoEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 9768094
+    name     = cms.string('SingleElectronRun2012CPromptv2EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CPromptv2EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 3491407
+    name     = cms.string('SingleElectronRun2012CPromptV2TopUpEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 16178887
+    name     = cms.string('SingleElectronRun2012D-PromptReco-v1_v3'+VType),
+    nickName = cms.string('Run2012_SingleElectronRun2012D-PromptReco-v1_v3'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+
+
+
+    cms.PSet(
+    skip     = cms.bool(True), # 90889
+    name     = cms.string('SingleMuRun2012AAug06EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012AAug06EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 916855
+    name     = cms.string('SingleMuRun2012AJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012AJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 6121904
+    name     = cms.string('SingleMuRun2012BJul13EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012BJul13EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CAug24RerecoEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CAug24RerecoEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CPromptV2TopUpEdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CPromptV2TopUpEdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), 
+    name     = cms.string('SingleMuRun2012CPromptv2EdmV42'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012CPromptv2EdmV42'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+    cms.PSet(
+    skip     = cms.bool(True), # 11860310
+    name     = cms.string('SingleMuRun2012D-PromptReco-v1'+VType),
+    nickName = cms.string('Run2012_SingleMuRun2012D-PromptReco-v1'),
+    color    = cms.int32(1),
+    xSec     = cms.double(-1),
+    ),
+   
     
     ),
 
@@ -234,7 +409,7 @@ process.fwliteInput = cms.PSet(
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets
     
     
-    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
+    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
     doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
     doType2       = cms.untracked.int32(0),  #SL(4,1)
     doType3       = cms.untracked.int32(0),  #SL(4,3) 
@@ -242,10 +417,10 @@ process.fwliteInput = cms.PSet(
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
 
-    doType0ByBTagShape = cms.untracked.int32(1),
-    doType1ByBTagShape = cms.untracked.int32(1),
-    doType2ByBTagShape = cms.untracked.int32(1),
-    doType3ByBTagShape = cms.untracked.int32(1),
+    doType0ByBTagShape = cms.untracked.int32(0),
+    doType1ByBTagShape = cms.untracked.int32(0),
+    doType2ByBTagShape = cms.untracked.int32(0),
+    doType3ByBTagShape = cms.untracked.int32(0),
     doType6ByBTagShape = cms.untracked.int32(0),
 
     useME         = cms.int32(1),
@@ -257,10 +432,10 @@ process.fwliteInput = cms.PSet(
 
     doubleGaussianB  = cms.untracked.int32(1),
     useBtag          = cms.untracked.int32(1),
-    selectByBTagShape= cms.untracked.int32(1),
+    selectByBTagShape= cms.untracked.int32(0),
     useRegression    = cms.untracked.int32(0),
     
-    printout     = cms.int32(0),
+    printout     = cms.int32(1),
     debug        = cms.int32(0),   
     verbose      = cms.bool(False),
 
@@ -273,9 +448,9 @@ process.fwliteInput = cms.PSet(
     MhL          = cms.untracked.double(110),
     MhH          = cms.untracked.double(140),
 
-    btag_prob_cut_6jets = cms.untracked.double(0.988),
-    btag_prob_cut_5jets = cms.untracked.double(0.992),
-    btag_prob_cut_4jets = cms.untracked.double(0.992),
+    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ), #0.96675
+    btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
+    btag_prob_cut_4jets = cms.untracked.double( 0.95295 ),
     
     massesH      = cms.vdouble(125.),
     #massesH      = cms.vdouble(105.,110.,115.,120.,125.,130.,135.,140.),
@@ -283,7 +458,7 @@ process.fwliteInput = cms.PSet(
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
     fixNumEvJob    = cms.untracked.int32(1),
-    evLimits       = cms.vint32(0,40),
+    evLimits       = cms.vint32(0,100),
 
     doJERbias  = cms.untracked.int32(0),   
     doCSVup    = cms.untracked.int32(0),
@@ -292,5 +467,7 @@ process.fwliteInput = cms.PSet(
     doJECdown  = cms.untracked.int32(0),
     doJERup    = cms.untracked.int32(0),
     doJERdown  = cms.untracked.int32(0),
+
+    doGenLevelAnalysis  = cms.untracked.int32(1)
 
     )
