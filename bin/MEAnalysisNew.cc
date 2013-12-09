@@ -66,7 +66,7 @@
 #define JERCORRECTED 1
 
 // a global flag to select RECO or GEN+SMEAR analysis
-#define DOGENLEVELANALYSIS 1
+//#define DOGENLEVELANALYSIS 0
 
 
 using namespace std;
@@ -97,12 +97,13 @@ int main(int argc, const char* argv[])
 
   // SAMPLES
   const edm::VParameterSet& samples = in.getParameter<edm::VParameterSet>("samples") ;
-  std::string outFileName( in.getParameter<std::string>  ("outFileName" ) );
-  std::string pathToFile ( in.getParameter<std::string>  ("pathToFile" ) );
-  std::string ordering   ( in.getParameter<std::string>  ("ordering" ) );
-  std::string pathToTF   ( in.getParameter<std::string>  ("pathToTF") );
-  std::string pathToCP   ( in.getParameter<std::string>  ("pathToCP") );
-  bool   verbose         ( in.getParameter<bool>         ("verbose" ) );
+  std::string outFileName    ( in.getParameter<std::string>  ("outFileName" ) );
+  std::string pathToFile     ( in.getParameter<std::string>  ("pathToFile" ) );
+  std::string ordering       ( in.getParameter<std::string>  ("ordering" ) );
+  std::string pathToTF       ( in.getParameter<std::string>  ("pathToTF") );
+  std::string pathToCP       ( in.getParameter<std::string>  ("pathToCP") );
+  std::string pathToCP_smear ( in.getParameter<std::string>  ("pathToCP_smear") );
+  bool   verbose             ( in.getParameter<bool>         ("verbose" ) );
   
   // PARAMETERS
   double lumi               ( in.getParameter<double>("lumi") );
@@ -117,6 +118,9 @@ int main(int argc, const char* argv[])
   double maxChi2_           ( in.getUntrackedParameter<double> ("maxChi2", 2.5));
   vector<double> massesH    ( in.getParameter<vector<double> > ("massesH"));
   vector<double> massesT    ( in.getParameter<vector<double> > ("massesT"));
+  float  csv_WP_L           ( in.getUntrackedParameter<double> ("csv_WP_L",      0.244));
+  float  csv_WP_M           ( in.getUntrackedParameter<double> ("csv_WP_M",      0.679));
+  float  csv_WP_T           ( in.getUntrackedParameter<double> ("csv_WP_T",      0.898));
 
   // FLAGS
   int   switchoffOL      ( in.getUntrackedParameter<int>    ("switchoffOL",      0));
@@ -159,6 +163,7 @@ int main(int argc, const char* argv[])
   int   fixNumEvJob      ( in.getUntrackedParameter<int>    ("fixNumEvJob",1));
   vector<string> functions(in.getParameter<vector<string> > ("functions"));
   vector<int>    evLimits (in.getParameter<vector<int> >    ("evLimits"));
+  int   ntuplizeAll      ( in.getUntrackedParameter<int>    ("ntuplizeAll",0));
 
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
@@ -169,10 +174,10 @@ int main(int argc, const char* argv[])
 
   /////////////////////////////////////////////////////////////////////////////
   
-  if(DOGENLEVELANALYSIS!=doGenLevelAnalysis){
-    cout << "ATTENTION: inconsistency between analysis-levels... exit" << endl;
-    return 0;
-  }
+  //if(DOGENLEVELANALYSIS!=doGenLevelAnalysis){
+  //cout << "ATTENTION: inconsistency between analysis-levels... exit" << endl;
+  //return 0;
+  //}
 
 
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -200,6 +205,9 @@ int main(int argc, const char* argv[])
 
   // file with b-tag pdf
   TFile* fCP = TFile::Open(pathToCP.c_str(),"READ");
+
+  // file with jet energy pdf: gen-jet --> reco-jet (for smearing)
+  TFile* fCP_smear = TFile::Open(pathToCP_smear.c_str(),"READ");
 
   // name of csv in the input file ()
   TString csvName = "csv_rec";
@@ -235,44 +243,48 @@ int main(int argc, const char* argv[])
     return 0;
   } 
 
-  if( doGenLevelAnalysis && fCP!=0 ){
+  if( doGenLevelAnalysis && fCP!=0 && fCP_smear!=0){
 
+    // initialize the random engine
     ran = new TRandom3();
     ran->SetSeed( 65539 );
     
+    // initialize the function that smears the jet energy (Double-Gaussian w/ 5 parameters)
     jet_smear = new TF1("jet_smear", 
 			Form("[0]*exp(-0.5*((x-[1])**2)/[2]/[2]) + (1-[0])*exp(-0.5*((x-[3])**2)/[4]/[4])"), 
 			0, 4000);
     
 
 
-    // load the correct histogram
+    // read the TH1 histograms that contain the parametrization of the DG parameters as a function of the parton energy
     TH1F* histo = 0;
     
-    histo = (TH1F*)fCP->Get("respG1HeavyBin0") ;
+    // for Heavy jets:
+    histo = (TH1F*)fCP_smear->Get("respG1HeavyBin0") ;
     if(histo!=0) transferfunctions["b_G1_m_Bin0"] = histo->GetFunction("meanG1HeavyBin0")  != 0 ? histo->GetFunction("meanG1HeavyBin0")  : 0;
-    histo = (TH1F*)fCP->Get("resolG1HeavyBin0") ;
+    histo = (TH1F*)fCP_smear->Get("resolG1HeavyBin0") ;
     if(histo!=0) transferfunctions["b_G1_s_Bin0"] = histo->GetFunction("sigmaG1HeavyBin0") != 0 ? histo->GetFunction("sigmaG1HeavyBin0") : 0;
-    histo = (TH1F*)fCP->Get("respG2HeavyBin0") ;
+    histo = (TH1F*)fCP_smear->Get("respG2HeavyBin0") ;
     if(histo!=0) transferfunctions["b_G2_m_Bin0"] = histo->GetFunction("meanG2HeavyBin0")  != 0 ? histo->GetFunction("meanG2HeavyBin0")  : 0;
-    histo = (TH1F*)fCP->Get("resolG2HeavyBin0") ;
+    histo = (TH1F*)fCP_smear->Get("resolG2HeavyBin0") ;
     if(histo!=0) transferfunctions["b_G2_s_Bin0"] = histo->GetFunction("sigmaG2HeavyBin0") != 0 ? histo->GetFunction("sigmaG2HeavyBin0") : 0;
-    histo = (TH1F*)fCP->Get("respG1HeavyBin1") ;
+    histo = (TH1F*)fCP_smear->Get("respG1HeavyBin1") ;
     if(histo!=0) transferfunctions["b_G1_m_Bin1"] = histo->GetFunction("meanG1HeavyBin1")  != 0 ? histo->GetFunction("meanG1HeavyBin1")  : 0;
-    histo = (TH1F*)fCP->Get("resolG1HeavyBin1") ;
+    histo = (TH1F*)fCP_smear->Get("resolG1HeavyBin1") ;
     if(histo!=0) transferfunctions["b_G1_s_Bin1"] = histo->GetFunction("sigmaG1HeavyBin1") != 0 ? histo->GetFunction("sigmaG1HeavyBin1") : 0;
-    histo = (TH1F*)fCP->Get("respG2HeavyBin1") ;
+    histo = (TH1F*)fCP_smear->Get("respG2HeavyBin1") ;
     if(histo!=0) transferfunctions["b_G2_m_Bin1"] = histo->GetFunction("meanG2HeavyBin1")  != 0 ? histo->GetFunction("meanG2HeavyBin1")  : 0;
-    histo = (TH1F*)fCP->Get("resolG2HeavyBin1") ;
+    histo = (TH1F*)fCP_smear->Get("resolG2HeavyBin1") ;
     if(histo!=0) transferfunctions["b_G2_s_Bin1"] = histo->GetFunction("sigmaG2HeavyBin1") != 0 ? histo->GetFunction("sigmaG2HeavyBin1") : 0;
 
-    histo = (TH1F*)fCP->Get("respLightBin0") ;
+    // for Light jets:
+    histo = (TH1F*)fCP_smear->Get("respLightBin0") ;
     if(histo!=0) transferfunctions["l_G1_m_Bin0"] = histo->GetFunction("meanLightBin0")   != 0 ? histo->GetFunction("meanLightBin0")  : 0;
-    histo = (TH1F*)fCP->Get("resolLightBin0") ;
+    histo = (TH1F*)fCP_smear->Get("resolLightBin0") ;
     if(histo!=0) transferfunctions["l_G1_s_Bin0"] = histo->GetFunction("sigmaLightBin0")  != 0 ? histo->GetFunction("sigmaLightBin0") : 0;
-    histo = (TH1F*)fCP->Get("respLightBin1") ;
+    histo = (TH1F*)fCP_smear->Get("respLightBin1") ;
     if(histo!=0) transferfunctions["l_G1_m_Bin1"] = histo->GetFunction("meanLightBin1")   != 0 ? histo->GetFunction("meanLightBin1")  : 0;
-    histo = (TH1F*)fCP->Get("resolLightBin1") ;
+    histo = (TH1F*)fCP_smear->Get("resolLightBin1") ;
     if(histo!=0) transferfunctions["l_G1_s_Bin1"] = histo->GetFunction("sigmaLightBin1")  != 0 ? histo->GetFunction("sigmaLightBin1") : 0;
  
     // check that all histograms have been found
@@ -286,8 +298,8 @@ int main(int argc, const char* argv[])
     if( countFailures>0 )  return 0;
 
   }
-  else if( doGenLevelAnalysis && fCP==0 ){
-    cout << "Cound not find " << pathToCP << ": exit" << endl;
+  else if( doGenLevelAnalysis && (fCP==0 || fCP_smear==0) ){
+    cout << "Cound not find " << pathToCP << " or " << pathToCP_smear << ": exit" << endl;
     return 0;
   }
 
@@ -498,11 +510,12 @@ int main(int argc, const char* argv[])
 
   // jet kinematics (as passed via **jets** collection)
   int nJet_;
-  float jet_pt_  [NMAXJETS];
-  float jet_eta_ [NMAXJETS];
-  float jet_phi_ [NMAXJETS];
-  float jet_m_   [NMAXJETS];
-  float jet_csv_ [NMAXJETS];
+  float jet_pt_    [NMAXJETS];
+  float jet_pt_alt_[NMAXJETS];
+  float jet_eta_   [NMAXJETS];
+  float jet_phi_   [NMAXJETS];
+  float jet_m_     [NMAXJETS];
+  float jet_csv_   [NMAXJETS];
 
   // number of selected jets passing CSV L,M,T
   int numBTagL_, numBTagM_, numBTagT_;
@@ -606,6 +619,7 @@ int main(int argc, const char* argv[])
   // jet kinematics
   tree->Branch("nJet",                    &nJet_,      "nJet/I");
   tree->Branch("jet_pt",                  jet_pt_,     "jet_pt[nJet]/F");
+  tree->Branch("jet_pt_alt",              jet_pt_alt_, "jet_pt_alt[nJet]/F");
   tree->Branch("jet_eta",                 jet_eta_,    "jet_eta[nJet]/F");
   tree->Branch("jet_phi",                 jet_phi_,    "jet_phi[nJet]/F");
   tree->Branch("jet_m",                   jet_m_,      "jet_m[nJet]/F");
@@ -826,7 +840,46 @@ int main(int argc, const char* argv[])
       // read event...
       currentTree->GetEntry(i);
       
-      // reset variables
+
+
+      // RESET VARIABLES
+      nPermut_            = 0;
+      nPermut_alt_        = 0;
+      nTotInteg_          = 0;
+      nTotInteg_alt_      = 0;
+      matchesH_           = -99;
+      matchesT_           = -99;
+      matchesHAll_        = -99;
+      matchesWAll_        = -99;
+      matchesTAll_        = -99;
+      overlapLight_       = -99;
+      overlapHeavy_       = -99;
+      type_               = -99;
+      nSimBs_             = nSimBs;
+      nMatchSimBs_        = -99;
+      time_               = 0.;
+
+      counter_            = counter;
+      weight_             = scaleFactor;
+      nPVs_               = nPVs;
+      Vtype_              = Vtype;
+
+      EVENT_.run          = EVENT.run;
+      EVENT_.lumi         = EVENT.lumi;
+      EVENT_.event        = EVENT.event;
+      EVENT_.json         = EVENT.json;
+
+      PUweight_           = PUweight;
+      PUweightP_          = PUweightP;
+      PUweightM_          = PUweightM;
+
+      lheNj_              = lheNj;
+      
+      trigger_     = weightTrig2012;
+      for(int k = 0; k < 70 ; k++){
+	triggerFlags_[k] = triggerFlags[k];
+      }
+      
       probAtSgn_          =  0.;
       probAtSgn_alt_      =  0.;
       probAtSgn_ttbb_     =  0.;
@@ -849,7 +902,7 @@ int main(int argc, const char* argv[])
 	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99;
       }
       for( int k = 0; k < NMAXJETS; k++){
-	jet_pt_[k] = -99; jet_eta_[k] = -99; jet_phi_[k] = -99; jet_m_[k] = -99;  jet_csv_[k] = -99;
+	jet_pt_[k] = -99; jet_pt_alt_[k] = -99; jet_eta_[k] = -99; jet_phi_[k] = -99; jet_m_[k] = -99;  jet_csv_[k] = -99;
       }
       for( int k = 0; k < NMAXPERMUT; k++){
 	perm_to_jet_    [k] = -99;
@@ -866,16 +919,47 @@ int main(int argc, const char* argv[])
 	mT_scan_[t] = mT[t];
       }
       
-      
-      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GEN PARTICLES @@@@@@@@@@@@@@@@@@@@@@@@@@  */
-
-      // reset the gen top/Higgs 4-vector
+       // reset the gen top/Higgs 4-vector
       for(int elem=0; elem<4; elem++){
 	p4T_   [elem] = -99.;
 	p4Tbar_[elem] = -99.;
 	p4H_   [elem] = -99.;
       }
+
+      // save jet kinematics into the tree...
+      nJet_ = 8;
+      for(int q = 0; q < nJet_ ; q++ ){
+	// kinematics
+	jet_pt_     [q] = -99;
+	jet_pt_alt_ [q] = -99;
+	jet_eta_    [q] = -99;
+	jet_phi_    [q] = -99;
+	jet_m_      [q] = -99;
+	jet_csv_    [q] = -99;
+      }
+	
+      // set all prob. to 0.0;
+      for(int p = 0 ; p < nTotInteg_; p++){
+	probAtSgn_permut_       [p] = 0.;
+	probAtSgnErr_permut_    [p] = 0.;
+      }
+      for(int p = 0 ; p < nPermut_; p++){
+	probAtSgn_bb_permut_ [p] = 0.;
+      }
+      for(int p = 0 ; p < nTotInteg_alt_; p++){
+	probAtSgn_alt_permut_   [p] = 0.;
+	probAtSgnErr_alt_permut_[p] = 0.;
+      }
+      for(int p = 0 ; p < nPermut_alt_; p++){
+	probAtSgn_bj_permut_ [p] = 0.;
+	probAtSgn_cc_permut_ [p] = 0.;
+	probAtSgn_jj_permut_ [p] = 0.;
+      }
+
+      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GEN PARTICLES @@@@@@@@@@@@@@@@@@@@@@@@@@  */
+
+     
 
       // read top decay products from input files   
       TLorentzVector topBLV   (1,0,0,1);
@@ -1050,6 +1134,7 @@ int main(int argc, const char* argv[])
 
 
       // find out number of b-hadrons in the event...
+      nSimBs_      = nSimBs;
       nMatchSimBs_ = 0;
       for(int l = 0; l<nSimBs; l++){
 	TLorentzVector Bs(1,0,0,1);
@@ -1378,6 +1463,9 @@ int main(int argc, const char* argv[])
 	    float pt     = (coll==0) ? hJet_genPt [hj]  : aJet_genPt [hj];
 	    float eta    = (coll==0) ? hJet_genEta[hj]  : aJet_genEta[hj];
 	    float phi    = (coll==0) ? hJet_genPhi[hj]  : aJet_genPhi[hj];
+
+	    // assume massless jets 
+	    // (unfortunately necessary because the mass of the genJet is not saved)
 	    float e      = (coll==0) ? hJet_genPt [hj]*TMath::CosH(hJet_genEta[hj]) : aJet_genPt [hj]*TMath::CosH(aJet_genEta[hj]);
 	    float m      = 0.; 
 
@@ -1410,9 +1498,15 @@ int main(int argc, const char* argv[])
 	      fl = "l";
 	    
 	    // set-up the TF parameters for the appropriate bin and flavor
+
+	    // relative fraction of the two gaussians
 	    jet_smear->SetParameter(0, fl == "b" ? 0.65 : 1.0);
+
+	    // mean and sigma of the 1st
 	    jet_smear->SetParameter(1, transferfunctions[fl+"_G1_m_"+bin]->Eval( e ));
 	    jet_smear->SetParameter(2, transferfunctions[fl+"_G1_s_"+bin]->Eval( e ));
+
+	    // mean and sigma of the 2nd
 	    jet_smear->SetParameter(3, fl == "b" ? transferfunctions[fl+"_G2_m_"+bin]->Eval( e ) : e);
 	    jet_smear->SetParameter(4, fl == "b" ? transferfunctions[fl+"_G2_s_"+bin]->Eval( e ) : 1.0);
 
@@ -1430,7 +1524,7 @@ int main(int argc, const char* argv[])
 	    // the random csv value
 	    float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
 
-	    // smear the jets
+	    // !!! smear the jet energy !!!
 	    pt *= (e_smear/e);
 
 	    // add the jet transverse energy to the sumEt
@@ -1475,16 +1569,19 @@ int main(int argc, const char* argv[])
 	int nPU_ran        = ran->Poisson(16);
 
 	// assume each PU gives 50 GeV of sumEt
-	float sumEt_PU_ran = nPU_ran*50.;
+	float sumEt_PU_ran = nPU_ran*20.;
 
 	// add the extra smear
 	MET_sumEt_ += sumEt_PU_ran;
-	deltaPx    += ran->Gaus(0.,0.5*TMath::Sqrt(sumEt_PU_ran));
-	deltaPy    += ran->Gaus(0.,0.5*TMath::Sqrt(sumEt_PU_ran));
+	deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	
+	// keep it fixed to a value such that sx~29 GeV
+	MET_sumEt_ = 1800.;
+
 	// add to invisble particles pt the extra smearing coming from jets
-	float metPx = (INVISIBLE.Px() - deltaPx);
-	float metPy = (INVISIBLE.Py() - deltaPy);
+	float metPx = ( INVISIBLE.Px() - deltaPx /*- (nLep_==1 ? lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) + lepton_pt_[1]*TMath::Cos(lepton_phi_[1])) )*/ );
+	float metPy = ( INVISIBLE.Py() - deltaPy /*- (nLep_==1 ? lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) + lepton_pt_[1]*TMath::Sin(lepton_phi_[1])) )*/ );
 	neutrinoLV.SetPxPyPzE( metPx , metPy , 0., TMath::Sqrt( metPx*metPx + metPy*metPy) );
 	
 	if( debug>=3 ){
@@ -1596,11 +1693,11 @@ int main(int argc, const char* argv[])
 	float pt_k  = (jets_p4[k]).Pt();
 
 	// passes CSVL...
-	int btag_L = csv_k>0.244 ;	
+	int btag_L = csv_k>csv_WP_L ;	
 	// passes CSVM...
-	int btag_M = csv_k>0.679 ;
+	int btag_M = csv_k>csv_WP_M ;
 	// passes CSVT...
-	int btag_T = csv_k>0.898 ;	
+	int btag_T = csv_k>csv_WP_T ;	
 
 	// any btag value...
 	if( pt_k>30 ) banytag_indices.push_back( k );
@@ -1653,7 +1750,7 @@ int main(int argc, const char* argv[])
       // variable that flags events passing or failing the b-probability cut
       int passes_btagshape = 0;
 
-      if( selectByBTagShape && useBtag &&                    // run this only if specified AND...
+      if( /*selectByBTagShape &&*/ useBtag &&                    // run this only if specified AND...
 	  ((properEventSL && banytag_indices.size()>=5) ||   // [ run this only if SL and at least 5 jets OR...
 	   (properEventDL && banytag_indices.size()>=4)) ){  //   run this only if DL and at least 4 jets ]
 	
@@ -1800,7 +1897,7 @@ int main(int argc, const char* argv[])
 
 	// if the event passes the cut, reshuffle jets into btag/buntag vectors
 	// N.B. ==> jets will be sorted by descending btag probaility!!!
-	if( passes_btagshape ){
+	if( passes_btagshape && selectByBTagShape){
 
 	  // reset old vector
 	  btag_indices.clear();
@@ -1927,7 +2024,46 @@ int main(int argc, const char* argv[])
       }
       if( genLight.size()>1 && deltaR(genLight[0], genLight[1])<0.5  ) overlapL++;
       overlapLight_  = overlapL;      
-      
+
+
+      // if ntuplize all event, then compute the regressed energy per jet...
+      if( ntuplizeAll && useRegression ){
+
+	  // empty the array (was filled with the standard jets)
+	  jets_p4_reg.clear();
+
+	  // loop over all jets
+	  for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){	  
+
+	    // the four-vector
+	    TLorentzVector p4 = jet_map[jj].p4; 
+	    
+	    // the regressed pt of the jet
+	    float pt_reg;  
+	    
+	    // call to the function that computes the regressed pt of the jet	 
+	    getRegressionEnergy(pt_reg,            // the regressed pt (passed by &reference)
+				"BDTG",            // the TMVA method
+				reader,            // the TMVA reader
+				readerVars,        // arrays with input variables
+				currentTree_reg,   // the tree under process
+				i,                 // the event of currentTree_reg under process
+				jet_map[jj].index ,// index of hJet/aJet collection to be read 
+				jet_map[jj].shift, // a multiplicative variation of the input jet energy/pt 
+				(debug>=3) );      // if 1, print the input and output values (debug)
+	    
+	    // protect against negative/too small values
+	    if( pt_reg < 20. ) 
+	      pt_reg = p4.Pt(); 
+	    
+	    // set the jet (keep same direction as old jet)
+	    TLorentzVector p4_reg; 
+	    p4_reg.SetPtEtaPhiM( pt_reg, p4.Eta(), p4.Phi(), p4.M()*(pt_reg/p4.Pt()) );
+	    
+	    // push back the regressed jet
+	    jets_p4_reg.push_back ( p4_reg );
+	  }
+	}      
 
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -1936,6 +2072,7 @@ int main(int argc, const char* argv[])
 
       //  input 4-vectors
       vector<TLorentzVector> jets;
+      vector<TLorentzVector> jets_alt;
 
       // internal map: [ position in "jets" ] -> [ position in "jets_p4" ]
       std::map< unsigned int, unsigned int> pos_to_index;
@@ -1947,8 +2084,8 @@ int main(int argc, const char* argv[])
 	
 
 	// if the event has been accepted, then compute the regressed energy per jet
-	// avoid to do this for every event (speed up)
-	if( useRegression ){
+	// (if not done before)
+	if( !ntuplizeAll && useRegression ){
 
 	  // empty the array (was filled with the standard jets)
 	  jets_p4_reg.clear();
@@ -2235,6 +2372,12 @@ int main(int argc, const char* argv[])
 	jets.push_back( leptonLV     );  
 	jets.push_back( neutrinoLV   );  
 
+	// keep track of an alternative jet selection when doing regression
+	jets_alt.clear();
+	jets_alt.push_back( leptonLV   );
+	jets_alt.push_back( neutrinoLV );
+
+
 	// b1,...,w1,w2 are indices for jets_p4 collection;
 	// This is a map between the internal ordering bLep=2, W1Had=3, ..., higgs2 = 7, and jets_p4
 	pos_to_index.clear();
@@ -2291,6 +2434,13 @@ int main(int argc, const char* argv[])
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[1] ] : jets_p4_reg[ btag_indices[1] ] );
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ] );
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ] );
+
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[0] ] : jets_p4_reg[ btag_indices[0] ]  );
+	  jets_alt.push_back( jets_p4[ ind1 ]);  
+	  jets_alt.push_back( jets_p4[ ind2 ]);  
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[1] ] : jets_p4_reg[ btag_indices[1] ] );
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ] );
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ] );
 	  
 	  pos_to_index[2] = btag_indices[0];
 	  pos_to_index[3] = ind1;
@@ -2307,6 +2457,13 @@ int main(int argc, const char* argv[])
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ]);
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ]);
 
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[0] ] : jets_p4_reg[ btag_indices[0] ] );
+	  jets_alt.push_back( leptonLV2   );  
+	  jets_alt.push_back( neutrinoLV  );      // dummy  
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[1] ] : jets_p4_reg[ btag_indices[1] ]);
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[2] ] : jets_p4_reg[ btag_indices[2] ]);
+	  jets_alt.push_back( useRegression ? jets_p4[ btag_indices[3] ] : jets_p4_reg[ btag_indices[3] ]);
+
 	  pos_to_index[2] = btag_indices[0];
 	  pos_to_index[3] = btag_indices[0];  // dummy
 	  pos_to_index[4] = btag_indices[0];  // dummy
@@ -2321,6 +2478,13 @@ int main(int argc, const char* argv[])
 	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[1] ] : jets_p4_reg[ btagLoose_indices[1] ]);
 	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[2] ] : jets_p4_reg[ btagLoose_indices[2] ]);
 	  jets.push_back( !useRegression ? jets_p4[ btagLoose_indices[3] ] : jets_p4_reg[ btagLoose_indices[3] ]);
+
+	  jets_alt.push_back( useRegression ? jets_p4[ btagLoose_indices[0] ] : jets_p4_reg[ btagLoose_indices[0] ] );
+	  jets_alt.push_back( leptonLV2   );  
+	  jets_alt.push_back( neutrinoLV  );           // dummy  
+	  jets_alt.push_back( useRegression ? jets_p4[ btagLoose_indices[1] ] : jets_p4_reg[ btagLoose_indices[1] ]);
+	  jets_alt.push_back( useRegression ? jets_p4[ btagLoose_indices[2] ] : jets_p4_reg[ btagLoose_indices[2] ]);
+	  jets_alt.push_back( useRegression ? jets_p4[ btagLoose_indices[3] ] : jets_p4_reg[ btagLoose_indices[3] ]);
 
 	  pos_to_index[2] = btagLoose_indices[0];
 	  pos_to_index[3] = btagLoose_indices[0];  // dummy
@@ -2338,11 +2502,12 @@ int main(int argc, const char* argv[])
 	nJet_ = 8;
 	for(int q = 0; q < nJet_ ; q++ ){
 	  // kinematics
-	  jet_pt_ [q] = jets[q].Pt(); 
-	  jet_eta_[q] = jets[q].Eta(); 
-	  jet_phi_[q] = jets[q].Phi(); 	    
-	  jet_m_  [q] = jets[q].M(); 
-	  jet_csv_[q] = q>1 ? jets_csv[ pos_to_index[q] ] : -99.;
+	  jet_pt_    [q] = jets[q].Pt() ; 
+	  jet_pt_alt_[q] = jets_alt[q].Pt(); 
+	  jet_eta_   [q] = jets[q].Eta(); 
+	  jet_phi_   [q] = jets[q].Phi(); 	    
+	  jet_m_     [q] = jets[q].M(); 
+	  jet_csv_   [q] = q>1 ? jets_csv[ pos_to_index[q] ] : -99.;
 	}
 	
 	// set all prob. to 0.0;
@@ -2849,31 +3014,74 @@ int main(int argc, const char* argv[])
       ///////////////////////////////////////////////////
 
       else{
+
+	// if save all events, fill the tree...
+	if(ntuplizeAll){
+
+	  // save jet kinematics into the tree...
+	  for(int q = 0; q < nJet_ ; q++ ){
+
+	    // fill elem 0th w/ lepton kinematics
+	    if( q==0 ){
+	      jet_pt_    [q] = leptonLV.Pt(); 
+	      jet_pt_alt_[q] = leptonLV.Pt(); 
+	      jet_eta_   [q] = leptonLV.Eta(); 
+	      jet_phi_   [q] = leptonLV.Phi(); 	    
+	      jet_m_     [q] = leptonLV.M(); 
+	      jet_csv_   [q] = -99.;
+	    }	    
+
+	    // fill elem 1st w/ MET kinematics
+	    else if( q==1 ){
+	      jet_pt_    [q] = neutrinoLV.Pt(); 
+	      jet_pt_alt_[q] = neutrinoLV.Pt(); 
+	      jet_eta_   [q] = neutrinoLV.Eta(); 
+	      jet_phi_   [q] = neutrinoLV.Phi(); 	    
+	      jet_m_     [q] = neutrinoLV.M(); 
+	      jet_csv_   [q] = -99.;
+	    }
+
+	    // fill other elems w/ the jet kinematics
+	    else if( (q-2) < jets_p4.size() && ( properEventSL || (properEventDL && !(q==3 || q==4)))   ){
+	      jet_pt_     [q] = !useRegression ? jets_p4[q-2].Pt() : jets_p4_reg[q-2].Pt(); 
+	      jet_pt_alt_ [q] =  useRegression ? jets_p4[q-2].Pt() : jets_p4_reg[q-2].Pt(); 
+	      jet_eta_    [q] = jets_p4[q-2].Eta(); 
+	      jet_phi_    [q] = jets_p4[q-2].Phi(); 	    
+	      jet_m_      [q] = jets_p4[q-2].M(); 
+	      jet_csv_    [q] = jets_csv[q-2];
+	    }
+
+	    // if DL, fill elem 3rd w/ second lepton kinematics
+	    else if( properEventDL && q==3 ){
+	      jet_pt_     [q] = leptonLV2.Pt(); 
+	      jet_pt_alt_ [q] = leptonLV2.Pt(); 
+	      jet_eta_    [q] = leptonLV2.Eta(); 
+	      jet_phi_    [q] = leptonLV2.Phi(); 	    
+	      jet_m_      [q] = leptonLV2.M(); 
+	      jet_csv_    [q] = -99.;
+	    }
+
+	    //  if DL, fill elem 4th w/ MET kinematics
+	    else if( properEventDL && q==4 ){
+	      jet_pt_    [q] = neutrinoLV.Pt();
+	      jet_pt_alt_[q] = neutrinoLV.Pt();  
+	      jet_eta_   [q] = neutrinoLV.Eta(); 
+	      jet_phi_   [q] = neutrinoLV.Phi(); 	    
+	      jet_m_     [q] = neutrinoLV.M(); 
+	      jet_csv_   [q] = -99.;
+	    }
+
+	    else{}
+
+	  }
+
+	  // fill the tree...
+	  tree->Fill(); 
+	}   
+
 	continue;
       }
-      
-      counter_     = counter;
-      nSimBs_      = nSimBs;
-      weight_      = scaleFactor;
-      nPVs_        = nPVs;
-      Vtype_       = Vtype;
-
-      EVENT_.run   = EVENT.run;
-      EVENT_.lumi  = EVENT.lumi;
-      EVENT_.event = EVENT.event;
-      EVENT_.json  = EVENT.json;
-
-      PUweight_    = PUweight;
-      PUweightP_   = PUweightP;
-      PUweightM_   = PUweightM;
-
-      lheNj_       = lheNj;
-      
-      trigger_     = weightTrig2012;
-      for(int k = 0; k < 70 ; k++){
-	triggerFlags_[k] = triggerFlags[k];
-      }
-      
+           
       // fill the tree...
       tree->Fill();      
 

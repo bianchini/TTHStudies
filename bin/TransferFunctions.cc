@@ -82,12 +82,16 @@ int main(int argc, const char* argv[])
 
   AutoLibraryLoader::enable();
 
-  TString extraname =  argc>2 ?  "TEST"+TString(argv[2]) : "TEST";
+  TString reg =  argc>2 ? TString(argv[2]) : "_std"  ; // default is standard reco
+  TString gen =  argc>3 ? TString(argv[3]) : "_part" ; // default is parton
+
+  TString extraname =  "TEST"+reg+gen;
+
   TFile* fout = 0;
   fout = new TFile("./root/ControlPlots"+extraname+".root","RECREATE");
   fout->cd();
 
-  TString reg =  argc>2 ? TString(argv[2]) : "" ;
+  if( string(reg.Data()).find("std")!=string::npos ) reg = "";
 
   PythonProcessDesc builder(argv[1]);
   const edm::ParameterSet& in = builder.processDesc()->getProcessPSet()->getParameter<edm::ParameterSet>("fwliteInput");
@@ -127,8 +131,10 @@ int main(int argc, const char* argv[])
     return 0;
   }
 
+
+
   float etaBinning[] = {0.0, 1.0, 2.5};
-  int nBinsY = 58;
+  int nBinsY =  58 ;
 
   // RESOLUTION (GAUSSIAN)
   TH1F* resolLightBin0  = new TH1F("resolLightBin0","",nBinsY,30,300);
@@ -158,12 +164,12 @@ int main(int argc, const char* argv[])
 
   for(int k = 0; k < 2; k++){
 
-    TCut  cut_Bin_Light(Form("(pt_rec>20)  *(TMath::Abs(eta_part)>%f && TMath::Abs(eta_part)<%f)",              etaBinning[k],etaBinning[k+1]));
-    TCut  cut_Bin_Heavy(Form("(pt_rec%s>20)*(TMath::Abs(eta_part)>%f && TMath::Abs(eta_part)<%f)",  reg.Data(), etaBinning[k],etaBinning[k+1]));
+    TCut  cut_Bin_Light(Form("(pt_rec>20)  *(TMath::Abs(eta%s)>%f && TMath::Abs(eta%s)<%f)",              gen.Data(), etaBinning[k],  gen.Data(), etaBinning[k+1]));
+    TCut  cut_Bin_Heavy(Form("(pt_rec%s>20)*(TMath::Abs(eta%s)>%f && TMath::Abs(eta%s)<%f)",  reg.Data(), gen.Data(), etaBinning[k],  gen.Data(), etaBinning[k+1]));
     //TCut  cut_Bin_Heavy(Form("(pt_rec>30)*(TMath::Abs(eta_part)>%f && TMath::Abs(eta_part)<%f)",                etaBinning[k],etaBinning[k+1]));
 
     TH2F* hCorrLight = new TH2F("hCorrLight","", nBinsY, 30,300 , 100, 0,500);
-    treeJetsLight->Draw("e_rec:e_part>>hCorrLight", cut_Bin_Light );
+    treeJetsLight->Draw("e_rec:e"+gen+">>hCorrLight", cut_Bin_Light );
 
     for(int j = 1; j<=hCorrLight->GetNbinsX(); j++){
 
@@ -197,7 +203,7 @@ int main(int argc, const char* argv[])
 
 
     TH2F* hCorrHeavy = new TH2F("hCorrHeavy","",  nBinsY, 30,300 , 100, 0,500);
-    treeJetsHeavy->Draw("e_rec"+reg+":e_part>>hCorrHeavy", cut_Bin_Heavy );
+    treeJetsHeavy->Draw("e_rec"+reg+":e"+gen+">>hCorrHeavy", cut_Bin_Heavy );
 
     for(int j = 1; j<=hCorrHeavy->GetNbinsX(); j++){
 
@@ -334,16 +340,21 @@ int main(int argc, const char* argv[])
   respG2HeavyBin1->Fit  (meanG2HeavyBin1, "","",40,300);
   
   // resolutions
-  resolG1HeavyBin0->Fit (sigmaG1HeavyBin0,"","",100,300);
-  //resolG1HeavyBin0->Fit (sigmaG1HeavyBin0,"","",40, 250);
+  if( string(gen.Data()).find("part")!=string::npos )    
+    resolG1HeavyBin0->Fit (sigmaG1HeavyBin0,"","",100,300);
+  else
+    resolG1HeavyBin0->Fit (sigmaG1HeavyBin0,"","",150,300);
+
 
   resolG2HeavyBin0->Fit (sigmaG2HeavyBin0,"","",100,300);
-  //resolG2HeavyBin0->Fit (sigmaG2HeavyBin0,"","",40, 250);
  
-  resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",30,  300);
-  resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",60,  300);
-  resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",80,  300);
-  //resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",50, 300);
+  if( string(gen.Data()).find("part")!=string::npos ){
+    resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",30,  300);
+    resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",60,  300);
+    resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",80,  300);
+  }
+  else
+    resolG1HeavyBin1->Fit (sigmaG1HeavyBin1,"","",30,  300);
 
   resolG2HeavyBin1->Fit (sigmaG2HeavyBin1,"","",130,300);
   resolG2HeavyBin1->Fit (sigmaG2HeavyBin1,"","",130,300);
@@ -628,8 +639,8 @@ int main(int argc, const char* argv[])
 
 
 
-  RooRealVar flavor("flavor","flavor",        -6, 6);
-  RooRealVar eta   ("eta_part","eta_part",    -3, 3);
+  RooRealVar flavor("flavor",  "flavor",        -6, 6);
+  RooRealVar eta   ("eta_part","eta_part",      -3, 3);
 
   RooRealVar csvRecoLight("csv_rec","csv", 0., 1.0);  //0.6, 1.0 10 bins
   csvRecoLight.setBins(25);

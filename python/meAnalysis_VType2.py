@@ -179,7 +179,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTZJets_8TeV-madgraph'+VType),
+    name     = cms.string('TTZJets_8TeV-madgraph_v2'+VType),
     nickName = cms.string('TTZ'),
     color    = cms.int32(18),
     xSec     = cms.double(0.2057),
@@ -188,7 +188,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_SL),
@@ -196,7 +196,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsFullLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_FL),

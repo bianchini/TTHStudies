@@ -20,7 +20,7 @@ process.fwliteInput = cms.PSet(
     verbose       = cms.bool(False),
 
     # if 1, compute only jet TF
-    doOnlyJetTF   = cms.untracked.int32(0),
+    doOnlyJetTF   = cms.untracked.int32(1),
 
     # parameters of the 2G parametrization for b-jets
     relWeightBin0 = cms.untracked.double(0.65),
