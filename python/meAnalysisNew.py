@@ -16,7 +16,7 @@ process.fwliteInput = cms.PSet(
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
-    pathToFile    = cms.string("/scratch/bianchi/"),
+    pathToFile    = cms.string("./"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
 
