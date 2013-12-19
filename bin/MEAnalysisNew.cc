@@ -207,7 +207,7 @@ int main(int argc, const char* argv[])
   TFile* fCP = TFile::Open(pathToCP.c_str(),"READ");
 
   // file with jet energy pdf: gen-jet --> reco-jet (for smearing)
-  TFile* fCP_smear = TFile::Open(pathToCP_smear.c_str(),"READ");
+  TFile* fCP_smear = doGenLevelAnalysis ? TFile::Open(pathToCP_smear.c_str(),"READ") : 0;
 
   // name of csv in the input file ()
   TString csvName = "csv_rec";

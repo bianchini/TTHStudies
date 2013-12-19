@@ -10,12 +10,13 @@ process = cms.Process("MEAnalysisNew")
 
 process.fwliteInput = cms.PSet(
 
-    outFileName   = cms.string("/scratch/bianchi/Trees/MEM/MEAnalysisNewTEST.root"),
+    outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
     pathToTF      = cms.string("./root/transferFunctionsTEST_reg.root"),
     pathToCP      = cms.string("./root/ControlPlotsTEST_reg.root"),
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
+    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
+    pathToFile    = cms.string("/scratch/bianchi/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
 
@@ -146,8 +147,8 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(True),  
-    name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'+VType),
+    skip     = cms.bool(False),  
+    name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6_v2'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
     xSec     = cms.double(0.1302*0.569)
@@ -189,7 +190,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -404,14 +405,14 @@ process.fwliteInput = cms.PSet(
     'x>=12 ? x^(-2.010e-01)*exp((-1.5785e-02)*x) : 4.184e-02*x'),           # tth Pt
  
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
-    speedup       = cms.untracked.int32(1), ###### CHECK HERE
+    speedup       = cms.untracked.int32(0), ###### CHECK HERE
 
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets
     
     
-    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
+    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
     doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
     doType2       = cms.untracked.int32(0),  #SL(4,1)
     doType3       = cms.untracked.int32(0),  #SL(4,3) 
@@ -419,10 +420,10 @@ process.fwliteInput = cms.PSet(
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
 
-    doType0ByBTagShape = cms.untracked.int32(1),
-    doType1ByBTagShape = cms.untracked.int32(1),
-    doType2ByBTagShape = cms.untracked.int32(1),
-    doType3ByBTagShape = cms.untracked.int32(1),
+    doType0ByBTagShape = cms.untracked.int32(0),
+    doType1ByBTagShape = cms.untracked.int32(0),
+    doType2ByBTagShape = cms.untracked.int32(0),
+    doType3ByBTagShape = cms.untracked.int32(0),
     doType6ByBTagShape = cms.untracked.int32(0),
 
     useME         = cms.int32(1),
@@ -434,8 +435,8 @@ process.fwliteInput = cms.PSet(
 
     doubleGaussianB  = cms.untracked.int32(1),
     useBtag          = cms.untracked.int32(1),
-    selectByBTagShape= cms.untracked.int32(1),
-    useRegression    = cms.untracked.int32(1),
+    selectByBTagShape= cms.untracked.int32(0),
+    useRegression    = cms.untracked.int32(0),
     
     printout     = cms.int32(1),
     debug        = cms.int32(0),   
@@ -460,7 +461,7 @@ process.fwliteInput = cms.PSet(
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
     fixNumEvJob    = cms.untracked.int32(1),
-    evLimits       = cms.vint32(0,80),
+    evLimits       = cms.vint32(0,10),
 
     doJERbias  = cms.untracked.int32(0),   
     doCSVup    = cms.untracked.int32(0),
@@ -472,7 +473,7 @@ process.fwliteInput = cms.PSet(
 
 
     doGenLevelAnalysis  = cms.untracked.int32(0),
-    ntuplizeAll         = cms.untracked.int32(1),
+    ntuplizeAll         = cms.untracked.int32(0),
     
     )
 
