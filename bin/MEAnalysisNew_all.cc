@@ -124,7 +124,7 @@ int main(int argc, const char* argv[])
   float  csv_WP_M           ( in.getUntrackedParameter<double> ("csv_WP_M",      0.679));
   float  csv_WP_T           ( in.getUntrackedParameter<double> ("csv_WP_T",      0.898));
 
-  vector<int> systematics     ( in.getParameter<vector<int> > ("systematics"));
+  vector<int> systematics   ( in.getParameter<vector<int> > ("systematics"));
 
   // FLAGS
   int   switchoffOL      ( in.getUntrackedParameter<int>    ("switchoffOL",      0));
@@ -501,9 +501,10 @@ int main(int argc, const char* argv[])
 
   // event-wise **ME** probability (summed over permutations)
   // ...for ttH...
-  float probAtSgn_    /*, probAtSgn2_*/;
+  float probAtSgn_ ;
+
   // ...for ttbb...
-  float probAtSgn_alt_/*, probAtSgn_alt2_*/;
+  float probAtSgn_alt_ ;
 
   // event-wise **ME X btag** probability (summed over permutations)
   // ...for ttH...
@@ -639,9 +640,6 @@ int main(int argc, const char* argv[])
   // marginalized over permutations (all <=> Sum_{p=0}^{nTotPermut}( mH=MH, mT=MT ) )
   tree->Branch(Form("p_%d_all_s",     int(MH)),   &probAtSgn_,           Form("p_%d_all_s/F",              int(MH)) );
   tree->Branch(Form("p_%d_all_b",     int(MH)),   &probAtSgn_alt_,       Form("p_%d_all_b/F",              int(MH)) );
-  //tree->Branch(Form("p_%d_all2_s",    int(MH)),   &probAtSgn2_,          Form("p_%d_all2_s/F",             int(MH)) );
-  //tree->Branch(Form("p_%d_all2_b",    int(MH)),   &probAtSgn_alt2_,      Form("p_%d_all2_b/F",             int(MH)) );
-
   tree->Branch(Form("p_%d_all_s_ttbb",int(MH)),   &probAtSgn_ttbb_,      Form("p_%d_all_s_ttbb/F",         int(MH)) );
   tree->Branch(Form("p_%d_all_b_ttbb",int(MH)),   &probAtSgn_alt_ttbb_,  Form("p_%d_all_b_ttbb/F",         int(MH)) );
   tree->Branch(Form("p_%d_all_b_ttjj",int(MH)),   &probAtSgn_alt_ttjj_,  Form("p_%d_all_b_ttjj/F",         int(MH)) );
@@ -1367,382 +1365,397 @@ int main(int argc, const char* argv[])
 	}
 
 
-      ///////////////////////////////////
-      //         DL events             //
-      ///////////////////////////////////
-
-      properEventDL = false;
-      if( nvlep>=2 && (Vtype==0 || Vtype==1)){
+	///////////////////////////////////
+	//         DL events             //
+	///////////////////////////////////
 	
-	// first lepton...
-	leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
-	lep_index.push_back( 0 );   
+	properEventDL = false;
+	if( nvlep>=2 && (Vtype==0 || Vtype==1)){
+	  
+	  // first lepton...
+	  leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
+	  lep_index.push_back( 0 );   
+	  
+	  // second lepton...
+	  leptonLV2.SetPtEtaPhiM(vLepton_pt[1],vLepton_eta[1],vLepton_phi[1],vLepton_mass[1]);
+	  lep_index.push_back( 1 );   
+	  
+	  if(doGenLevelAnalysis){
+	    if( vLepton_genPt[0]>5.) 
+	      leptonLV. SetPtEtaPhiM(vLepton_genPt[0], vLepton_genEta[0], vLepton_genPhi[0], (vLepton_type[0]==13 ? 0.113 : 0.0005 )  ); 
+	    else 
+	      leptonLV. SetPtEtaPhiM( 5., 0., 0., 0. );
+	    if( vLepton_genPt[1]>5.) 
+	      leptonLV2.SetPtEtaPhiM(vLepton_genPt[1], vLepton_genEta[1], vLepton_genPhi[1], (vLepton_type[1]==13 ? 0.113 : 0.0005 )  ); 
+	    else 
+	      leptonLV2.SetPtEtaPhiM( 5., 0., 0., 0. );	  
+	  }
 
-	// second lepton...
-	leptonLV2.SetPtEtaPhiM(vLepton_pt[1],vLepton_eta[1],vLepton_phi[1],vLepton_mass[1]);
-	lep_index.push_back( 1 );   
 
-	if(doGenLevelAnalysis){
-	  if( vLepton_genPt[0]>5.) 
-	    leptonLV. SetPtEtaPhiM(vLepton_genPt[0], vLepton_genEta[0], vLepton_genPhi[0], (vLepton_type[0]==13 ? 0.113 : 0.0005 )  ); 
-	  else 
-	    leptonLV. SetPtEtaPhiM( 5., 0., 0., 0. );
-	  if( vLepton_genPt[1]>5.) 
-	    leptonLV2.SetPtEtaPhiM(vLepton_genPt[1], vLepton_genEta[1], vLepton_genPhi[1], (vLepton_type[1]==13 ? 0.113 : 0.0005 )  ); 
-	  else 
-	    leptonLV2.SetPtEtaPhiM( 5., 0., 0., 0. );	  
-	}
-
-
-	// cut on leptons (DL)
-	int lepSelVtype0 = ( Vtype==0 && vLepton_type[0]==13 && vLepton_type[1]==13 && 
-			    ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
-			       leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.4 && vLepton_pfCorrIso[1]<0.20) ||
-			      (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.4 && vLepton_pfCorrIso[0]<0.20 &&
-			       leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.1 && vLepton_pfCorrIso[1]<0.10) )
-			    ) && vLepton_charge[0]*vLepton_charge[1]<0;
-
-	int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[0]==11 && 
-			    ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.10 &&
-			       leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.20) ||
-			      (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.20 &&
-			       leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.10) )
-			    ) && vLepton_charge[0]*vLepton_charge[1]<0;
-	
-	// OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
-	int trigVtype0 =  (Vtype==0 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
-
-	// OR of two trigger paths:    "HLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_v.*", "HLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_v.*"     
-	int trigVtype1 =  (Vtype==1 && ( triggerFlags[5]>0 || triggerFlags[6]>0 ) );		 
+	  // cut on leptons (DL)
+	  int lepSelVtype0 = ( Vtype==0 && vLepton_type[0]==13 && vLepton_type[1]==13 && 
+			       ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
+				  leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.4 && vLepton_pfCorrIso[1]<0.20) ||
+				 (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.4 && vLepton_pfCorrIso[0]<0.20 &&
+				  leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.1 && vLepton_pfCorrIso[1]<0.10) )
+			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
+	  
+	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[0]==11 && 
+			       ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.10 &&
+				  leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.20) ||
+				 (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.20 &&
+				  leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.10) )
+			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
+	  
+	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
+	  int trigVtype0 =  (Vtype==0 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
+	  
+	  // OR of two trigger paths:    "HLT_Ele17_CaloIdL_CaloIsoVL_Ele8_CaloIdL_CaloIsoVL_v.*", "HLT_Ele17_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_Ele8_CaloIdT_CaloIsoVL_TrkIdVL_TrkIsoVL_v.*"     
+	  int trigVtype1 =  (Vtype==1 && ( triggerFlags[5]>0 || triggerFlags[6]>0 ) );		 
 			
-	// for the moment, don't cut on trigger bit (save and cut offline)
-	trigVtype0 = 1; 
-	trigVtype1 = 1;
+	  // for the moment, don't cut on trigger bit (save and cut offline)
+	  trigVtype0 = 1; 
+	  trigVtype1 = 1;
 
-	// ID && trigger
-	properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
+	  // ID && trigger
+	  properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
-	if( debug>=2 ){
-	  cout << "******** Event " << EVENT.event << endl;	
-	  cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
-	  cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
-	  cout << "Trigger: " <<  ((isMC ? 1 : trigVtype0) || (isMC ? 1 : trigVtype1)) << endl;
-	  cout << "Passes = " << int (properEventDL) << endl;
+	  if( debug>=2 ){
+	    cout << "******** Event " << EVENT.event << endl;	
+	    cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
+	    cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
+	    cout << "Trigger: " <<  ((isMC ? 1 : trigVtype0) || (isMC ? 1 : trigVtype1)) << endl;
+	    cout << "Passes = " << int (properEventDL) << endl;
+	  }
+	  
+	  // save lepton(s) kinematics into the tree...
+	  nLep_ = 2;
+	  
+	  // lep 1...
+	  lepton_pt_     [0] = leptonLV.Pt();
+	  lepton_eta_    [0] = leptonLV.Eta();
+	  lepton_phi_    [0] = leptonLV.Phi();
+	  lepton_m_      [0] = leptonLV.M();
+	  lepton_charge_ [0] = vLepton_charge   [0];
+	  lepton_rIso_   [0] = vLepton_pfCorrIso[0];
+	  lepton_type_   [0] = vLepton_type[0];	
+	  
+	  // lep 2...
+	  lepton_pt_     [1] = leptonLV2.Pt();
+	  lepton_eta_    [1] = leptonLV2.Eta();
+	  lepton_phi_    [1] = leptonLV2.Phi();
+	  lepton_m_      [1] = leptonLV2.M();
+	  lepton_charge_ [1] = vLepton_charge   [1];
+	  lepton_rIso_   [1] = vLepton_pfCorrIso[1];
+	  lepton_type_   [1] = vLepton_type[1];
+	  
+	}
+    
+	// continue if leptons do not satisfy cuts
+	if( !(properEventSL || properEventDL) ){
+	  if( debug>=2 ) cout << "Rejected by lepton selection" << endl << endl;
+	  continue;
 	}
 
-	// save lepton(s) kinematics into the tree...
-	nLep_ = 2;
 
-	// lep 1...
-	lepton_pt_     [0] = leptonLV.Pt();
-	lepton_eta_    [0] = leptonLV.Eta();
-	lepton_phi_    [0] = leptonLV.Phi();
-	lepton_m_      [0] = leptonLV.M();
-	lepton_charge_ [0] = vLepton_charge   [0];
-	lepton_rIso_   [0] = vLepton_pfCorrIso[0];
-	lepton_type_   [0] = vLepton_type[0];	
-
-	// lep 2...
-	lepton_pt_     [1] = leptonLV2.Pt();
-	lepton_eta_    [1] = leptonLV2.Eta();
-	lepton_phi_    [1] = leptonLV2.Phi();
-	lepton_m_      [1] = leptonLV2.M();
-	lepton_charge_ [1] = vLepton_charge   [1];
-	lepton_rIso_   [1] = vLepton_pfCorrIso[1];
-	lepton_type_   [1] = vLepton_type[1];
-
-      }
-
-      ////////////////////////////////////////////////////////////////////////
-
-      // MET
-      float nuPx = METtype1p2corr.et*TMath::Cos(METtype1p2corr.phi);
-      float nuPy = METtype1p2corr.et*TMath::Sin(METtype1p2corr.phi);
-      float nuE  = TMath::Sqrt(nuPx*nuPx+nuPy*nuPy);
-      neutrinoLV.SetPxPyPzE(nuPx,nuPy,0. ,nuE);
-
-      // save MET kinematics into the tree...
-      MET_pt_    = neutrinoLV.Pt();
-      MET_phi_   = neutrinoLV.Phi();
-      MET_sumEt_ = METtype1p2corr.sumet; 
-
-      // save invisible particles kinematics into the tree...
-      Nus_pt_    = INVISIBLE.Pt();
-      Nus_phi_   = INVISIBLE.Phi();
-
-      // continue if leptons do not satisfy cuts
-      if( !(properEventSL || properEventDL) ){
-	if( debug>=2 ) cout << "Rejected by lepton selection" << endl << endl;
-	continue;
-      }
-
-
-      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-      /* @@@@@@@@@@@@@@@@@@@@@@@@ JET SELECTION @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-
-      // this container will hold the jets
-      std::vector<JetObservable> jet_map;
-
-      // for the MET
-      float deltaPx = 0.;
-      float deltaPy = 0.;
-
-      // if doing the gen level analysis, read gen-jets
-      if( doGenLevelAnalysis==0 ){
-
-	// loop over jet collections
-	for(int coll = 0 ; coll < 2 ; coll++){
+	/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+	/* @@@@@@@@@@@@@@@@@@@@@@@@ JET SELECTION @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+	
+	// this container will hold the jets
+	std::vector<JetObservable> jet_map;
+	
+	// for the MET
+	float deltaPx = 0.;
+	float deltaPy = 0.;
+	
+	// if doing the gen level analysis, read gen-jets
+	if( doGenLevelAnalysis==0 ){
 	  
-	  // loop over jets
-	  for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	  // loop over jet collections
+	  for(int coll = 0 ; coll < 2 ; coll++){
 	    
-	    float ptGen = -99.;
-	    if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
-	    if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
+	    // loop over jets
+	    for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	      
+	      float ptGen = -99.;
+	      if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
+	      if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
+	      
+	      float pt     = (coll==0) ? hJet_pt [hj]  : aJet_pt [hj];
+	      float eta    = (coll==0) ? hJet_eta[hj]  : aJet_eta[hj];
+	      float phi    = (coll==0) ? hJet_phi[hj]  : aJet_phi[hj];
+	      float e      = (coll==0) ? hJet_e  [hj]  : aJet_e  [hj];
+	      float m2     = e*e - pt*pt*TMath::CosH(eta)*TMath::CosH(eta);
+	      if(m2<0) m2 = 0.; 
+	      float m      = TMath::Sqrt( m2 ); 
+	      
+	      int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
+	      float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
+	      
+	      // subtract the nominal JEC corrected jet (px,py)
+	      deltaPx -= ( pt*TMath::Cos(phi) );
+	      deltaPy -= ( pt*TMath::Sin(phi) );
+	      
+	      // for JEC/JER systematics (N.B. this assumes that the jets are already corrected)
+	      float shift     = 1.0;
+	      if     ( doJECup   )  shift *= (1+JECUnc);
+	      else if( doJECdown )  shift *= (1-JECUnc);
+	      else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	      else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
+	      else{}
+	      
+	      // if correct for bias in jet resolution (for sanity, enforce isMC)
+	      if( isMC && doJERbias && !doJERup && !doJERdown) 
+		shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
 	    
-	    float pt     = (coll==0) ? hJet_pt [hj]  : aJet_pt [hj];
-	    float eta    = (coll==0) ? hJet_eta[hj]  : aJet_eta[hj];
-	    float phi    = (coll==0) ? hJet_phi[hj]  : aJet_phi[hj];
-	    float e      = (coll==0) ? hJet_e  [hj]  : aJet_e  [hj];
-	    float m2     = e*e - pt*pt*TMath::CosH(eta)*TMath::CosH(eta);
-	    if(m2<0) m2 = 0.; 
-	    float m      = TMath::Sqrt( m2 ); 
+	      // change energy/mass by shift
+	      pt *= shift;
+	      m  *= shift;
+	      
+	      // add the +/- JEC corrected jet (px,py)
+	      deltaPx += ( pt*TMath::Cos(phi) );
+	      deltaPy += ( pt*TMath::Sin(phi) );
+	      
+	      // only jets in acceptance...
+	      if( TMath::Abs(eta)> 2.5 ) continue;
+	      
+	      // only jets passing ID...
+	      if( id < 0.5 ) continue;	
+	      
+	      // only jets above pt cut...
+	      if( pt < 30  ) continue;	  
+	      
+	      // the jet four-vector
+	      TLorentzVector p4;
+	      p4.SetPtEtaPhiM( pt, eta, phi, m );
+	      
+	      // for csv systematics
+	      float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
+	      float csv_upBC    =  (coll==0) ? hJet_csv_upBC   [hj] : aJet_csv_upBC   [hj];
+	      float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
+	      float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
+	      float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
+	      float csv = csv_nominal;
+	      if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
+	      else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
+	      else{}
 	    
-	    int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
-	    float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
+	      // the b-tagger output 
+	      //  ==> Min needed because in csvUp, csv can exceed 1..., 
+	      //      Max needed because we crunch  [-inf,0[ -> {0.}
+	      csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
+	      
+	      // the jet observables (p4 and csv)
+	      JetObservable myJet;
+	      myJet.p4    = p4;
+	      myJet.csv   = csv; 
+	      myJet.index = (coll==0 ? hj : -hj-1);
+	      myJet.shift = shift;
+	      
+	      // push back the jet...
+	      jet_map.push_back    ( myJet );
 	    
-	    // for JEC/JER systematics (N.B. this assumes that the jets are already corrected)
-	    float shift     = 1.0;
-	    if     ( doJECup   )  shift *= (1+JECUnc);
-	    else if( doJECdown )  shift *= (1-JECUnc);
-	    else if( doJERup   )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), +1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-	    else if( doJERdown )  shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), -1, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-	    else{}
-	    
-	    // if correct for bias in jet resolution (for sanity, enforce isMC)
-	    if( isMC && doJERbias && !doJERup && !doJERdown) 
-	      shift *= (ptGen>0. ?  1+resolutionBias(TMath::Abs(eta), 0, JERCORRECTED)*(1-ptGen/pt)   : 1.0);
-	    
-	    // change energy/mass by shift
-	    pt *= shift;
-	    m  *= shift;
-	    
-	    // only jets in acceptance...
-	    if( TMath::Abs(eta)> 2.5 ) continue;
-	    
-	    // only jets passing ID...
-	    if( id < 0.5 ) continue;	
-	    
-	    // only jets above pt cut...
-	    if( pt < 30  ) continue;	  
-	    
-	    // the jet four-vector
-	    TLorentzVector p4;
-	    p4.SetPtEtaPhiM( pt, eta, phi, m );
-	    
-	    // for csv systematics
-	    float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
-	    float csv_upBC    =  (coll==0) ? hJet_csv_upBC   [hj] : aJet_csv_upBC   [hj];
-	    float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
-	    float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
-	    float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
-	    float csv = csv_nominal;
-	    if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
-	    else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
-	    else{}
-	    
-	    // the b-tagger output 
-	    //  ==> Min needed because in csvUp, csv can exceed 1..., 
-	    //      Max needed because we crunch  [-inf,0[ -> {0.}
-	    csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
-	    
-	    // the jet observables (p4 and csv)
-	    JetObservable myJet;
-	    myJet.p4    = p4;
-	    myJet.csv   = csv; 
-	    myJet.index = (coll==0 ? hj : -hj-1);
-	    myJet.shift = shift;
-	    
-	    // push back the jet...
-	    jet_map.push_back    ( myJet );
-	    
-	    if( debug>=3 ){
-	      cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+	      if( debug>=3 ){
+		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+	      }
+	      
 	    }
-	    
 	  }
 	}
-      }
-          
-      // if doing the gen level analysis, read gen-jets
-      else{
-
-	// reset everything
-	jet_map.clear();
-
-	// reset the sumEt
-	MET_sumEt_ = 0.;
 	
-	// loop over jet collections
-	for(int coll = 0 ; coll < 2 ; coll++){
+	// if doing the gen level analysis, read gen-jets
+	else{
+
+	  // reset everything
+	  jet_map.clear();
+
+	  // reset the sumEt
+	  MET_sumEt_ = 0.;
 	  
-	  // loop over jets
-	  for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	  // loop over jet collections
+	  for(int coll = 0 ; coll < 2 ; coll++){
 	    
-	    float ptGen = -99.;
-	    if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
-	    if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
+	    // loop over jets
+	    for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
+	      
+	      float ptGen = -99.;
+	      if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
+	      if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
 
-	    float pt     = (coll==0) ? hJet_genPt [hj]  : aJet_genPt [hj];
-	    float eta    = (coll==0) ? hJet_genEta[hj]  : aJet_genEta[hj];
-	    float phi    = (coll==0) ? hJet_genPhi[hj]  : aJet_genPhi[hj];
+	      float pt     = (coll==0) ? hJet_genPt [hj]  : aJet_genPt [hj];
+	      float eta    = (coll==0) ? hJet_genEta[hj]  : aJet_genEta[hj];
+	      float phi    = (coll==0) ? hJet_genPhi[hj]  : aJet_genPhi[hj];
 
-	    // assume massless jets 
-	    // (unfortunately necessary because the mass of the genJet is not saved)
-	    float e      = (coll==0) ? hJet_genPt [hj]*TMath::CosH(hJet_genEta[hj]) : aJet_genPt [hj]*TMath::CosH(aJet_genEta[hj]);
-	    float m      = 0.; 
+	      // assume massless jets 
+	      // (unfortunately necessary because the mass of the genJet is not saved)
+	      float e      = (coll==0) ? hJet_genPt [hj]*TMath::CosH(hJet_genEta[hj]) : aJet_genPt [hj]*TMath::CosH(aJet_genEta[hj]);
+	      float m      = 0.; 
+	      
+	      float flavor = (coll==0) ? hJet_flavour [hj] : aJet_flavour [hj];
+	      
+	      // only jets in acceptance
+	      // (this is needed because the TF and csv shapes are valid only in the acceptance) 
+	      if( TMath::Abs(eta) > 2.5 ) continue;
+	      
+	      if( debug>=3 ){
+		cout << "Gen-Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m  << "), flavor=" << flavor << endl;
+	      }	   
 
-	    float flavor = (coll==0) ? hJet_flavour [hj] : aJet_flavour [hj];
-
-	    // only jets in acceptance
-	    // (this is needed because the TF and csv shapes are valid only in the acceptance) 
-	    if( TMath::Abs(eta) > 2.5 ) continue;
-
-	    if( debug>=3 ){
-	      cout << "Gen-Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m  << "), flavor=" << flavor << endl;
-	    }	   
-
-	    // keep track of the per-jet smearing (for the MET...)
-	    deltaPx -= ( pt*TMath::Cos(phi) );
-	    deltaPy -= ( pt*TMath::Sin(phi) );
-
-	    // needed to find appropriate PDF
-	    string bin = "";
-	    if( TMath::Abs( eta ) <= 1.0 ) 
-	      bin = "Bin0";
-	    if( TMath::Abs( eta ) >  1.0 ) 
-	      bin = "Bin1";
-
-	    // needed to find appropriate flavor
-	    string fl = "";
-	    if(abs(flavor)==5)
-	      fl = "b";
-	    else
-	      fl = "l";
+	      // keep track of the per-jet smearing (for the MET...)
+	      deltaPx -= ( pt*TMath::Cos(phi) );
+	      deltaPy -= ( pt*TMath::Sin(phi) );
+	      
+	      // needed to find appropriate PDF
+	      string bin = "";
+	      if( TMath::Abs( eta ) <= 1.0 ) 
+		bin = "Bin0";
+	      if( TMath::Abs( eta ) >  1.0 ) 
+		bin = "Bin1";
+	      
+	      // needed to find appropriate flavor
+	      string fl = "";
+	      if(abs(flavor)==5)
+		fl = "b";
+	      else
+		fl = "l";
+	      
+	      // set-up the TF parameters for the appropriate bin and flavor
+	      
+	      // relative fraction of the two gaussians
+	      jet_smear->SetParameter(0, fl == "b" ? 0.65 : 1.0);
+	      
+	      // mean and sigma of the 1st
+	      jet_smear->SetParameter(1, transferfunctions[fl+"_G1_m_"+bin]->Eval( e ));
+	      jet_smear->SetParameter(2, transferfunctions[fl+"_G1_s_"+bin]->Eval( e ));
+	      
+	      // mean and sigma of the 2nd
+	      jet_smear->SetParameter(3, fl == "b" ? transferfunctions[fl+"_G2_m_"+bin]->Eval( e ) : e);
+	      jet_smear->SetParameter(4, fl == "b" ? transferfunctions[fl+"_G2_s_"+bin]->Eval( e ) : 1.0);
+	      
+	      // consider the range [0.2,2.0]*e, and evaluate every s1/5 GeV, s1 = width of the narrower gaussian
+	      jet_smear->SetRange(e*0.2, e*2.0);
+	      jet_smear->SetNpx( TMath::Min( TMath::Max( int( (1.8*e)/( jet_smear->GetParameter(2)/5 ) ), int(4)), 200 ) );
 	    
-	    // set-up the TF parameters for the appropriate bin and flavor
+	      // the smeared energy
+	      float e_smear = TMath::Max( float(jet_smear->GetRandom()), float(0.) );
 
-	    // relative fraction of the two gaussians
-	    jet_smear->SetParameter(0, fl == "b" ? 0.65 : 1.0);
+	      // for c-quarks, we have a dedicated csv probability (but not a TF)
+	      if(abs(flavor)==4)
+		fl = "c";
+	      
+	      // the random csv value
+	      float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
+	      
+	      // !!! smear the jet energy !!!
+	      pt *= (e_smear/e);
 
-	    // mean and sigma of the 1st
-	    jet_smear->SetParameter(1, transferfunctions[fl+"_G1_m_"+bin]->Eval( e ));
-	    jet_smear->SetParameter(2, transferfunctions[fl+"_G1_s_"+bin]->Eval( e ));
-
-	    // mean and sigma of the 2nd
-	    jet_smear->SetParameter(3, fl == "b" ? transferfunctions[fl+"_G2_m_"+bin]->Eval( e ) : e);
-	    jet_smear->SetParameter(4, fl == "b" ? transferfunctions[fl+"_G2_s_"+bin]->Eval( e ) : 1.0);
-
-	    // consider the range [0.2,2.0]*e, and evaluate every s1/5 GeV, s1 = width of the narrower gaussian
-	    jet_smear->SetRange(e*0.2, e*2.0);
-	    jet_smear->SetNpx( TMath::Min( TMath::Max( int( (1.8*e)/( jet_smear->GetParameter(2)/5 ) ), int(4)), 200 ) );
+	      // add the jet transverse energy to the sumEt
+	      MET_sumEt_ += pt;
 	    
-	    // the smeared energy
-	    float e_smear = TMath::Max( float(jet_smear->GetRandom()), float(0.) );
+	      if( debug>=3 ){
+		cout << "Gen-Jet (smear)" << " => (" << pt << "," << eta << "," << phi << "," << m  << ")" << ", csv=" << csv  << endl;
+		cout << "jet_smear (" << jet_smear->GetNpx() << " points): " << string(Form("%.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2) + %.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2)",
+											    jet_smear->GetParameter(0), jet_smear->GetParameter(1),jet_smear->GetParameter(2),
+											    (1-jet_smear->GetParameter(0)), jet_smear->GetParameter(3), jet_smear->GetParameter(4)
+											    )) 
+		     << " => ran : " << e << " --> " << e_smear << endl;
+	      }
+	      
+	      // keep track of the per-jet smearing (for the MET...)
+	      deltaPx += ( pt*TMath::Cos(phi) );
+	      deltaPy += ( pt*TMath::Sin(phi) );
+	      
+	      // only jets above pt cut...
+	      if( pt < 30 ) continue;	  
+	      
+	      // the jet four-vector
+	      TLorentzVector p4;
+	      p4.SetPtEtaPhiM( pt, eta, phi, m );
 
-	    // for c-quarks, we have a dedicated csv probability (but not a TF)
-	    if(abs(flavor)==4)
-	      fl = "c";
-
-	    // the random csv value
-	    float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
-
-	    // !!! smear the jet energy !!!
-	    pt *= (e_smear/e);
-
-	    // add the jet transverse energy to the sumEt
-	    MET_sumEt_ += pt;
-
-	    if( debug>=3 ){
-	      cout << "Gen-Jet (smear)" << " => (" << pt << "," << eta << "," << phi << "," << m  << ")" << ", csv=" << csv  << endl;
-	      cout << "jet_smear (" << jet_smear->GetNpx() << " points): " << string(Form("%.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2) + %.2f*exp(-0.5*((x-%.0f)**2)/%.1f**2)",
-						   jet_smear->GetParameter(0), jet_smear->GetParameter(1),jet_smear->GetParameter(2),
-						   (1-jet_smear->GetParameter(0)), jet_smear->GetParameter(3), jet_smear->GetParameter(4)
-						   )) 
-		   << " => ran : " << e << " --> " << e_smear << endl;
-	    }
-
-	    // keep track of the per-jet smearing (for the MET...)
-	    deltaPx += ( pt*TMath::Cos(phi) );
-	    deltaPy += ( pt*TMath::Sin(phi) );
-
-	    // only jets above pt cut...
-	    if( pt < 30 ) continue;	  
-
-	    // the jet four-vector
-	    TLorentzVector p4;
-	    p4.SetPtEtaPhiM( pt, eta, phi, m );
-
-	    // the jet observables (p4 and csv)
-	    JetObservable myJet;
-	    myJet.p4    = p4;
-	    myJet.csv   = csv; 
-	    myJet.index = (coll==0 ? hj : -hj-1);
-	    myJet.shift = 1.0;
-	    
-	    // push back the jet...
-	    jet_map.push_back    ( myJet );
+	      // the jet observables (p4 and csv)
+	      JetObservable myJet;
+	      myJet.p4    = p4;
+	      myJet.csv   = csv; 
+	      myJet.index = (coll==0 ? hj : -hj-1);
+	      myJet.shift = 1.0;
+	      
+	      // push back the jet...
+	      jet_map.push_back    ( myJet );
+	      
+	  }
 	    
 	  }
 
+
+	  // assume 16 average PU
+	  int nPU_ran        = ran->Poisson(16);
+	  
+	  // assume each PU gives 50 GeV of sumEt
+	  float sumEt_PU_ran = nPU_ran*20.;
+
+	  // add the extra smear
+	  MET_sumEt_ += sumEt_PU_ran;
+	  deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  
+	  // keep it fixed to a value such that sx~29 GeV
+	  MET_sumEt_ = 1800.;
+	  
+	  // add to invisble particles pt the extra smearing coming from jets
+	  float metPx = ( INVISIBLE.Px() - deltaPx /*- (nLep_==1 ? lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) + lepton_pt_[1]*TMath::Cos(lepton_phi_[1])) )*/ );
+	  float metPy = ( INVISIBLE.Py() - deltaPy /*- (nLep_==1 ? lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) + lepton_pt_[1]*TMath::Sin(lepton_phi_[1])) )*/ );
+	  neutrinoLV.SetPxPyPzE( metPx , metPy , 0., TMath::Sqrt( metPx*metPx + metPy*metPy) );
+	  
+	  if( debug>=3 ){
+	    cout << "MET (from invisible) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
+	  }
+	  
+	  // save smeared MET kinematics into the tree...
+	  MET_pt_    = neutrinoLV.Pt();
+	  MET_phi_   = neutrinoLV.Phi();
+	  
+	  if( debug>=3 ){
+	    cout << "MET (smear) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
+	  }
+
+
 	}
 
 
-	// assume 16 average PU
-	int nPU_ran        = ran->Poisson(16);
+	////////////////////////////////////////////////////////////////////////
 
-	// assume each PU gives 50 GeV of sumEt
-	float sumEt_PU_ran = nPU_ran*20.;
-
-	// add the extra smear
-	MET_sumEt_ += sumEt_PU_ran;
-	deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
-	deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	// MET
+	float nuPx = METtype1p2corr.et*TMath::Cos(METtype1p2corr.phi);
+	float nuPy = METtype1p2corr.et*TMath::Sin(METtype1p2corr.phi);
 	
-	// keep it fixed to a value such that sx~29 GeV
-	MET_sumEt_ = 1800.;
-
-	// add to invisble particles pt the extra smearing coming from jets
-	float metPx = ( INVISIBLE.Px() - deltaPx /*- (nLep_==1 ? lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) + lepton_pt_[1]*TMath::Cos(lepton_phi_[1])) )*/ );
-	float metPy = ( INVISIBLE.Py() - deltaPy /*- (nLep_==1 ? lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Sin(lepton_phi_[0]) + lepton_pt_[1]*TMath::Sin(lepton_phi_[1])) )*/ );
-	neutrinoLV.SetPxPyPzE( metPx , metPy , 0., TMath::Sqrt( metPx*metPx + metPy*metPy) );
+	// correct for JEC
+	nuPx -= deltaPx;
+	nuPy -= deltaPy;
 	
-	if( debug>=3 ){
-	  cout << "MET (from invisible) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
-	}
-
-	// save smeared MET kinematics into the tree...
+	float nuE  = TMath::Sqrt(nuPx*nuPx+nuPy*nuPy);
+	neutrinoLV.SetPxPyPzE(nuPx,nuPy,0. ,nuE);
+	
+	// save MET kinematics into the tree...
 	MET_pt_    = neutrinoLV.Pt();
 	MET_phi_   = neutrinoLV.Phi();
-
-	if( debug>=3 ){
-	  cout << "MET (smear) = (" << MET_pt_ << "," << MET_phi_ << ")" << endl;
-	}
-
-
-      }
-
-
-      // order jet list by Pt
-      std::sort( jet_map.begin(),     jet_map.end(),     JetObservableListerByPt() );
+	MET_sumEt_ = METtype1p2corr.sumet; 
+	
+	// save invisible particles kinematics into the tree...
+	Nus_pt_    = INVISIBLE.Pt();
+	Nus_phi_   = INVISIBLE.Phi();
+	
+	////////////////////////////////////////////////////////////////////////
       
 
-      // if use btag shape, order by decreasing CSV 
-      //       <=> when considering only a subset of the jets, this ensures that the combination
-      //           obtained from CSVM only jets is among those considered
+	// order jet list by Pt
+	std::sort( jet_map.begin(),     jet_map.end(),     JetObservableListerByPt() );
+      
 
-      if( selectByBTagShape )
-	std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
+	// if use btag shape, order by decreasing CSV 
+	// <=> when considering only a subset of the jets, this ensures that the combination
+	// obtained from CSVM only jets is among those considered
+	if( selectByBTagShape )
+	  std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
 
 
       
@@ -3167,9 +3180,8 @@ int main(int argc, const char* argv[])
 			intPoints *= 1.5;		   
 		      }
 		      // otherwise, just go to the next permutation...
-		      else {
-			ntries = MAX_REEVAL_TRIES+1;			
-		      }
+		      else 
+			ntries = MAX_REEVAL_TRIES+1;					      
 		      
 		    }
 
@@ -3229,9 +3241,8 @@ int main(int argc, const char* argv[])
 		    }
 		    
 		    // the point has already been calculated, just read the result...
-		    else{
-		      p    = perm_to_integral[barcode];
-		    }
+		    else p = perm_to_integral[barcode];
+		    
 		    
 		    chi2 =  perm_to_integrator[barcode]->ChiSqr();
 		    pErr =  perm_to_integrator[barcode]->Error();	
@@ -3297,10 +3308,10 @@ int main(int argc, const char* argv[])
 		// total and per-permutation ME probability for nominal MH and MT
 		if( mH[m]<MH+1.5 && mH[m]>MH-1.5 && mT[t]<MT+1.5 && mT[t]>MT-1.5){
 		  if(hyp==0){
-		    probAtSgn_      += p;
+		    probAtSgn_     += p;
 		  }
 		  else{
-		    probAtSgn_alt_     += p;
+		    probAtSgn_alt_ += p;
 		  }
 		}
 		
@@ -3400,13 +3411,15 @@ int main(int argc, const char* argv[])
 
       // clean the map
       int countGSL = 0;
-      for( map<string, ROOT::Math::GSLMCIntegrator*>::iterator x = perm_to_integrator.begin() ; x != perm_to_integrator.end() ; x++ ){
+      for( std::map<string, ROOT::Math::GSLMCIntegrator*>::iterator x = perm_to_integrator.begin() ; 
+	   x != perm_to_integrator.end() ; x++ ){
 	if( x->second ){
 	  countGSL++;
 	  delete x->second; 	  
 	}
       }
-      if(perm_to_integrator.size()>0 && print) cout << "Deleted " << countGSL << " GSLMCIntegrator(s)" << endl;
+      if(perm_to_integrator.size()>0 && print) 
+	cout << "Deleted " << countGSL << " GSLMCIntegrator(s)" << endl;
 
     } // nentries
 

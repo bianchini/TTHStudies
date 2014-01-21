@@ -6,20 +6,33 @@ VType     = ""
 xsecTT_SL = 103.0
 xsecTT_FL = 24.8
 
-process = cms.Process("MEAnalysisNew")
+process = cms.Process("MEAnalysisNewall")
 
 process.fwliteInput = cms.PSet(
 
+    # output file name
     outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
+
+    # path to the TF root file
     pathToTF      = cms.string("./root/transferFunctionsTEST.root"),
+
+    # path to CVS shapes & TF parameters
     pathToCP      = cms.string("./root/ControlPlotsTEST.root"),
+
+    # path to TF parameters from gen-jets --> reco-jets
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
+    # input file directory
     pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     #pathToFile    = cms.string("./"),
+
+    # a name tag for the input files
     ordering      = cms.string("DiJetPt_"),
+
+    # the target luminosity (used to calculate the 'weight' variable)
     lumi          = cms.untracked.double(12.1),
 
+    # the input samples 
     samples       = cms.VPSet(
 
     cms.PSet(
@@ -383,31 +396,23 @@ process.fwliteInput = cms.PSet(
     
     ),
 
-
-    #SLNoBLep 10000
-    #SLNoBHad 10000
-    #SLNoHiggs 8000
-    #SL2wj     2000
-    #SL1wj     4000
-    #DL       10000
-
     # run both S and B hypotheses
-    SoB             = cms.untracked.int32(1),
+    SoB                       = cms.untracked.int32(1),
 
     # in case SoB=0, run only this hypothesis
-    hypo            = cms.untracked.int32(0),
+    hypo                      = cms.untracked.int32(0),
 
     # optimization0: re-run integral if bad chi2
-    integralOption0 = cms.untracked.int32(1),
+    integralOption0           = cms.untracked.int32(1),
     
     # max chi2 for optimization0
-    maxChi2         = cms.untracked.double(2.5),
+    maxChi2                   = cms.untracked.double(2.5),
 
     # optimization1: skip combinations loosely compatible with H/t/W mass
-    integralOption1 = cms.untracked.int32(0),
+    integralOption1           = cms.untracked.int32(0),
 
     # optimization2: re-run the integral using last VEGAS grid only
-    integralOption2 = cms.untracked.int32(0),
+    integralOption2           = cms.untracked.int32(1),
 
     # number of iterations for option2
     integralOption2_stage     = cms.untracked.int32(1),
@@ -418,8 +423,10 @@ process.fwliteInput = cms.PSet(
     # increase in evaluations for option2
     integralOption2_nevalfact = cms.untracked.double(1.),
 
+    # divide ME weight by total cross-section
     norm            = cms.untracked.int32(0),
 
+    # formulas for total cross-section
     functions     = cms.vstring(
     '8.95351e+18*TMath::Landau(x, 5.67600e+01,1.01258e+01)',                # incl
     '2.95547e+17*TMath::Landau(x,7.61581e+01 ,1.89245e+01)',                # SL2wj
@@ -427,15 +434,17 @@ process.fwliteInput = cms.PSet(
     '6.28300e+16*TMath::Landau(x,8.03060e+01 ,1.81679e+01)',                # SLNoBHad
     'x>150?2.44515e+27*x^(-5.35628e+00):1.24208e+18*exp((-3.63162e-02)*x)', # SLNoHiggs
     'x>=12 ? x^(-2.010e-01)*exp((-1.5785e-02)*x) : 4.184e-02*x'),           # tth Pt
-    
+
+    # switch-off OL
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
+
+    # skip VEGAS call
     speedup       = cms.untracked.int32(0), ###### CHECK HERE
 
+    # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
-    doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets
-    
-    
+    doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets       
     doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
     doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
     doType2       = cms.untracked.int32(0),  #SL(4,1)
@@ -443,50 +452,70 @@ process.fwliteInput = cms.PSet(
     doType4       = cms.untracked.int32(0),  #SL(3,2)
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
-
     doType0ByBTagShape = cms.untracked.int32(0),
     doType1ByBTagShape = cms.untracked.int32(0),
     doType2ByBTagShape = cms.untracked.int32(0),
     doType3ByBTagShape = cms.untracked.int32(0),
     doType6ByBTagShape = cms.untracked.int32(0),
 
+    # MEIntegrator options
     useME         = cms.untracked.int32(1),
     useJac        = cms.untracked.int32(1),
     useMET        = cms.untracked.int32(1),
     useTF         = cms.untracked.int32(1),
     usePDF        = cms.untracked.int32(1),
 
-
+    # use DG for b-jet TF
     doubleGaussianB  = cms.untracked.int32(1),
+
+    # use jet b-tag information
     useBtag          = cms.untracked.int32(1),
+
+    # select events based on btag LLR
     selectByBTagShape= cms.untracked.int32(0),
+
+    # if selectByBTagShape, choose cut-value
+    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ), #0.96675
+    btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
+    btag_prob_cut_4jets = cms.untracked.double( 0.95295 ), 
+
+    # apply energy regression on jets
     useRegression    = cms.untracked.int32(0),
-    
+
+    # print out the integral at run-time
     printout     = cms.untracked.int32(1),
+
+    # various degrees of verbosity
     debug        = cms.untracked.int32(0),   
+
+    # extremely verbose 
     verbose      = cms.bool(False),
 
+    # the 'nominal' Higgs, top, and W masses
     MH           = cms.untracked.double(125.00),
     MT           = cms.untracked.double(174.30),
     MW           = cms.untracked.double( 80.19),
 
+    # needed for category classification
     MwL          = cms.untracked.double(60),
     MwH          = cms.untracked.double(100),
     MhL          = cms.untracked.double(110),
     MhH          = cms.untracked.double(140),
 
-    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ), #0.96675
-    btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
-    btag_prob_cut_4jets = cms.untracked.double( 0.95295 ),
-    
+    # Higgs and top mass values to be scanned
     massesH      = cms.vdouble(125.),
     #massesH      = cms.vdouble(105.,110.,115.,120.,125.,130.,135.,140.),
     massesT      = cms.vdouble(174.3),
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
+    # if 1, process evLimits[1]-evLimits[0] events passing the selection cuts
+    # if 0, process all events in the tree from evLimits[0] to evLimits[1]
     fixNumEvJob    = cms.untracked.int32(1),
+
+    # event limits
     evLimits       = cms.vint32(0,1),
 
+    # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
     doCSVup    = cms.untracked.int32(0),
     doCSVdown  = cms.untracked.int32(0),
@@ -495,10 +524,16 @@ process.fwliteInput = cms.PSet(
     doJERup    = cms.untracked.int32(0),
     doJERdown  = cms.untracked.int32(0),
 
+    # choose which systematics to run
+    # [0=nominal, 1=CSVup, 2=CSVdown, 3=JECup, 4=JECdown, 5=JERup, 6=JERdown]   
     systematics= cms.vint32(0,1,2,3,4),
 
-
+    # if 1, gen-jets in the input tree are smeared by the TF
+    # if 0, use the reco-jets
     doGenLevelAnalysis  = cms.untracked.int32(0),
+
+    # if 1, save into the tree all events
+    # if 0, save only events passing the analysis cuts
     ntuplizeAll         = cms.untracked.int32(0),
     
     )
