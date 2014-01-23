@@ -2556,7 +2556,6 @@ int main(int argc, const char* argv[])
 	jets_alt.push_back( leptonLV   );
 	jets_alt.push_back( neutrinoLV );
 
-
 	// b1,...,w1,w2 are indices for jets_p4 collection;
 	// This is a map between the internal ordering bLep=2, W1Had=3, ..., higgs2 = 7, and jets_p4
 	pos_to_index.clear();
@@ -2674,9 +2673,6 @@ int main(int argc, const char* argv[])
 	}
 	else{ /* ... */ }
 	
-
-
-
 	// save jet kinematics into the tree...
 	nJet_ = 8;
 	for(int q = 0; q < nJet_ ; q++ ){
@@ -2716,6 +2712,8 @@ int main(int argc, const char* argv[])
 	// check if there is a tag-untag pair that satisfies the "cs-tag" 
 	for( unsigned int w = 0; w<btag_indices.size(); w++){
 	  
+	  if(ind1==999 || ind2==999) continue;
+
 	  float m1 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind1] ).M();
 	  float m2 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind2] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind2] ).M();
 	  
@@ -2741,10 +2739,10 @@ int main(int argc, const char* argv[])
 	    if( jets_csv[btag_indices[w]]<0.80 ) flag_type2_ = 4;  
 	  }
 	}
+
 	// for type 3, the W-tag is different...
 	float WMass = type_==3 ? (jets_p4[ ind1 ]+jets_p4[ ind2 ]).M() : -999.;
 	if( WMass>MwL && WMass<MwH )  flag_type3_ = 1;
-	
 	
 	/////////////////////////////////////////////////////////////
 	
@@ -2811,7 +2809,6 @@ int main(int argc, const char* argv[])
 		int bHad_pos = (permutList[pos])%1000/100;
 		int b1_pos   = (permutList[pos])%100/10;
 		int b2_pos   = (permutList[pos])%10/1;   
-
 
 		// the barcode for this permutation
 		string barcode = Form("%d_%d_%d%d%d_%d%d%d_%d%d", 
