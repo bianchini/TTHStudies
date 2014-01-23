@@ -491,6 +491,8 @@ int main(int argc, const char* argv[])
   float p4T_   [4];
   float p4Tbar_[4];
 
+  tthInfo ttH_;
+
   // type-dependent flags
   int flag_type0_;
   int flag_type1_;
@@ -636,6 +638,7 @@ int main(int argc, const char* argv[])
   tree->Branch("p4H",          p4H_,            "p4H[4]/F");
   tree->Branch("p4T",          p4T_,            "p4T[4]/F");
   tree->Branch("p4Tbar",       p4Tbar_,         "p4Tbar[4]/F");
+  tree->Branch("ttH",          &ttH_,           "x1/F:x2/F:pdf/F:pt/F:eta/F:phi/F:m/F:me2_ttH/F:me2_ttbb/F");
 
   // marginalized over permutations (all <=> Sum_{p=0}^{nTotPermut}( mH=MH, mT=MT ) )
   tree->Branch(Form("p_%d_all_s",     int(MH)),   &probAtSgn_,           Form("p_%d_all_s/F",              int(MH)) );
@@ -1001,6 +1004,7 @@ int main(int argc, const char* argv[])
 	p4Tbar_[elem] = -99.;
 	p4H_   [elem] = -99.;
       }
+      ttH_.reset();
 
       // save jet kinematics into the tree...
       nJet_ = 8;
@@ -1100,7 +1104,7 @@ int main(int argc, const char* argv[])
 	p4H_[1] = (genBLV+genBbarLV).Eta();
 	p4H_[2] = (genBLV+genBbarLV).Phi();
 	p4H_[3] = (genBLV+genBbarLV).M();
-      }
+      }    
 
       // dummy cut (for the moment)
       bool properEventSL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
@@ -1224,6 +1228,31 @@ int main(int argc, const char* argv[])
       }
 
 
+      // save informations on the ttH system
+      if( switchoffOL==0 && 
+	  p4T_[0]>0. && p4Tbar_[0]>0. && p4H_[0]>0. &&  
+	  TMath::Abs(HIGGSB1.Py())>0  && TMath::Abs(HIGGSB2.Py())>0){
+
+	TLorentzVector top;
+	top.SetPtEtaPhiM  ( p4T_   [0],    p4T_   [1],    p4T_   [2],    p4T_   [3]);
+	TLorentzVector atop;
+	atop.SetPtEtaPhiM ( p4Tbar_[0],    p4Tbar_[1],    p4Tbar_[2],    p4Tbar_[3]);
+	TLorentzVector higgs;  
+	higgs.SetPtEtaPhiM( p4H_   [0],    p4H_   [1],    p4H_   [2],    p4H_   [3]);
+
+	double x1,x2;
+	ttH_.me2_ttH  = meIntegrator->meSquaredOpenLoops( &top, &atop, &higgs, x1, x2);
+	ttH_.x1       = x1;
+	ttH_.x2       = x2;
+	ttH_.pdf      = meIntegrator->ggPdf( x1, x2, (2*MT + MH)/2. )*x1*x1*x2*x2;
+	ttH_.pt       = (top+atop+higgs).Pt();
+	ttH_.eta      = (top+atop+higgs).Eta();
+	ttH_.phi      = (top+atop+higgs).Phi();
+	ttH_.m        = (top+atop+higgs).M();
+	ttH_.me2_ttbb = meIntegrator->meSquaredOpenLoops_ttbb( &top, &atop, &HIGGSB1, &HIGGSB2, x1, x2);	
+      }
+
+
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GEN BHADRONS @@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
@@ -1274,7 +1303,7 @@ int main(int argc, const char* argv[])
 	// which systematic is considered
 	syst_ = systematics[ syst ];
 
-	// decide which analysis is run
+	// decide which analysis to run
 	doCSVup   = syst_==1 ;
 	doCSVdown = syst_==2 ;
 	doJECup   = syst_==3 ;
@@ -1535,7 +1564,7 @@ int main(int argc, const char* argv[])
 	      float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
 	      float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
 	      float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
-	      float csv = csv_nominal;
+	      float csv         = csv_nominal;
 	      if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
 	      else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
 	      else{}
@@ -1577,10 +1606,6 @@ int main(int argc, const char* argv[])
 	    
 	    // loop over jets
 	    for(int hj = 0; hj < (coll==0 ? nhJets : naJets); hj++){
-	      
-	      float ptGen = -99.;
-	      if(coll==0 && hJet_genPt[hj]>0.) ptGen = hJet_genPt[hj];
-	      if(coll==1 && aJet_genPt[hj]>0.) ptGen = aJet_genPt[hj];
 
 	      float pt     = (coll==0) ? hJet_genPt [hj]  : aJet_genPt [hj];
 	      float eta    = (coll==0) ? hJet_genEta[hj]  : aJet_genEta[hj];
@@ -2993,11 +3018,9 @@ int main(int argc, const char* argv[])
 		
 		// per-permutation probability...
 		double p     = 0.;
-		double p2    = 0.;	
 
 		// per-permutation probability error...
 		double pErr  = 0.;	       	
-		double pErr2 = 0.;	       	
 		
 		// per-permutation chi2
 		double chi2  = 0.;
