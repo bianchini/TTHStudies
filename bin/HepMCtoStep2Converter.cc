@@ -36,12 +36,7 @@
 // dR distance for reco-gen matching
 #define GENJETDR  0.3
 
-// 3.141...
-#define PI TMath::Pi()
-
-
 using namespace std;
-
 
 typedef struct 
 {
@@ -111,7 +106,7 @@ public:
 class IsLquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( ( abs( p->pdg_id())<5 || p->pdg_id()==21 ) && p->status()==1 ) return 1; // check here !!!
+    if ( ( abs( p->pdg_id() )<5 || p->pdg_id()==21 ) && p->status()==1 && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -119,7 +114,7 @@ public:
 class IsCquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( abs(p->pdg_id())==4 && p->status()==1 ) return 1; // check here !!!
+    if ( abs(p->pdg_id())==4 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -127,7 +122,7 @@ public:
 class IsBquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( abs(p->pdg_id())==5 && p->status()==1 ) return 1; // check here !!!
+    if ( abs(p->pdg_id())==5 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -135,7 +130,7 @@ public:
 class IsHiggs {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( abs(p->pdg_id())==25 && p->status()==1 ) return 1; // check here !!!
+    if ( abs(p->pdg_id())==25 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -143,7 +138,7 @@ public:
 class IsTquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( abs(p->pdg_id())==6 && p->status()==1 ) return 1; // check here !!!
+    if ( abs(p->pdg_id())==6 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -210,8 +205,8 @@ int main(int argc, const char* argv[])
   const edm::ParameterSet& in = builder.processDesc()->getProcessPSet()->getParameter<edm::ParameterSet>("fwliteInput");
 
   // SAMPLES
-  std::string outFileName    ( in.getParameter<std::string>  ("outFileName" ) );
-  std::string pathToFile     ( in.getParameter<std::string>  ("pathToFile" ) );
+  std::string         outFileName    ( in.getParameter<std::string>                 ("outFileName" ) );
+  vector<std::string> pathToFile     ( in.getParameter< std::vector<std::string> >  ("pathToFile"  ) );
   
   // FLAGS
   bool   verbose             ( in.getParameter<bool>         ("verbose" ) );
@@ -379,70 +374,77 @@ int main(int argc, const char* argv[])
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
   /* @@@@@@@@@@@@@@@@@@@@@@@@@ EVENT LOOP @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
 
-
-  HepMC::IO_GenEvent ascii_in( pathToFile ,std::ios::in);
-
-  if ( ascii_in.rdstate() == std::ios::failbit ) {
-    std::cerr << "ERROR input file example_UsingIterators.txt is needed "
-	      << "and does not exist. "
-	      << "\n Look for it in HepMC/examples, Exit." << std::endl;
-    return 1;
-  }
-  
   // declare an instance of the event selection predicate
   IsSLEvent    is_SL_event;
   IsDLEvent    is_DL_event;
   IsStateFinal is_fs_particle;
-
-  IsBquark is_l_quark;
+  
+  IsLquark is_l_quark;
   IsBquark is_b_quark;
   IsCquark is_c_quark;
   IsTquark is_t_quark;
   IsHiggs  is_higgs;
+  
 
-  int icount=0;
-  HepMC::GenEvent* evt = ascii_in.read_next_event();
-  while ( evt ) {
-    icount++;
+  int icount = 0;
+  for(unsigned int file = 0; file < pathToFile.size() ; file++){
+
+    HepMC::IO_GenEvent ascii_in( pathToFile[file] ,std::ios::in);
+
+    if ( ascii_in.rdstate() == std::ios::failbit ) {
+      cout << "File " <<   pathToFile[file] << " not found" << endl;
+      continue;
+    }
+      
     
-    if ( icount%50==1 ) 
-      std::cout << "Processing Event Number " << icount
-		<< " its # " << evt->event_number()
-		<< std::endl;
+    HepMC::GenEvent* evt = ascii_in.read_next_event();
 
+    while ( evt ) {
 
-    if ( ( filter && ( is_SL_event(evt) || is_DL_event(evt) ) ) || !filter ) {
+      icount++;
+      
+      if ( icount%200==1 ) 
+	std::cout << "Processing event " << icount
+		  << "  [event number " << evt->event_number() << "]"
+		  << std::endl;
+      
+      
+      if ( ( filter && ( is_SL_event(evt) || is_DL_event(evt) ) ) || !filter ) {
+	
+	
+	// get all particles
+	std::list<HepMC::GenParticle*> tquarks;
+	std::list<HepMC::GenParticle*> bquarks;
+	std::list<HepMC::GenParticle*> cquarks;
+	std::list<HepMC::GenParticle*> lquarks;
+	std::list<HepMC::GenParticle*> higgs;
+	std::list<HepMC::GenParticle*> finalstateparticles;
+	
+	for ( HepMC::GenEvent::particle_iterator p = evt->particles_begin();
+	      p != evt->particles_end(); ++p ) {
+	  
+	  if ( is_fs_particle(*p) && 
+	       !is_t_quark(*p) && 
+	       !is_higgs(*p) ) 
+	    finalstateparticles.push_back(*p);
 
-
-      // get all particles
-      std::list<HepMC::GenParticle*> tquarks;
-      std::list<HepMC::GenParticle*> bquarks;
-      std::list<HepMC::GenParticle*> cquarks;
-      std::list<HepMC::GenParticle*> lquarks;
-      std::list<HepMC::GenParticle*> higgs;
-      std::list<HepMC::GenParticle*> finalstateparticles;
-
-      for ( HepMC::GenEvent::particle_iterator p = evt->particles_begin();
-	    p != evt->particles_end(); ++p ) {
-
-	if ( is_fs_particle(*p) ) finalstateparticles.push_back(*p);
-	if ( is_t_quark(*p) )     tquarks.push_back(*p);
-	if ( is_b_quark(*p) )     bquarks.push_back(*p);
-	if ( is_c_quark(*p) )     cquarks.push_back(*p);
-	if ( is_l_quark(*p) )     lquarks.push_back(*p);
-	if ( is_higgs(*p)   )     higgs.push_back(*p);
-      }
-
-      if( verbose ){
-	cout << "Event " << icount << ", found:" << endl;
-	cout << " -- " << finalstateparticles.size() << " FS particles" << endl; 
-	cout << " -- " << tquarks.size() << " t quarks" << endl;
-	cout << " -- " << bquarks.size() << " b quarks" << endl;
-	cout << " -- " << cquarks.size() << " c quarks" << endl;
-	cout << " -- " << lquarks.size() << " l quarks" << endl;
-	cout << " -- " << higgs.size() << " higgs" << endl;
-      }
-
+	  if ( is_t_quark(*p) )     tquarks.push_back(*p);
+	  if ( is_b_quark(*p) )     bquarks.push_back(*p);
+	  if ( is_c_quark(*p) )     cquarks.push_back(*p);
+	  if ( is_l_quark(*p) )     lquarks.push_back(*p);
+	  if ( is_higgs(*p)   )     higgs.push_back(*p);
+	}
+	
+	if( verbose ){
+	  cout << "Event " << icount << ", found:" << endl;
+	  cout << " -- " << finalstateparticles.size() << " FS particles" << endl; 
+	  cout << " -- " << tquarks.size() << " t quarks" << endl;
+	  cout << " -- " << bquarks.size() << " b quarks" << endl;
+	  cout << " -- " << cquarks.size() << " c quarks" << endl;
+	  cout << " -- " << lquarks.size() << " l quarks" << endl;
+	  cout << " -- " << higgs.size() << " higgs" << endl;
+	}
+	
       vector<TLorentzVector> leptons ;
       vector<int> leptonscharge;
 
@@ -523,7 +525,7 @@ int main(int argc, const char* argv[])
 	  for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p != bquarks.end() ; ++p ){
 	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
 	    float dist = dR(part,jet_j) ;
-	    if( dist < 0.3 && dist < closestdR ){
+	    if( dist < GENJETDR && dist < closestdR ){
 	      closestdR  = dist;
 	      closestPdg = (*p)->pdg_id();
 	    }
@@ -531,7 +533,7 @@ int main(int argc, const char* argv[])
 	  for ( std::list<HepMC::GenParticle*>::iterator p = cquarks.begin() ; p!=cquarks.end() ; p++ ){
 	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
 	    float dist = dR(part,jet_j) ;
-	    if( dist < 0.3 && dist < closestdR ){
+	    if( dist < GENJETDR && dist < closestdR ){
 	      closestdR  = dist;
 	      closestPdg = (*p)->pdg_id();
 	    }
@@ -539,12 +541,13 @@ int main(int argc, const char* argv[])
 	  for ( std::list<HepMC::GenParticle*>::iterator p = lquarks.begin() ; p!=lquarks.end() ; p++ ){
 	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
 	    float dist = dR(part,jet_j) ;
-	    if( dist < 0.3 && dist < closestdR ){
+	    if( dist < GENJETDR && dist < closestdR ){
 	      closestdR  = dist;
 	      closestPdg = (*p)->pdg_id();
 	    }
 	  }
 
+	  if( verbose ) cout << closestPdg << endl;
 	  jetscharge.push_back( closestPdg );
 
 
@@ -593,7 +596,7 @@ int main(int argc, const char* argv[])
 	Vtype = -99;
 
 
-      if(jets.size()<2 && filter){
+      if(jets.size()<2 /*&& filter*/){
 	ascii_in >> evt;
 	continue;
       }
@@ -762,16 +765,17 @@ int main(int argc, const char* argv[])
 	}
 
       }
-
+      
       tree->Fill();
+      
+      } // is good event
 
-    } // is good event
-
-    delete evt;
-    ascii_in >> evt;
-
-  } // event loop
-
+      delete evt;
+      ascii_in >> evt;
+      
+    } // event loop
+    
+  } // input file loop
 
 
   // save the tree and the counting histo in the ROOT file
@@ -788,9 +792,9 @@ int main(int argc, const char* argv[])
   cout << "Job done in " << totalTime/60. << " min." << endl;
 
   // delete MEIntegrator and other allocated objects
-  cout << "Delete meIntegrator..." << endl;
+  cout << "Delete clocks and random engine..." << endl;
   delete clock; delete clock2;
-  if(ran!=0)       delete ran;
+  if(ran!=0)    delete ran;
   cout << "Finished!!!" << endl;
   cout << "*******************" << endl;
   

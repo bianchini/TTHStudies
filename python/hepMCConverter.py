@@ -5,10 +5,12 @@ process = cms.Process("HEPMC")
 
 process.fwliteInput = cms.PSet(
 
-    pathToFile    = cms.string("tryfull.hepmc2g"),
+    pathToFile    = cms.vstring(
+    './root/hep_1BJpu_999468319.hepmc2g',
+    './root/hep_1BJpu_993036056.hepmc2g'),
+
     outFileName   = cms.string("TEST.root"),
-    verbose       = cms.bool(True),
-    filter        = cms.bool(False),
-    
-    
+    verbose       = cms.bool(False),
+    filter        = cms.bool(False),        
+
     )
