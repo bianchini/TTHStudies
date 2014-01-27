@@ -824,19 +824,21 @@ int main(int argc, const char* argv[])
     float SimBseta            [999];
     float SimBsphi            [999];
    
+    //if( currentTree->GetBranch("") )
+
     currentTree->SetBranchAddress("EVENT",            &EVENT);
-    currentTree->SetBranchAddress("PUweight",         &PUweight);
-    currentTree->SetBranchAddress("PUweightP",        &PUweightP);
-    currentTree->SetBranchAddress("PUweightM",        &PUweightM);
-    currentTree->SetBranchAddress("lheNj",            &lheNj); 
-    currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
-    currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
+    if( currentTree->GetBranch("PUweight") )          currentTree->SetBranchAddress("PUweight",         &PUweight);
+    if( currentTree->GetBranch("PUweightP") )         currentTree->SetBranchAddress("PUweightP",        &PUweightP);
+    if( currentTree->GetBranch("PUweightM") )         currentTree->SetBranchAddress("PUweightM",        &PUweightM);
+    if( currentTree->GetBranch("lheNj") )             currentTree->SetBranchAddress("lheNj",            &lheNj); 
+    if( currentTree->GetBranch("weightTrig2012") )    currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
+    if( currentTree->GetBranch("triggerFlags") )      currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
     currentTree->SetBranchAddress("Vtype",            &Vtype);        
-    currentTree->SetBranchAddress("nhJets",           &nhJets);
+    if( currentTree->GetBranch("nhJets") )            currentTree->SetBranchAddress("nhJets",           &nhJets);
     currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("nSimBs",           &nSimBs);
     currentTree->SetBranchAddress("nvlep",            &nvlep);
-    currentTree->SetBranchAddress("nPVs",             &nPVs);
+    if( currentTree->GetBranch("nPVs") )              currentTree->SetBranchAddress("nPVs",             &nPVs);
     currentTree->SetBranchAddress("genB",             &genB);
     currentTree->SetBranchAddress("genBbar",          &genBbar);
     currentTree->SetBranchAddress("genTop",           &genTop);
@@ -853,21 +855,23 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("vLepton_charge",   vLepton_charge);
     currentTree->SetBranchAddress("vLepton_pfCorrIso",vLepton_pfCorrIso);
     currentTree->SetBranchAddress("vLepton_type",     vLepton_type);
-    currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
-    currentTree->SetBranchAddress("hJet_eta",         hJet_eta);    
-    currentTree->SetBranchAddress("hJet_phi",         hJet_phi);    
-    currentTree->SetBranchAddress("hJet_e",           hJet_e); 
-    currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
-    currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
-    currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
-    currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
-    currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
-    currentTree->SetBranchAddress("hJet_csv_upL",     hJet_csv_upL);
-    currentTree->SetBranchAddress("hJet_csv_downL",   hJet_csv_downL);
-    currentTree->SetBranchAddress("hJet_JECUnc",      hJet_JECUnc);
-    currentTree->SetBranchAddress("hJet_genPt",       hJet_genPt);
-    currentTree->SetBranchAddress("hJet_genEta",      hJet_genEta);
-    currentTree->SetBranchAddress("hJet_genPhi",      hJet_genPhi);
+    if( currentTree->GetBranch("hJet_pt") ){
+      currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
+      currentTree->SetBranchAddress("hJet_eta",         hJet_eta);    
+      currentTree->SetBranchAddress("hJet_phi",         hJet_phi);    
+      currentTree->SetBranchAddress("hJet_e",           hJet_e); 
+      currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
+      currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
+      currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
+      currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
+      currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
+      currentTree->SetBranchAddress("hJet_csv_upL",     hJet_csv_upL);
+      currentTree->SetBranchAddress("hJet_csv_downL",   hJet_csv_downL);
+      currentTree->SetBranchAddress("hJet_JECUnc",      hJet_JECUnc);
+      currentTree->SetBranchAddress("hJet_genPt",       hJet_genPt);
+      currentTree->SetBranchAddress("hJet_genEta",      hJet_genEta);
+      currentTree->SetBranchAddress("hJet_genPhi",      hJet_genPhi);
+    }
     currentTree->SetBranchAddress("aJet_pt",          aJet_pt);    
     currentTree->SetBranchAddress("aJet_eta",         aJet_eta);    
     currentTree->SetBranchAddress("aJet_phi",         aJet_phi);    
@@ -911,6 +915,19 @@ int main(int argc, const char* argv[])
       if(i%500==0){
 	cout << i << " (" << float(i)/float(nentries)*100 << " %)" << endl;
       }
+
+      // set variables that are used, but for which there may be no branches in the input tree
+      PUweight       = 1.0;
+      PUweightP      = 1.0;
+      PUweightM      = 1.0;
+      lheNj          = 1.0;
+      weightTrig2012 = 1.0;
+      for(int k = 0; k < 70 ; k++){
+	triggerFlags_[k] = 1;
+      }
+      nhJets = 0;
+      nPVs   = 1;
+
 
       // read event...
       currentTree->GetEntry(i);
@@ -2712,6 +2729,7 @@ int main(int argc, const char* argv[])
 	// check if there is a tag-untag pair that satisfies the "cs-tag" 
 	for( unsigned int w = 0; w<btag_indices.size(); w++){
 	  
+	  // this is needed if type>3
 	  if(ind1==999 || ind2==999) continue;
 
 	  float m1 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind1] ).M();

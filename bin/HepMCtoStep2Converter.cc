@@ -35,6 +35,7 @@
 
 // dR distance for reco-gen matching
 #define GENJETDR  0.3
+#define NJETSMAX   99
 
 using namespace std;
 
@@ -55,7 +56,23 @@ typedef struct
   int json;
 } EventInfo;
 
-
+typedef struct 
+{
+  int signalID;
+  float eventscale;
+  float alphaQCD;
+  float alphaQED;
+  float xSec;
+  float xSecErr;
+  int id1;
+  int id2;
+  float x1;
+  float x2;
+  float scalePDF;
+  float pdf1;
+  float pdf2;
+  float weights[8];
+} GenEventInfo;
 
 typedef struct
 {
@@ -106,7 +123,7 @@ public:
 class IsLquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
-    if ( ( abs( p->pdg_id() )<5 || p->pdg_id()==21 ) && p->status()==1 && !p->end_vertex() ) return 1; // check here !!!
+    if ( ( abs( p->pdg_id() )<4 || p->pdg_id()==21 ) && p->status()==1 && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -153,7 +170,7 @@ public:
       int pdgid = (*p)->pdg_id();
       float pt  = (*p)->momentum().perp();
       float eta = TMath::Abs( (*p)->momentum().eta() );
-      if(  (pdgid == 11 || pdgid == 13 ) && pt > 25.&& eta < 2.5 ) counterlep++;	  
+      if( (*p)->status()==1  && !(*p)->end_vertex() && (pdgid == 11 || pdgid == 13 ) && pt > 25.&& eta < 2.5 ) counterlep++;	  
     }
     if( counterlep==1 ) return 1;
     return 0;
@@ -169,7 +186,7 @@ public:
       int pdgid = (*p)->pdg_id();
       float pt  = (*p)->momentum().perp();
       float eta = TMath::Abs( (*p)->momentum().eta() );
-      if(  (pdgid == 11 || pdgid == 13 ) && pt > 25.&& eta < 2.5 ){
+      if( (*p)->status()==1  && !(*p)->end_vertex() &&  (pdgid == 11 || pdgid == 13 ) && pt > 25.&& eta < 2.5 ){
 	counterlep++;	  
 	countcharge += abs(pdgid)/pdgid;
       }
@@ -209,10 +226,15 @@ int main(int argc, const char* argv[])
   vector<std::string> pathToFile     ( in.getParameter< std::vector<std::string> >  ("pathToFile"  ) );
   
   // FLAGS
-  bool   verbose             ( in.getParameter<bool>         ("verbose" ) );
-  bool   filter              ( in.getParameter<bool>         ("filter" ) );
+  bool   verbose             ( in.getParameter<bool>         ("verbose")   );
 
-
+  bool   filter              ( in.getParameter<bool>         ("filter")    );
+  double jetRadius           ( in.getParameter<double>       ("jetRadius") );
+  double ptMin               ( in.getParameter<double>       ("ptMin")     );
+  double ptCut               ( in.getParameter<double>       ("ptCut")     );
+  double etaCut              ( in.getParameter<double>       ("etaCut")    );
+  int    nJetsMin            ( in.getParameter<int>          ("nJetsMin")  );
+  double overlapLep          ( in.getParameter<double>       ("overlapLep"));
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
   /* @@@@@@@@@@@@@@@@@@@@@@@@@ INITIALIZE @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
@@ -254,11 +276,13 @@ int main(int argc, const char* argv[])
   genTopInfo      genTop, genTbar;
   metInfo         METtype1p2corr;
   EventInfo       EVENT;
-  int             nvlep, nSimBs, nhJets, naJets, nPVs, Vtype;
-  float           PUweight, PUweightP, PUweightM;
-  float           lheNj;
-  float           weightTrig2012;
-  UChar_t         triggerFlags[70];
+  GenEventInfo    GENEVENT;
+
+  int             nvlep, nSimBs /*, nhJets*/, naJets /*, nPVs*/, Vtype;
+  //float           PUweight, PUweightP, PUweightM;
+  //float           lheNj;
+  //float           weightTrig2012;
+  //UChar_t         triggerFlags[70];
   Int_t   vLepton_type      [2];
   Float_t vLepton_mass      [2];
   Float_t vLepton_pt        [2];
@@ -269,54 +293,61 @@ int main(int argc, const char* argv[])
   Float_t vLepton_genPhi    [2];
   Float_t vLepton_charge    [2];
   Float_t vLepton_pfCorrIso [2];
-  Float_t hJet_pt           [999];
-  Float_t hJet_eta          [999];
-  Float_t hJet_phi          [999];
-  Float_t hJet_e            [999];
-  Float_t hJet_flavour      [999];
-  Float_t hJet_puJetIdL     [999];
-  Float_t hJet_csv_nominal  [999];
-  Float_t hJet_csv_upBC     [999];
-  Float_t hJet_csv_downBC   [999];
-  Float_t hJet_csv_upL      [999];
-  Float_t hJet_csv_downL    [999];
-  Float_t hJet_JECUnc       [999];
-  Float_t hJet_genPt        [999];
-  Float_t hJet_genEta       [999];
-  Float_t hJet_genPhi       [999];
-  Float_t aJet_pt           [999];
-  Float_t aJet_eta          [999];
-  Float_t aJet_phi          [999];
-  Float_t aJet_e            [999];
-  Float_t aJet_flavour      [999];
-  Float_t aJet_puJetIdL     [999];
-  Float_t aJet_csv_nominal  [999];
-  Float_t aJet_csv_upBC     [999];
-  Float_t aJet_csv_downBC   [999];
-  Float_t aJet_csv_upL      [999];
-  Float_t aJet_csv_downL    [999];
-  Float_t aJet_JECUnc       [999];
-  Float_t aJet_genPt        [999];
-  Float_t aJet_genEta       [999];
-  Float_t aJet_genPhi       [999];
-  float SimBsmass           [999];
-  float SimBspt             [999];
-  float SimBseta            [999];
-  float SimBsphi            [999];
+  //Float_t hJet_pt           [999];
+  //Float_t hJet_eta          [999];
+  //Float_t hJet_phi          [999];
+  //Float_t hJet_e            [999];
+  //Float_t hJet_flavour      [999];
+  //Float_t hJet_puJetIdL     [999];
+  //Float_t hJet_csv_nominal  [999];
+  //Float_t hJet_csv_upBC     [999];
+  //Float_t hJet_csv_downBC   [999];
+  //Float_t hJet_csv_upL      [999];
+  //Float_t hJet_csv_downL    [999];
+  //Float_t hJet_JECUnc       [999];
+  //Float_t hJet_genPt        [999];
+  //Float_t hJet_genEta       [999];
+  //Float_t hJet_genPhi       [999];
+  Float_t aJet_pt           [NJETSMAX];
+  Float_t aJet_eta          [NJETSMAX];
+  Float_t aJet_phi          [NJETSMAX];
+  Float_t aJet_e            [NJETSMAX];
+  Float_t aJet_flavour      [NJETSMAX];
+
+  Float_t aJet_nBs          [NJETSMAX];
+  Float_t aJet_nCs          [NJETSMAX];
+  Float_t aJet_nLs          [NJETSMAX];
+   
+  Float_t aJet_puJetIdL     [NJETSMAX];
+  Float_t aJet_csv_nominal  [NJETSMAX];
+  Float_t aJet_csv_upBC     [NJETSMAX];
+  Float_t aJet_csv_downBC   [NJETSMAX];
+  Float_t aJet_csv_upL      [NJETSMAX];
+  Float_t aJet_csv_downL    [NJETSMAX];
+  Float_t aJet_JECUnc       [NJETSMAX];
+  Float_t aJet_genPt        [NJETSMAX];
+  Float_t aJet_genEta       [NJETSMAX];
+  Float_t aJet_genPhi       [NJETSMAX];
+  float SimBsmass           [NJETSMAX];
+  float SimBspt             [NJETSMAX];
+  float SimBseta            [NJETSMAX];
+  float SimBsphi            [NJETSMAX];
   
   tree->Branch("EVENT",            &EVENT,            "run/I:lumi/I:event/I:json/I");
-  tree->Branch("PUweight",         &PUweight,         "PUweight/F");
-  tree->Branch("PUweightP",        &PUweightP,        "PUweightP/F");
-  tree->Branch("PUweightM",        &PUweightM,        "PUweightM/F");
-  tree->Branch("lheNj",            &lheNj,            "lheNj/F"); 
-  tree->Branch("weightTrig2012",   &weightTrig2012,   "weightTrig2012/F"); 
-  tree->Branch("triggerFlags",     triggerFlags,      "triggerFlags[70]/b"); 
+  tree->Branch("GENEVENT",         &GENEVENT,         "signalID/I:eventscale/F:alphaQCD/F:alphaQED/F:xSec/F:xSecErr/F:id1/I:id2/I:x1/F:x2/F:scalePDF/F:pdf1/F:pdf2/F:weights[8]/F");
+ 
+  //tree->Branch("PUweight",         &PUweight,         "PUweight/F");
+  //tree->Branch("PUweightP",        &PUweightP,        "PUweightP/F");
+  //tree->Branch("PUweightM",        &PUweightM,        "PUweightM/F");
+  //tree->Branch("lheNj",            &lheNj,            "lheNj/F"); 
+  //tree->Branch("weightTrig2012",   &weightTrig2012,   "weightTrig2012/F"); 
+  //tree->Branch("triggerFlags",     triggerFlags,      "triggerFlags[70]/b"); 
   tree->Branch("Vtype",            &Vtype,            "Vtype/I");        
-  tree->Branch("nhJets",           &nhJets,           "nhJets/I");
+  //tree->Branch("nhJets",           &nhJets,           "nhJets/I");
   tree->Branch("naJets",           &naJets,           "naJets/I");
   tree->Branch("nSimBs",           &nSimBs,           "nSimBs/I");
   tree->Branch("nvlep",            &nvlep,            "nvlep/I");
-  tree->Branch("nPVs",             &nPVs,             "nPVs/I");
+  //tree->Branch("nPVs",             &nPVs,             "nPVs/I");
   tree->Branch("genB",             &genB,             "mass/F:pt/F:eta:phi/F:status/F:charge:momid/F");
   tree->Branch("genBbar",          &genBbar,          "mass/F:pt/F:eta:phi/F:status/F:charge:momid/F");
   tree->Branch("genTop",           &genTop,           "bmass/F:bpt/F:beta:bphi/F:bstatus/F:wdau1mass/F:wdau1pt/F:wdau1eta:wdau1phi/F:wdau1id/F:wdau2mass/F:wdau2pt/F:wdau2eta:wdau2phi/F:wdau2id/F");
@@ -333,27 +364,32 @@ int main(int argc, const char* argv[])
   tree->Branch("vLepton_pfCorrIso",vLepton_pfCorrIso, "vLepton_pfCorrIso[nvlep]/F");
   tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/F");
 
-  tree->Branch("hJet_pt",          hJet_pt,         "hJet_pt[nhJets]/F");    
-  tree->Branch("hJet_eta",         hJet_eta,        "hJet_eta[nhJets]/F");    
-  tree->Branch("hJet_phi",         hJet_phi,        "hJet_phi[nhJets]/F");    
-  tree->Branch("hJet_e",           hJet_e,          "hJet_e[nhJets]/F"); 
-  tree->Branch("hJet_flavour",     hJet_flavour,    "hJet_flavour[nhJets]/F");    
-  tree->Branch("hJet_puJetIdL",    hJet_puJetIdL,   "hJet_puJetIdL[nhJets]/F");
-  tree->Branch("hJet_csv_nominal", hJet_csv_nominal,"hJet_csv_nominal[nhJets]/F");
-  tree->Branch("hJet_csv_upBC",    hJet_csv_upBC,   "hJet_csv_upBC[nhJets]/F");
-  tree->Branch("hJet_csv_downBC",  hJet_csv_downBC, "hJet_csv_downBC[nhJets]/F");
-  tree->Branch("hJet_csv_upL",     hJet_csv_upL,    "hJet_csv_upL[nhJets]/F");
-  tree->Branch("hJet_csv_downL",   hJet_csv_downL,  "hJet_csv_downL[nhJets]/F");
-  tree->Branch("hJet_JECUnc",      hJet_JECUnc,     "hJet_JECUnc[nhJets]/F");
-  tree->Branch("hJet_genPt",       hJet_genPt,      "hJet_genPt[nhJets]/F");
-  tree->Branch("hJet_genEta",      hJet_genEta,     "hJet_genEta[nhJets]/F");
-  tree->Branch("hJet_genPhi",      hJet_genPhi,     "hJet_genPhi[nhJets]/F");
+  //tree->Branch("hJet_pt",          hJet_pt,         "hJet_pt[nhJets]/F");    
+  //tree->Branch("hJet_eta",         hJet_eta,        "hJet_eta[nhJets]/F");    
+  //tree->Branch("hJet_phi",         hJet_phi,        "hJet_phi[nhJets]/F");    
+  //tree->Branch("hJet_e",           hJet_e,          "hJet_e[nhJets]/F"); 
+  //tree->Branch("hJet_flavour",     hJet_flavour,    "hJet_flavour[nhJets]/F");    
+  //tree->Branch("hJet_puJetIdL",    hJet_puJetIdL,   "hJet_puJetIdL[nhJets]/F");
+  //tree->Branch("hJet_csv_nominal", hJet_csv_nominal,"hJet_csv_nominal[nhJets]/F");
+  //tree->Branch("hJet_csv_upBC",    hJet_csv_upBC,   "hJet_csv_upBC[nhJets]/F");
+  //tree->Branch("hJet_csv_downBC",  hJet_csv_downBC, "hJet_csv_downBC[nhJets]/F");
+  //tree->Branch("hJet_csv_upL",     hJet_csv_upL,    "hJet_csv_upL[nhJets]/F");
+  //tree->Branch("hJet_csv_downL",   hJet_csv_downL,  "hJet_csv_downL[nhJets]/F");
+  //tree->Branch("hJet_JECUnc",      hJet_JECUnc,     "hJet_JECUnc[nhJets]/F");
+  //tree->Branch("hJet_genPt",       hJet_genPt,      "hJet_genPt[nhJets]/F");
+  //tree->Branch("hJet_genEta",      hJet_genEta,     "hJet_genEta[nhJets]/F");
+  //tree->Branch("hJet_genPhi",      hJet_genPhi,     "hJet_genPhi[nhJets]/F");
 
   tree->Branch("aJet_pt",          aJet_pt,         "aJet_pt[naJets]/F");    
   tree->Branch("aJet_eta",         aJet_eta,        "aJet_eta[naJets]/F");    
   tree->Branch("aJet_phi",         aJet_phi,        "aJet_phi[naJets]/F");    
   tree->Branch("aJet_e",           aJet_e,          "aJet_e[naJets]/F"); 
   tree->Branch("aJet_flavour",     aJet_flavour,    "aJet_flavour[naJets]/F");    
+
+  tree->Branch("aJet_nBs",         aJet_nBs,        "aJet_nBs[naJets]/F");    
+  tree->Branch("aJet_nCs",         aJet_nCs,        "aJet_nCs[naJets]/F");    
+  tree->Branch("aJet_nLs",         aJet_nLs,        "aJet_nLs[naJets]/F");    
+
   tree->Branch("aJet_puJetIdL",    aJet_puJetIdL,   "aJet_puJetIdL[naJets]/F");
   tree->Branch("aJet_csv_nominal", aJet_csv_nominal,"aJet_csv_nominal[naJets]/F");
   tree->Branch("aJet_csv_upBC",    aJet_csv_upBC,   "aJet_csv_upBC[naJets]/F");
@@ -385,33 +421,89 @@ int main(int argc, const char* argv[])
   IsTquark is_t_quark;
   IsHiggs  is_higgs;
   
-
+  // total event counter
   int icount = 0;
+
+  // total accepted event counter  
+  int pcount = 0;
+
+  // loop over input files
   for(unsigned int file = 0; file < pathToFile.size() ; file++){
 
+    // read the event colection from the input file
     HepMC::IO_GenEvent ascii_in( pathToFile[file] ,std::ios::in);
 
+    // if no valid input hepmc file found, go to the next file
     if ( ascii_in.rdstate() == std::ios::failbit ) {
       cout << "File " <<   pathToFile[file] << " not found" << endl;
       continue;
     }
       
-    
-    HepMC::GenEvent* evt = ascii_in.read_next_event();
+    // read an event...
+    HepMC::GenEvent* evt = ascii_in.read_next_event();    
 
+    // start the event loop
     while ( evt ) {
 
+      // increment event counter
       icount++;
       
+      // to monitor the job
       if ( icount%200==1 ) 
 	std::cout << "Processing event " << icount
 		  << "  [event number " << evt->event_number() << "]"
 		  << std::endl;
       
-      
-      if ( ( filter && ( is_SL_event(evt) || is_DL_event(evt) ) ) || !filter ) {
+      // if the event passes the selection cut, or no cut at all is applied...
+      if ( ( filter && ( is_SL_event(evt) || is_DL_event(evt) ) ) || !filter ) {			
+
+	// gen-level infos
+	HepMC::PdfInfo* pdfInfo              = evt->pdf_info();
+	HepMC::GenCrossSection* crosssection = evt->cross_section();
+
+	GENEVENT.signalID   = evt->signal_process_id();
+	GENEVENT.eventscale = evt->event_scale();
+	GENEVENT.alphaQCD   = evt->alphaQCD();
+	GENEVENT.alphaQED   = evt->alphaQED();
+
+	if( pdfInfo ){
+	  GENEVENT.id1      = pdfInfo->id1();
+	  GENEVENT.id2      = pdfInfo->id2();
+	  GENEVENT.x1       = pdfInfo->x1();
+	  GENEVENT.x2       = pdfInfo->x2();
+	  GENEVENT.pdf1     = pdfInfo->pdf1();
+	  GENEVENT.pdf2     = pdfInfo->pdf2();
+	  GENEVENT.scalePDF = pdfInfo->scalePDF();
+	}
+	else{
+	  GENEVENT.id1      = -99;
+	  GENEVENT.id2      = -99;
+	  GENEVENT.x1       = -99;
+	  GENEVENT.x2       = -99;
+	  GENEVENT.pdf1     = -99;
+	  GENEVENT.pdf2     = -99;
+	  GENEVENT.scalePDF = -99;
+	}
+
+	if( crosssection ){
+	  GENEVENT.xSec    = crosssection->cross_section();
+	  GENEVENT.xSecErr = crosssection->cross_section_error();
+	}
+	else{
+	  GENEVENT.xSec    = -99;
+	  GENEVENT.xSecErr = -99;
+	}
 	
-	
+	for(int w = 0; w < 8 ; w++)
+	  GENEVENT.weights[w] = -99;
+	unsigned int count_wit = 0;
+	for( HepMC::WeightContainer::iterator wit = (evt->weights()).begin() ; wit != (evt->weights()).end() ; wit++){
+	  if(  count_wit>7 ) continue;
+	  GENEVENT.weights[ count_wit ] = (*wit);
+	  count_wit++;
+	}
+
+
 	// get all particles
 	std::list<HepMC::GenParticle*> tquarks;
 	std::list<HepMC::GenParticle*> bquarks;
@@ -420,9 +512,13 @@ int main(int argc, const char* argv[])
 	std::list<HepMC::GenParticle*> higgs;
 	std::list<HepMC::GenParticle*> finalstateparticles;
 	
+	// loop over all particles in the event record
 	for ( HepMC::GenEvent::particle_iterator p = evt->particles_begin();
 	      p != evt->particles_end(); ++p ) {
 	  
+	  // push back final-state particles that are neither top nor higgs
+	  // [ is_fs_particle() selects only status=1 particles, but if the top and higgs are undecayed
+	  // they will ahve such status ]
 	  if ( is_fs_particle(*p) && 
 	       !is_t_quark(*p) && 
 	       !is_higgs(*p) ) 
@@ -433,6 +529,7 @@ int main(int argc, const char* argv[])
 	  if ( is_c_quark(*p) )     cquarks.push_back(*p);
 	  if ( is_l_quark(*p) )     lquarks.push_back(*p);
 	  if ( is_higgs(*p)   )     higgs.push_back(*p);
+
 	}
 	
 	if( verbose ){
@@ -445,101 +542,179 @@ int main(int argc, const char* argv[])
 	  cout << " -- " << higgs.size() << " higgs" << endl;
 	}
 	
-      vector<TLorentzVector> leptons ;
-      vector<int> leptonscharge;
-
-      vector<TLorentzVector> jets ;
-      vector<int> jetscharge;
-
-      TLorentzVector invisible(0.,0.,0.,0) ;
-      
-      // get the leptons and MET
-      vector<fastjet::PseudoJet> input_particles;
-      for ( std::list<HepMC::GenParticle*>::iterator p_fs = finalstateparticles.begin() ; 
-	    p_fs!=finalstateparticles.end() ; p_fs++  ){
+	// container of leptons 4-vectors
+	vector<TLorentzVector> leptons ;
 	
-	int pdgid  = (*p_fs)->pdg_id();
-	float pt   = (*p_fs)->momentum().perp();
-	float eta  = (*p_fs)->momentum().eta();
-	float phi  = (*p_fs)->momentum().phi();
-	float m    = (*p_fs)->momentum().m();
-	float px   = (*p_fs)->momentum().px();
-	float py   = (*p_fs)->momentum().py();
-	float pz   = (*p_fs)->momentum().pz();
-	float e    = (*p_fs)->momentum().e();
+	// contained of leptons pdgid
+	vector<int> leptonscharge;
+	
+	// container of jets 4-vectors
+	vector<TLorentzVector> jets ;
 
-	input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 
+	// container of jets closest particle pdgid
+	vector<int> jetscharge;
+	
+	// container of jets multiplicity of b-quarks
+	vector<int> jetsnBs;
 
-	if( (abs(pdgid)==11 || abs(pdgid)==13) && pt>30 && TMath::Abs(eta)<2.5 ){
-	  TLorentzVector lep;
-	  lep.SetPtEtaPhiM( pt, eta, phi, m);
-	  leptons.push_back( lep );
-	  leptonscharge.push_back( pdgid );
-	}
-	if( (abs(pdgid)==12 || abs(pdgid)==14 || abs(pdgid)==16) ){
-	  TLorentzVector nu;
-	  nu.SetPtEtaPhiM( pt, eta, phi, m);
-	  invisible += nu;
-	}
-      }
+	// container of jets multiplicity of c-quarks
+	vector<int> jetsnCs;
 
-      // jet clustering algo
-      float sumEt = 0.;
-      double R = 0.5;
-      fastjet::JetDefinition jet_def(fastjet::antikt_algorithm, R);
+	// container of jets multiplicity of udcsg-quarks
+	vector<int> jetsnLs;
+
+	// total neutrinos momentum
+	TLorentzVector invisible(0.,0.,0.,0) ;
       
-      // run fastjet
-      fastjet::ClusterSequence clust_seq(input_particles, jet_def);
- 
-      // get the resulting jets ordered in pt     
-      double ptmin = 5.0;
-      vector<fastjet::PseudoJet> inclusive_jets = sorted_by_pt(clust_seq.inclusive_jets(ptmin));
-
-      if( verbose ) cout << "Found " << inclusive_jets.size() << " jets" << endl;
-      for(unsigned int j = 0 ; j < inclusive_jets.size() ; j++){
-
-	// count if the jet overlaps with a lepton
-	int overlap = 0;
-
-	// the pseudo jet from fastjet
-	fastjet::PseudoJet pjet_j = inclusive_jets[j] ;	
-	TLorentzVector jet_j( pjet_j.px(),  pjet_j.py(),  pjet_j.pz(),  pjet_j.e() );
-
-	if( verbose ) cout << "Jet #" << j << ": (" << jet_j.Pt() << "," << jet_j.Eta() << "," << jet_j.Phi() << "," << jet_j.M() << ")" << endl; 
-
-	// loop over selected leptons
-	for(unsigned int l = 0 ; l < leptons.size() ; l++){
-	  if( dR( leptons[l],jet_j)<0.50 ) overlap++;
+	// get the leptons, MET, and particles for jets
+	vector<fastjet::PseudoJet> input_particles;
+	for ( std::list<HepMC::GenParticle*>::iterator p_fs = finalstateparticles.begin() ; 
+	      p_fs!=finalstateparticles.end() ; p_fs++  ){
+	  
+	  int pdgid  = (*p_fs)->pdg_id();
+	  float pt   = (*p_fs)->momentum().perp();
+	  float eta  = (*p_fs)->momentum().eta();
+	  float phi  = (*p_fs)->momentum().phi();
+	  float m    = (*p_fs)->momentum().m();
+	  float px   = (*p_fs)->momentum().px();
+	  float py   = (*p_fs)->momentum().py();
+	  float pz   = (*p_fs)->momentum().pz();
+	  float e    = (*p_fs)->momentum().e();
+	  
+	  input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 
+	  
+	  if( (abs(pdgid)==11 || abs(pdgid)==13) && pt>30 && TMath::Abs(eta)<2.5 ){
+	    TLorentzVector lep;
+	    lep.SetPtEtaPhiM( pt, eta, phi, m);
+	    leptons.push_back( lep );
+	    leptonscharge.push_back( pdgid );
+	  }
+	  if( (abs(pdgid)==12 || abs(pdgid)==14 || abs(pdgid)==16) ){
+	    TLorentzVector nu;
+	    nu.SetPtEtaPhiM( pt, eta, phi, m);
+	    invisible += nu;
+	  }
 	}
 
-	// if the jet does NOT overlap, then...
-	if(overlap==0){
-	  
-	  // save it
-	  jets.push_back( jet_j );
+	// the sum Et 
+	float sumEt    = 0.;
+	int jetCounter = 0;
 
-	  // check for matching
+	// jet clustering algo
+	double R    = jetRadius;
+	fastjet::JetDefinition jet_def(fastjet::antikt_algorithm, R);
+	
+	// run fastjet
+	fastjet::ClusterSequence clust_seq(input_particles, jet_def);
+ 
+	// get the resulting jets ordered in pt     
+	vector<fastjet::PseudoJet> inclusive_jets = sorted_by_pt(clust_seq.inclusive_jets( ptMin ));
+	
+	if( verbose ) cout << "Found " << inclusive_jets.size() << " jets" << endl;
+
+	// loop over jet collection
+	for(unsigned int j = 0 ; j < inclusive_jets.size() ; j++){
+	  
+	  // count if the jet overlaps with a lepton
+	  int overlap = 0;
+	  
+	  // the pseudo jet from fastjet
+	  fastjet::PseudoJet pjet_j = inclusive_jets[j] ;	
+	  TLorentzVector jet_j( pjet_j.px(),  pjet_j.py(),  pjet_j.pz(),  pjet_j.e() );
+
+	  // count jets above threshold
+	  if(  jet_j.Pt()> ptCut && TMath::Abs( jet_j.Eta() )< etaCut ) jetCounter++;
+
+	  if( verbose ) cout << "Jet #" << j << ": (" << jet_j.Pt() << "," << jet_j.Eta() << "," << jet_j.Phi() << "," << jet_j.M() << ")" << endl; 
+
+	  // loop over selected leptons
+	  for(unsigned int l = 0 ; l < leptons.size() ; l++){
+	    if( dR( leptons[l],jet_j) < overlapLep ) overlap++;
+	  }
+
+	  // if the jet does NOT overlap, then...
+	  if(overlap==0){
+	  
+	    // save it
+	    jets.push_back( jet_j );
+
+	    // count multiplicity of b,c, or light quarks
+	    int numBs = 0;
+	    int numCs = 0;
+	    int numLs = 0;
+
+	    // the fast-jet constituents
+	    vector<fastjet::PseudoJet> constituents_j = clust_seq.constituents (pjet_j);
+
+	    if(verbose) cout << "Pseudo-jet " << j << " has " << constituents_j.size() << " constituents" << endl;
+
+	    // loop over the constituents
+	    for(unsigned int k = 0 ; k < constituents_j.size() ; k++){
+	      
+	      // take the kth constituent...
+	      fastjet::PseudoJet const_k = constituents_j[k] ;	
+	      TLorentzVector p_k( const_k.px(),  const_k.py(),  const_k.pz(),  const_k.e() );
+
+	      if( verbose ) cout << "Const #" << k << ": (" << p_k.Pt() << "," << p_k.Eta() << "," << p_k.Phi() << "," << p_k.M() << ")" << endl; 
+
+	      // make sure each constituent is unambiguously identified
+	      int matches = 0;
+	      
+
+	      // check of which type it is (use angular matching)
+	      for ( std::list<HepMC::GenParticle*>::iterator p = lquarks.begin() ; p!=lquarks.end() ; p++ ){
+		TLorentzVector part( ((*p)->momentum()).px(),  
+				     ((*p)->momentum()).py(),  
+				     ((*p)->momentum()).pz(),  
+				     ((*p)->momentum()).e() );
+		float dist = dR(part, p_k) ;
+		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04 ){
+		  numLs++;
+		  matches++;
+		  if(verbose) cout << "... matches with ligh-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		}
+	      }
+	      
+	      for ( std::list<HepMC::GenParticle*>::iterator p = cquarks.begin() ; p!=cquarks.end() ; p++ ){
+		TLorentzVector part( ((*p)->momentum()).px(),  
+				     ((*p)->momentum()).py(),  
+				     ((*p)->momentum()).pz(),  
+				     ((*p)->momentum()).e() );
+		float dist = dR(part, p_k) ;
+		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04  ){
+		  numCs++;
+		  matches++;
+		  if(verbose) cout << "... matches with c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		}
+	      }
+	      
+	      for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p!=bquarks.end() ; p++ ){
+		TLorentzVector part( ((*p)->momentum()).px(),  
+				     ((*p)->momentum()).py(),  
+				     ((*p)->momentum()).pz(),  
+				     ((*p)->momentum()).e() );
+		float dist = dR(part, p_k) ;
+		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04  ){
+		  numBs++;
+		  matches++;
+		  if(verbose) cout << "... matches with b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		}
+	      }
+
+	      if(matches>1) cout << "Ambiguous match of jet constituent..." << endl;
+	      
+	    }
+	    
+	  
+	  // check for closest particle matching
 	  int closestPdg  = -99;
 	  float closestdR = 999.;
 
-	  for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p != bquarks.end() ; ++p ){
-	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
-	    float dist = dR(part,jet_j) ;
-	    if( dist < GENJETDR && dist < closestdR ){
-	      closestdR  = dist;
-	      closestPdg = (*p)->pdg_id();
-	    }
-	  }
-	  for ( std::list<HepMC::GenParticle*>::iterator p = cquarks.begin() ; p!=cquarks.end() ; p++ ){
-	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
-	    float dist = dR(part,jet_j) ;
-	    if( dist < GENJETDR && dist < closestdR ){
-	      closestdR  = dist;
-	      closestPdg = (*p)->pdg_id();
-	    }
-	  }
 	  for ( std::list<HepMC::GenParticle*>::iterator p = lquarks.begin() ; p!=lquarks.end() ; p++ ){
-	    TLorentzVector part( ((*p)->momentum()).px(),  ((*p)->momentum()).py(),  ((*p)->momentum()).pz(),  ((*p)->momentum()).e() );
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
 	    float dist = dR(part,jet_j) ;
 	    if( dist < GENJETDR && dist < closestdR ){
 	      closestdR  = dist;
@@ -547,229 +722,356 @@ int main(int argc, const char* argv[])
 	    }
 	  }
 
+	  for ( std::list<HepMC::GenParticle*>::iterator p = cquarks.begin() ; p!=cquarks.end() ; p++ ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    float dist = dR(part,jet_j) ;
+	    if( dist < GENJETDR && dist < closestdR ){
+	      closestdR  = dist;
+	      closestPdg = (*p)->pdg_id();
+	    }
+	  }
+	  
+	  for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p != bquarks.end() ; ++p ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    float dist = dR(part,jet_j) ;
+	    if( dist < GENJETDR && dist < closestdR ){
+	      closestdR  = dist;
+	      closestPdg = (*p)->pdg_id();
+	    }
+	  }	         	 
+
+	  // save the results
 	  if( verbose ) cout << closestPdg << endl;
 	  jetscharge.push_back( closestPdg );
-
-
-	}
-      } // incluisve_jets
-
-
-      /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
-      /* @@@@@@@@@@@@@@@@@@@@@@@@@ FILL !!!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
-
-      nvlep = leptons.size();
-
-      if( !(nvlep==1 || nvlep==2) && filter){
-	ascii_in >> evt;
-	continue;
-      }
-
-      for(unsigned int l = 0 ; l < (unsigned int)nvlep; l++ ){
-	sumEt += leptons[l].Pt();
-	vLepton_type[l]      = abs(leptonscharge[l]) ;
-	vLepton_mass[l]      = leptons[l].M();
-	vLepton_pt[l]        = leptons[l].Pt();
-	vLepton_eta[l]       = leptons[l].Eta();
-	vLepton_phi[l]       = leptons[l].Phi();
-	vLepton_genPt[l]     = leptons[l].Pt();
-	vLepton_genEta[l]    = leptons[l].Eta();
-	vLepton_genPhi[l]    = leptons[l].Phi();
-	vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];
-	vLepton_pfCorrIso[l] = 0.;
-      }
-
-
-      if(nvlep==2 && abs(leptonscharge[0])==13 && abs(leptonscharge[1])==13 )
-	Vtype = 0;
-      else if(nvlep==2 && abs(leptonscharge[0])==11 && abs(leptonscharge[1])==11 )
-	Vtype = 1;
-      else if(nvlep==2 && ( (abs(leptonscharge[0])==13 && abs(leptonscharge[1])==11) ||
-			    (abs(leptonscharge[1])==13 && abs(leptonscharge[0])==11)
-			    ))	
-	Vtype = 4;
-      else if(nvlep==1 && abs(leptonscharge[0])==13 )
-	Vtype = 2;
-      else if(nvlep==1 && abs(leptonscharge[0])==11 )
-	Vtype = 3;
-      else
-	Vtype = -99;
-
-
-      if(jets.size()<2 /*&& filter*/){
-	ascii_in >> evt;
-	continue;
-      }
-      
-      nhJets = 2;
-      naJets = jets.size()-2;
-
-      for(unsigned int j = 0 ; j < jets.size() ; j++){
-
-	sumEt += jets[j].Pt();
-
-	// fill hJets
-	if( j<2 ){
-	  hJet_pt [j]     = jets[j].Pt();
-	  hJet_eta[j]     = jets[j].Eta();
-	  hJet_phi[j]     = jets[j].Phi();
-	  hJet_e  [j]     = jets[j].E();
-	  hJet_flavour[j] = jetscharge[j];
-
-	  hJet_puJetIdL[j]   = 1.0;
-	  hJet_csv_nominal[j]= 1.0;
-	  hJet_csv_upBC[j]   = 1.0;
-	  hJet_csv_downBC[j] = 1.0;
-	  hJet_csv_upL[j]    = 1.0;
-	  hJet_csv_downL[j]  = 1.0;
-	  hJet_JECUnc[j]     = 1.0;
-	  hJet_genPt[j]      = jets[j].Pt();
-	  hJet_genEta [j]    = jets[j].Eta();
-	  hJet_genPhi [j]    = jets[j].Phi();
-	}
-	// fill aJets
-	else{
-	  aJet_pt [j-2]     = jets[j].Pt();
-	  aJet_eta[j-2]     = jets[j].Eta();
-	  aJet_phi[j-2]     = jets[j].Phi();
-	  aJet_e  [j-2]     = jets[j].E();
-	  aJet_flavour[j-2] = jetscharge[j];
-
-	  aJet_puJetIdL[j-2]   = 1.0;
-	  aJet_csv_nominal[j-2]= 1.0;
-	  aJet_csv_upBC[j-2]   = 1.0;
-	  aJet_csv_downBC[j-2] = 1.0;
-	  aJet_csv_upL[j-2]    = 1.0;
-	  aJet_csv_downL[j-2]  = 1.0;
-	  aJet_JECUnc[j-2]     = 1.0;
-	  aJet_genPt[j-2]      = jets[j].Pt();
-	  aJet_genEta [j-2]    = jets[j].Eta();
-	  aJet_genPhi [j-2]    = jets[j].Phi();
-	}
-      }
-
-
-      nSimBs = bquarks.size();
-      int b_iter = 0;
-      for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p!=bquarks.end() ; p++ ){
-	SimBsmass[b_iter] = ((*p)->momentum()).m();
-	SimBspt  [b_iter] = ((*p)->momentum()).perp();
-	SimBseta [b_iter] = ((*p)->momentum()).eta();
-	SimBsphi [b_iter] = ((*p)->momentum()).phi();
-	b_iter++;
-      }
-
-      EVENT.event = evt->event_number();
-      EVENT.lumi  = 1;
-      EVENT.run   = 1;
-      EVENT.json  = 1;
-
-      PUweight  = 1.0;
-      PUweightP = 1.0;
-      PUweightM = 1.0;
-      lheNj     = 0.;
-      nPVs      = 1;
-      weightTrig2012 = 1.0;
-
-      for(int k = 0; k < 70 ; k++){
-	triggerFlags[k] = 1;
-      }
-
-      METtype1p2corr.et     = invisible.Pt();
-      METtype1p2corr.phi    = invisible.Phi();
-      METtype1p2corr.sig    = 1.0;
-      METtype1p2corr.sumet  = sumEt;
-
-
-      for ( std::list<HepMC::GenParticle*>::iterator h = higgs.begin() ; h!=higgs.end() ; h++ ){
-	if ( (*h)->end_vertex() ) {
-	  for ( HepMC::GenVertex::particle_iterator des = (*h)->end_vertex()->particles_begin(HepMC::descendants);
-		des != (*h)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
-	    if( abs((*des)->pdg_id())==+5 && (*des)->status()==2 ){
-	      genB.mass   = (*des)->momentum().m();
-	      genB.pt     = (*des)->momentum().perp();
-	      genB.eta    = (*des)->momentum().eta();
-	      genB.phi    = (*des)->momentum().phi();
-	      genB.status = (*des)->pdg_id();
-	      genB.charge = +2/3;
-	      genB.momid  = (*h)->pdg_id();
-	    }
-	    if( abs((*des)->pdg_id())==-5 && (*des)->status()==2 ){
-	      genBbar.mass   = (*des)->momentum().m();
-	      genBbar.pt     = (*des)->momentum().perp();
-	      genBbar.eta    = (*des)->momentum().eta();
-	      genBbar.phi    = (*des)->momentum().phi();
-	      genBbar.status = (*des)->pdg_id();
-	      genBbar.charge = -1/3;
-	      genBbar.momid  = (*h)->pdg_id();
-	    }
+	  jetsnBs.push_back( numBs );
+	  jetsnCs.push_back( numCs );
+	  jetsnLs.push_back( numLs );
+	  
 	  }
-
-	}
-      }
-
-      for ( std::list<HepMC::GenParticle*>::iterator t = tquarks.begin() ; t!=tquarks.end() ; t++ ){
+	} // incluisve_jets
 	
-	int pdg = (*t)->pdg_id();	
+	
+	/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
+	/* @@@@@@@@@@@@@@@@@@@@@@@@@ FILL !!!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
+	
+	// number of leptons
+	nvlep = leptons.size();
 
-	genTopInfo* thetop;
-	if     ( pdg==+6 ) thetop = &genTop;
-	else if( pdg==-6)  thetop = &genTbar;
-	else{
-	  cout << "Error: top" << endl;
+	// if not enough leptons, continue (unless filter=False)
+	if( !(nvlep==1 || nvlep==2) && filter){
+	  delete evt;
 	  ascii_in >> evt;
 	  continue;
 	}
+	
+	for(unsigned int l = 0 ; l < (unsigned int)nvlep; l++ ){
+	  sumEt += leptons[l].Pt();
+	  vLepton_type[l]      = abs(leptonscharge[l]) ;
+	  vLepton_mass[l]      = leptons[l].M();
+	  vLepton_pt[l]        = leptons[l].Pt();
+	  vLepton_eta[l]       = leptons[l].Eta();
+	  vLepton_phi[l]       = leptons[l].Phi();
+	  vLepton_genPt[l]     = leptons[l].Pt();
+	  vLepton_genEta[l]    = leptons[l].Eta();
+	  vLepton_genPhi[l]    = leptons[l].Phi();
+	  vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];
+	  vLepton_pfCorrIso[l] = 0.;
+	}
+	
 
-	if ( (*t)->end_vertex() ) {
-	  for ( HepMC::GenVertex::particle_iterator des = (*t)->end_vertex()->particles_begin(HepMC::descendants);
-		des != (*t)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
-
-	    // first, deal w/ the b-quark
-	    if( abs((*des)->pdg_id())==5 && (*des)->status()==1 ){
-	      thetop->bmass   = (*des)->momentum().m();
-	      thetop->bpt     = (*des)->momentum().perp();
-	      thetop->beta    = (*des)->momentum().eta();
-	      thetop->bphi    = (*des)->momentum().phi();
-	      thetop->bstatus = (*des)->pdg_id();
+	if(nvlep==2 && abs(leptonscharge[0])==13 && abs(leptonscharge[1])==13 )
+	  Vtype = 0;
+	else if(nvlep==2 && abs(leptonscharge[0])==11 && abs(leptonscharge[1])==11 )
+	  Vtype = 1;
+	else if(nvlep==2 && ( (abs(leptonscharge[0])==13 && abs(leptonscharge[1])==11) ||
+			      (abs(leptonscharge[1])==13 && abs(leptonscharge[0])==11)
+			      ))	
+	  Vtype = 4;
+	else if(nvlep==1 && abs(leptonscharge[0])==13 )
+	  Vtype = 2;
+	else if(nvlep==1 && abs(leptonscharge[0])==11 )
+	  Vtype = 3;
+	else
+	  Vtype = -99;
+	
+	// if not enough jets, continue (unless filter=False)
+	if( jetCounter<nJetsMin /*&& filter*/ ){
+	  delete evt;
+	  ascii_in >> evt;
+	  continue;
+	}
+      
+	//nhJets = 2;
+	naJets = jets.size();
+	
+	// loop over jets
+	for(unsigned int j = 0 ; j < (unsigned int)TMath::Min( naJets , NJETSMAX ) /*jets.size()*/ ; j++){
+	  
+	  sumEt += jets[j].Pt();
+	  
+	  // fill hJets
+	  /*
+	    if( j<2 ){
+	    hJet_pt [j]     = jets[j].Pt();
+	    hJet_eta[j]     = jets[j].Eta();
+	    hJet_phi[j]     = jets[j].Phi();
+	    hJet_e  [j]     = jets[j].E();
+	    hJet_flavour[j] = jetscharge[j];
+	    
+	    hJet_puJetIdL[j]   = 1.0;
+	    hJet_csv_nominal[j]= 1.0;
+	    hJet_csv_upBC[j]   = 1.0;
+	    hJet_csv_downBC[j] = 1.0;
+	    hJet_csv_upL[j]    = 1.0;
+	    hJet_csv_downL[j]  = 1.0;
+	    hJet_JECUnc[j]     = 1.0;
+	    hJet_genPt[j]      = jets[j].Pt();
+	    hJet_genEta [j]    = jets[j].Eta();
+	    hJet_genPhi [j]    = jets[j].Phi();
 	    }
+	  */
+	  
+	  // fill aJets
+	  aJet_pt [j]     = jets[j].Pt();
+	  aJet_eta[j]     = jets[j].Eta();
+	  aJet_phi[j]     = jets[j].Phi();
+	  aJet_e  [j]     = jets[j].E();
+	  aJet_flavour[j] = jetscharge[j];
 
-	    // then, deal w/ the W boson
-	    if( abs((*des)->pdg_id())==24 && (*des)->status()==1 && (*des)->end_vertex()!=0 ){
-	      int countdau = 0;
-	      for ( HepMC::GenVertex::particle_iterator des2 = (*des)->end_vertex()->particles_begin(HepMC::descendants);
-		    des2 != (*des)->end_vertex()->particles_end(HepMC::descendants); ++des2 ) {
-		int pdg2 = (*des2)->pdg_id();
-		int isWdaughter = abs(pdg2)<=5 || ( abs(pdg2)>=11 && abs(pdg2)<=16 ) ;
-		if(isWdaughter && countdau==0){
-		  thetop->wdau1mass   = (*des2)->momentum().m();
-		  thetop->wdau1pt     = (*des2)->momentum().perp();
-		  thetop->wdau1eta    = (*des2)->momentum().eta();
-		  thetop->wdau1phi    = (*des2)->momentum().phi();
-		  thetop->wdau1id     = (*des2)->pdg_id();
-		}
-		else if(isWdaughter && countdau==1){
-		  thetop->wdau2mass   = (*des2)->momentum().m();
-		  thetop->wdau2pt     = (*des2)->momentum().perp();
-		  thetop->wdau2eta    = (*des2)->momentum().eta();
-		  thetop->wdau2phi    = (*des2)->momentum().phi();
-		  thetop->wdau2id     = (*des2)->pdg_id();
-		}
-		else{}
-		countdau++;		
-	      }
-	    }
-
-
-	  }
+	  aJet_nBs[j] = jetsnBs[j];
+	  aJet_nCs[j] = jetsnCs[j];
+	  aJet_nLs[j] = jetsnLs[j];
+	
+	  aJet_puJetIdL[j]   = 1.0;
+	  aJet_csv_nominal[j]= 1.0;
+	  aJet_csv_upBC[j]   = 1.0;
+	  aJet_csv_downBC[j] = 1.0;
+	  aJet_csv_upL[j]    = 1.0;
+	  aJet_csv_downL[j]  = 1.0;
+	  aJet_JECUnc[j]     = 1.0;
+	  aJet_genPt[j]      = jets[j].Pt();
+	  aJet_genEta [j]    = jets[j].Eta();
+	  aJet_genPhi [j]    = jets[j].Phi();
+	  
+	}
+	
+	
+	// number of b-quarks
+	nSimBs = bquarks.size();
+	int b_iter = 0;
+	for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p!=bquarks.end() ; p++ ){
+	  SimBsmass[b_iter] = ((*p)->momentum()).m();
+	  SimBspt  [b_iter] = ((*p)->momentum()).perp();
+	  SimBseta [b_iter] = ((*p)->momentum()).eta();
+	  SimBsphi [b_iter] = ((*p)->momentum()).phi();
+	  b_iter++;
 	}
 
-      }
+	// event information
+	EVENT.event = evt->event_number();
+	EVENT.lumi  = 1;
+	EVENT.run   = 1;
+	EVENT.json  = 1;
+
+	//PUweight  = 1.0;
+	//PUweightP = 1.0;
+	//PUweightM = 1.0;
+	//lheNj     = 0.;
+	//nPVs      = 1;
+	//weightTrig2012 = 1.0;
+	//for(int k = 0; k < 70 ; k++){
+	//triggerFlags[k] = 1;
+	//}
+	
+	// the neutrinos 4-vector
+	METtype1p2corr.et     = invisible.Pt();
+	METtype1p2corr.phi    = invisible.Phi();
+	METtype1p2corr.sig    = 1.0;
+	METtype1p2corr.sumet  = sumEt;
+	
+
+
+	// fill Higgs decay kinematics (if any Higgs decay found)
+	if( higgs.size()<1 ){
+	  genB.mass      = -99;
+	  genB.pt        = -99;
+	  genB.eta       = -99;
+	  genB.phi       = -99;
+	  genB.status    = -99;
+	  genB.charge    = -99;
+	  genB.momid     = -99;
+	  genBbar.mass   = -99;
+	  genBbar.pt     = -99;
+	  genBbar.eta    = -99;
+	  genBbar.phi    = -99;
+	  genBbar.status = -99;
+	  genBbar.charge = -99;
+	  genBbar.momid  = -99;
+	}	
+	for ( std::list<HepMC::GenParticle*>::iterator h = higgs.begin() ; h!=higgs.end() ; h++ ){
+
+	  if ( (*h)->end_vertex() ) {
+	    for ( HepMC::GenVertex::particle_iterator des = (*h)->end_vertex()->particles_begin(HepMC::descendants);
+		  des != (*h)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
+	      if( abs((*des)->pdg_id())==+5 && (*des)->status()==1 ){
+		genB.mass   = (*des)->momentum().m();
+		genB.pt     = (*des)->momentum().perp();
+		genB.eta    = (*des)->momentum().eta();
+		genB.phi    = (*des)->momentum().phi();
+		genB.status = (*des)->pdg_id();
+		genB.charge = +2/3;
+		genB.momid  = (*h)->pdg_id();
+	      }
+	      if( abs((*des)->pdg_id())==-5 && (*des)->status()==1 ){
+		genBbar.mass   = (*des)->momentum().m();
+		genBbar.pt     = (*des)->momentum().perp();
+		genBbar.eta    = (*des)->momentum().eta();
+		genBbar.phi    = (*des)->momentum().phi();
+		genBbar.status = (*des)->pdg_id();
+		genBbar.charge = -1/3;
+		genBbar.momid  = (*h)->pdg_id();
+	      }
+	    }
+	    
+	  }
+	  else{
+	    genB.mass      = ((*h)->momentum()).m();
+	    genB.pt        = ((*h)->momentum()).perp();
+	    genB.eta       = ((*h)->momentum()).eta();
+	    genB.phi       = ((*h)->momentum()).phi();
+	    genB.status    = -99;
+	    genB.charge    = -99;
+	    genB.momid     = -99;
+	    genBbar.mass   = 0;
+	    genBbar.pt     = 0;
+	    genBbar.eta    = 0;
+	    genBbar.phi    = 0;
+	    genBbar.status = 0;
+	    genBbar.charge = 0;
+	    genBbar.momid  = 0;
+	  }
+	}
+	
+	// fill top decay kinematics (if any too decay found)
+	if( tquarks.size()<2 ){
+	  genTop.bmass     = -99;
+	  genTop.bpt       = -99;
+	  genTop.beta      = -99;
+	  genTop.bphi      = -99;
+	  genTop.bstatus   = -99;
+	  genTop.wdau1mass = -99;
+	  genTop.wdau1pt   = -99;
+	  genTop.wdau1eta  = -99;
+	  genTop.wdau1phi  = -99;
+	  genTop.wdau1id   = -99;
+	  genTop.wdau2mass = -99;
+	  genTop.wdau2pt   = -99;
+	  genTop.wdau2eta  = -99;
+	  genTop.wdau2phi  = -99;
+	  genTop.wdau2id   = -99;
+	  genTbar.bmass    = -99;
+	  genTbar.bpt      = -99;
+	  genTbar.beta     = -99;
+	  genTbar.bphi     = -99;
+	  genTbar.bstatus  = -99;
+	  genTbar.wdau1mass= -99;
+	  genTbar.wdau1pt  = -99;
+	  genTbar.wdau1eta = -99;
+	  genTbar.wdau1phi = -99;
+	  genTbar.wdau1id  = -99;
+	  genTbar.wdau2mass= -99;
+	  genTbar.wdau2pt  = -99;
+	  genTbar.wdau2eta = -99;
+	  genTbar.wdau2phi = -99;
+	  genTbar.wdau2id  = -99;	  
+	}
+	
+	for ( std::list<HepMC::GenParticle*>::iterator t = tquarks.begin() ; t!=tquarks.end() ; t++ ){
+	  
+	  int pdg = (*t)->pdg_id();	
+	  
+	  genTopInfo* thetop;
+	  if     ( pdg==+6 ) thetop = &genTop;
+	  else if( pdg==-6)  thetop = &genTbar;
+	  else{
+	    cout << "Error: top" << endl;
+	    ascii_in >> evt;
+	    continue;
+	  }
+	  
+	  if ( (*t)->end_vertex() ) {
+	    for ( HepMC::GenVertex::particle_iterator des = (*t)->end_vertex()->particles_begin(HepMC::descendants);
+		  des != (*t)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
+	      
+	      // first, deal w/ the b-quark
+	      if( abs((*des)->pdg_id())==5 && (*des)->status()==1 ){
+		thetop->bmass   = (*des)->momentum().m();
+		thetop->bpt     = (*des)->momentum().perp();
+		thetop->beta    = (*des)->momentum().eta();
+		thetop->bphi    = (*des)->momentum().phi();
+		thetop->bstatus = (*des)->pdg_id();
+	      }
+
+	      // then, deal w/ the W boson
+	      if( abs((*des)->pdg_id())==24 && (*des)->status()==1 && (*des)->end_vertex()!=0 ){
+		int countdau = 0;
+		for ( HepMC::GenVertex::particle_iterator des2 = (*des)->end_vertex()->particles_begin(HepMC::descendants);
+		      des2 != (*des)->end_vertex()->particles_end(HepMC::descendants); ++des2 ) {
+		  int pdg2 = (*des2)->pdg_id();
+		  int isWdaughter = abs(pdg2)<=5 || ( abs(pdg2)>=11 && abs(pdg2)<=16 ) ;
+		  if(isWdaughter && countdau==0){
+		    thetop->wdau1mass   = (*des2)->momentum().m();
+		    thetop->wdau1pt     = (*des2)->momentum().perp();
+		    thetop->wdau1eta    = (*des2)->momentum().eta();
+		    thetop->wdau1phi    = (*des2)->momentum().phi();
+		    thetop->wdau1id     = (*des2)->pdg_id();
+		  }
+		  else if(isWdaughter && countdau==1){
+		    thetop->wdau2mass   = (*des2)->momentum().m();
+		    thetop->wdau2pt     = (*des2)->momentum().perp();
+		    thetop->wdau2eta    = (*des2)->momentum().eta();
+		    thetop->wdau2phi    = (*des2)->momentum().phi();
+		    thetop->wdau2id     = (*des2)->pdg_id();
+		  }
+		  else{}
+		  countdau++;		
+		}
+	      }
+	    } // des
+	  }
+	  else{
+	    thetop->bmass     = 0;
+	    thetop->bpt       = 0;
+	    thetop->beta      = 0;
+	    thetop->bphi      = 0;
+	    thetop->bstatus   = -99;
+	    thetop->wdau1mass = ((*t)->momentum()).m();
+	    thetop->wdau1pt   = ((*t)->momentum()).perp();
+	    thetop->wdau1eta  = ((*t)->momentum()).eta();
+	    thetop->wdau1phi  = ((*t)->momentum()).phi();
+	    thetop->wdau1id   = -99;
+	    thetop->wdau2mass = 0;
+	    thetop->wdau2pt   = 0;
+	    thetop->wdau2eta  = 0;
+	    thetop->wdau2phi  = 0;
+	    thetop->wdau2id   = -99;  
+	  }
+
+	}
       
-      tree->Fill();
+
+	// fill the tree
+	pcount++;
+	tree->Fill();
       
       } // is good event
-
+      
       delete evt;
       ascii_in >> evt;
       
@@ -790,6 +1092,7 @@ int main(int argc, const char* argv[])
   float totalTime = clock2->RealTime();
   cout << "*******************" << endl;
   cout << "Job done in " << totalTime/60. << " min." << endl;
+  cout << string(Form("Filter efficiency: %.2f %%", float(pcount)/float(icount)*100.)) << endl;
 
   // delete MEIntegrator and other allocated objects
   cout << "Delete clocks and random engine..." << endl;
