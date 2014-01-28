@@ -1,6 +1,7 @@
 #ifndef HELPERFUNCTIONS_H // header guards
 #define HELPERFUNCTIONS_H
 
+using namespace std;
 
 #include <cassert>
 #include <cstdlib>
@@ -27,6 +28,32 @@ typedef struct
   float phi;
 } metInfo;
 
+typedef struct 
+{
+  float x1; 
+  float x2;
+  float pdf;
+  float pt;
+  float eta;
+  float phi;
+  float m;
+  float me2_ttH;
+  float me2_ttbb;
+
+  void reset(){
+     x1       = -99.; 
+     x2       = -99.;
+     pdf      = -99.;
+     pt       = -99.;
+     eta      = -99.;
+     phi      = -99.;
+     m        = -99.;
+     me2_ttH  = -99.;
+     me2_ttbb = -99.;
+  };
+
+} tthInfo;
+
 
 typedef struct 
 {
@@ -45,6 +72,46 @@ typedef struct
   float shift;
 } JetObservable;
 
+typedef struct
+{
+ 
+  TLorentzVector p4[8];
+
+  void fill( vector<TLorentzVector> p4v ){
+    for(unsigned int k = 0 ; k < p4v.size() ; k++){
+      if(k<8) p4[k] = p4v[k];
+    }
+  };
+
+  void print( string name ){
+    cout << "Phase-space point " << name << ":" << endl;
+    for(unsigned int k = 0 ; k < 8 ; k++){
+      cout << "(" << p4[k].E() << ", " <<  p4[k].Eta() << ", " <<  p4[k].Phi() << ") " << endl;
+    }
+  };
+  
+} PhaseSpacePoint;
+
+
+bool isSamePSP( PhaseSpacePoint P, PhaseSpacePoint Q, float resolE, float resolDR){
+
+  for(unsigned int k = 0 ; k < 8 ; k++){
+    if(  (Q.p4)[k].E()<=0 ){
+      //cout << "Negative energy..." << endl;
+      return false;    
+    }
+    
+    float dEoE = TMath::Abs( (P.p4)[k].E()- (Q.p4)[k].E() )/ (Q.p4)[k].E();
+    float dR   = ( (P.p4)[k] ).DeltaR( (Q.p4)[k] );
+    if( dEoE>resolE  || dR > resolDR ){
+      //cout << "dE/E(" << k << ") = " << dEoE << ", dR = " << dR << endl;
+      return false;
+    }
+  }
+  
+  //cout << "It the same PSP!!!" << endl; 
+  return true;   
+}
 
 struct JetObservableListerByPt
 {
@@ -60,6 +127,12 @@ struct JetObservableListerByCSV
   }
 };
 
+struct SorterByPt
+{
+  bool operator()( const TLorentzVector &lx, const TLorentzVector & rx ) const {
+    return lx.Pt() > rx.Pt();
+  }
+};
 
 typedef struct
 {

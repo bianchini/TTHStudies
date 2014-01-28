@@ -827,18 +827,18 @@ int main(int argc, const char* argv[])
     //if( currentTree->GetBranch("") )
 
     currentTree->SetBranchAddress("EVENT",            &EVENT);
-    if( currentTree->GetBranch("PUweight") )          currentTree->SetBranchAddress("PUweight",         &PUweight);
-    if( currentTree->GetBranch("PUweightP") )         currentTree->SetBranchAddress("PUweightP",        &PUweightP);
-    if( currentTree->GetBranch("PUweightM") )         currentTree->SetBranchAddress("PUweightM",        &PUweightM);
-    if( currentTree->GetBranch("lheNj") )             currentTree->SetBranchAddress("lheNj",            &lheNj); 
-    if( currentTree->GetBranch("weightTrig2012") )    currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
-    if( currentTree->GetBranch("triggerFlags") )      currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
+    if   ( currentTree->GetBranch("PUweight") )       currentTree->SetBranchAddress("PUweight",         &PUweight);
+    if   ( currentTree->GetBranch("PUweightP") )      currentTree->SetBranchAddress("PUweightP",        &PUweightP);
+    if   ( currentTree->GetBranch("PUweightM") )      currentTree->SetBranchAddress("PUweightM",        &PUweightM);
+    if   ( currentTree->GetBranch("lheNj") )          currentTree->SetBranchAddress("lheNj",            &lheNj); 
+    if   ( currentTree->GetBranch("weightTrig2012") ) currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
+    if   ( currentTree->GetBranch("triggerFlags") )   currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
     currentTree->SetBranchAddress("Vtype",            &Vtype);        
-    if( currentTree->GetBranch("nhJets") )            currentTree->SetBranchAddress("nhJets",           &nhJets);
+    if   ( currentTree->GetBranch("nhJets") )         currentTree->SetBranchAddress("nhJets",           &nhJets);
     currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("nSimBs",           &nSimBs);
     currentTree->SetBranchAddress("nvlep",            &nvlep);
-    if( currentTree->GetBranch("nPVs") )              currentTree->SetBranchAddress("nPVs",             &nPVs);
+    if   ( currentTree->GetBranch("nPVs") )           currentTree->SetBranchAddress("nPVs",             &nPVs);
     currentTree->SetBranchAddress("genB",             &genB);
     currentTree->SetBranchAddress("genBbar",          &genBbar);
     currentTree->SetBranchAddress("genTop",           &genTop);

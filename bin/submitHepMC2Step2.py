@@ -11,9 +11,10 @@ import sys
 sys.path.append('./')
 
 
-outdir = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/default_1/'
+indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/default_1/'
+outdir = '/scratch/bianchi/HBB_EDMNtuple/SherpaOpenLoops/'
 
-output   = commands.getoutput("ls -1 "+outdir)
+output   = commands.getoutput("ls -1 "+indir)
 outFiles = re.split(r'\n',output)
 
 files_per_job = 10
@@ -23,7 +24,7 @@ counter   = 0
 totcounter= 0
 job       = 0
 
-print "\nProcessing files in %s" % outdir
+print "\nProcessing files in %s" % indir
 print "Total number of files %s" % len(outFiles)
 
 for file in outFiles:
@@ -56,7 +57,7 @@ for file in outFiles:
             l_in.append( '/scratch/bianchi/'+file_i)
 
         process.fwliteInput.pathToFile  = cms.vstring( l_in )
-        process.fwliteInput.outFileName = cms.string("../root/hepMC_default_1_p"+str(job)+".root") 
+        process.fwliteInput.outFileName = cms.string(outdir+"hepMC_default_1_p"+str(job)+".root") 
 
         out = open(jobName+'.py','w')
         out.write(process.dumpPython())     
@@ -74,7 +75,7 @@ for file in outFiles:
         f.write('fi\n')
         f.write('ls -ltr /scratch/bianchi/\n')
         for file_i in l:
-            f.write('srmcp -2 srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+outdir+file_i+' file:////scratch/bianchi/'+file_i+'\n')
+            f.write('srmcp -2 srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+indir+file_i+' file:////scratch/bianchi/'+file_i+'\n')
         f.write('ls -ltr /scratch/bianchi/\n')
         f.write('HepMCtoStep2Converter ./'+jobName+'.py\n')
         f.write('echo "Remove input files..."\n')   
