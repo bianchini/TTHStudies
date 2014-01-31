@@ -5,9 +5,6 @@ import re
 import os
 import sys
 
-outdir = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/default_1/'
-
-print "Start : %s" % time.ctime()
 
 # how many files have been copied
 counter        = 0
@@ -21,12 +18,25 @@ penalty = 2 #sec
 # number of times no hepmc files are found (the source hangs, or it is over)
 numberoffailures = 0
 
+if len(sys.argv) < 2:
+    sys.stderr.write('Usage: sys.argv[0] <destination>\n')
+    sys.exit(1)
+
+outdir = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/'+sys.argv[1]+'/'
+
+if not os.path.exists(outdir):
+    sys.stderr.write('<destination> '+sys.argv[1]+' was not found!\n')
+    sys.exit(1)
+
+print "Start : %s" % time.ctime()
+
 for i in range(2000):
 
     print 'Itearation number %s' % i
     print '--------------------'
 
-    numoffiles     = 0
+    numoffiles           = 0
+    numofincompletefiles = 0
     
     onlyfiles = [ f for f in os.listdir('./') if os.path.isfile(os.path.join('./',f)) ]
 
@@ -52,10 +62,11 @@ for i in range(2000):
                         elapsed = (time.time() - start)
                         print '..... Done in %s sec' % elapsed
                 else:
+                    numofincompletefiles += 1
                     print '..... file incomplete: WAIT FOR NEXT ITERATION'
                     
         except IOError:
-            print 'Not found'
+            print 'Not found'            
 
     print ''
     print '--------------------'
@@ -69,6 +80,9 @@ for i in range(2000):
     if  numoffiles > numoflastfiles:
         penalty  -= 0.2
     elif  numoffiles < numoflastfiles:
+        penalty  += 0.2
+
+    if numofincompletefiles==numoffiles :
         penalty  += 0.2
         
     if penalty <= 0.:        
