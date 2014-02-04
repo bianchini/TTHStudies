@@ -66,7 +66,7 @@ if len(massesT)>1:
     extraoutname = "MTscan_"
 
 # set integral optimizations
-integralOption0 = 1 # chi2-optimization
+integralOption0 = 0 # chi2-optimization
 integralOption1 = 0 # permutation pruning
 integralOption2 = 1 # integration speed-up
 
@@ -74,7 +74,7 @@ integralOption2 = 1 # integration speed-up
 ntuplizeAll = 0
 
 # systematics
-systematics = cms.vint32(0, 1, 2, 3, 4)
+systematics = cms.vint32(0)
 
 
 
@@ -144,16 +144,16 @@ def submitMEAnalysisNew_all(script,
 
     if len(massesH) == 1 and len(massesT) == 1:
         #process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
-        process.fwliteInput.doType1            = cms.untracked.int32(0)
+        process.fwliteInput.doType1         = cms.untracked.int32(0)
     else:
-        process.fwliteInput.doType1            = cms.untracked.int32(0)
+        process.fwliteInput.doType1         = cms.untracked.int32(0)
 
-    process.fwliteInput.doType2            = cms.untracked.int32(not selectByBTagShape)
+    process.fwliteInput.doType2             = cms.untracked.int32(not selectByBTagShape)
 
     if len(massesH) == 1 and len(massesT) == 1:
-        process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType3         = cms.untracked.int32(not selectByBTagShape)
     else:
-        process.fwliteInput.doType3            = cms.untracked.int32(0)
+        process.fwliteInput.doType3         = cms.untracked.int32(0)
     
     process.fwliteInput.btag_prob_cut_6jets = cms.untracked.double(btag_prob_cut_6jets)
     process.fwliteInput.btag_prob_cut_5jets = cms.untracked.double(btag_prob_cut_5jets)
@@ -163,16 +163,16 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.csv_WP_M            =  cms.untracked.double(csv_WP_M)
     process.fwliteInput.csv_WP_T            =  cms.untracked.double(csv_WP_T)
 
-    process.fwliteInput.useRegression    = cms.untracked.int32(useRegression)
+    process.fwliteInput.useRegression       = cms.untracked.int32(useRegression)
 
-    process.fwliteInput.massesH          = massesH
-    process.fwliteInput.massesT          = massesT
-    process.fwliteInput.MH               = cms.untracked.double(MH)
-    process.fwliteInput.MT               = cms.untracked.double(MT)
-    process.fwliteInput.fixNumEvJob      = cms.untracked.int32(fixNumEvJob)
-    process.fwliteInput.evLimits         = cms.vint32(evLow,evHigh)
+    process.fwliteInput.massesH             = massesH
+    process.fwliteInput.massesT             = massesT
+    process.fwliteInput.MH                  = cms.untracked.double(MH)
+    process.fwliteInput.MT                  = cms.untracked.double(MT)
+    process.fwliteInput.fixNumEvJob         = cms.untracked.int32(fixNumEvJob)
+    process.fwliteInput.evLimits            = cms.vint32(evLow,evHigh)
 
-    process.fwliteInput.printout         = cms.untracked.int32(printout)
+    process.fwliteInput.printout            = cms.untracked.int32(printout)
 
     process.fwliteInput.doGenLevelAnalysis  = cms.untracked.int32(doGenLevelAnalysis)
     process.fwliteInput.speedup             = cms.untracked.int32(speedup)
@@ -190,7 +190,7 @@ def submitMEAnalysisNew_all(script,
     f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
     f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
     f.write('eval `scramv1 runtime -sh`\n')
-    f.write('export LD_PRELOAD="libglobus_gssapi_gsi_gcc64pthr.so.0":${LD_PRELOAD}\n')
+    #f.write('export LD_PRELOAD="libglobus_gssapi_gsi_gcc64pthr.so.0":${LD_PRELOAD}\n')
     f.write('\n\n')
     f.write('\n\n')
     f.write('MEAnalysisNew_all ./'+jobName+'.py\n')
@@ -229,7 +229,6 @@ def submitFullMEAnalysisNew_all( analysis ):
     for i in range(num_of_jobs):
         counter = counter + 1
         submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job )
-
 
     return
 
@@ -319,21 +318,21 @@ def submitFullMEAnalysisNew_all( analysis ):
         counter = counter + 1
         submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-   # TbartW
+    # TbartW
     sample  = 'TbartW'
     counter = 0
     for i in range(1):
         counter = counter + 1
         submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-   # Tbart
+    # Tbart
     sample  = 'Tbart'
     counter = 0
     for i in range(1):
         counter = counter + 1
         submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-   # Tbars
+    # Tbars
     sample  = 'Tbars'
     counter = 0
     for i in range(1):
@@ -488,7 +487,7 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 
 
-analyses = ['nominal_1-1-1']
+analyses = ['nominal_0-0-1']
 
 for analysis in analyses:
     if doGenLevelAnalysis:

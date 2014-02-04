@@ -526,7 +526,7 @@ process.fwliteInput = cms.PSet(
 
     # choose which systematics to run
     # [0=nominal, 1=CSVup, 2=CSVdown, 3=JECup, 4=JECdown, 5=JERup, 6=JERdown]   
-    systematics= cms.vint32(0,1,2,3,4),
+    systematics= cms.vint32(0),
 
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets
