@@ -23,8 +23,8 @@ process.fwliteInput = cms.PSet(
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
     # input file directory
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
-    #pathToFile    = cms.string("./"),
+    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
+    pathToFile    = cms.string("./root/"),
 
     # a name tag for the input files
     ordering      = cms.string("DiJetPt_"),
@@ -160,7 +160,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6_v2'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -392,7 +392,25 @@ process.fwliteInput = cms.PSet(
     color    = cms.int32(1),
     xSec     = cms.double(-1),
     ),
-   
+
+
+    # GEN LEVEL STUDIES
+
+    cms.PSet(
+    skip     = cms.bool(False),  
+    name     = cms.string('TTH_HToBB_M-125_sherpa'+VType),
+    nickName = cms.string('TTH125'),
+    color    = cms.int32(2),
+    xSec     = cms.double(0.1302*0.569)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),  
+    name     = cms.string('TTbb_sherpa'+VType),
+    nickName = cms.string('TTbb'),
+    color    = cms.int32(41),
+    xSec     = cms.double(6.76)
+    ),
     
     ),
 
@@ -403,7 +421,7 @@ process.fwliteInput = cms.PSet(
     hypo                      = cms.untracked.int32(0),
 
     # optimization0: re-run integral if bad chi2
-    integralOption0           = cms.untracked.int32(1),
+    integralOption0           = cms.untracked.int32(0),
     
     # max chi2 for optimization0
     maxChi2                   = cms.untracked.double(2.5),
@@ -474,6 +492,11 @@ process.fwliteInput = cms.PSet(
     # select events based on btag LLR
     selectByBTagShape= cms.untracked.int32(0),
 
+    # b-tag thresholds (for jet counting)
+    csv_WP_L         = cms.untracked.double( 0.244 ),
+    csv_WP_M         = cms.untracked.double( 0.5 ),
+    csv_WP_T         = cms.untracked.double( 0.898 ),
+
     # if selectByBTagShape, choose cut-value
     btag_prob_cut_6jets = cms.untracked.double( 0.96675 ), #0.96675
     btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
@@ -530,12 +553,11 @@ process.fwliteInput = cms.PSet(
 
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets
-    doGenLevelAnalysis  = cms.untracked.int32(0),
+    doGenLevelAnalysis  = cms.untracked.int32(1),
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(0),
+    ntuplizeAll         = cms.untracked.int32(1),
     
     )
 
-#print (process.fwliteInput.doType0)

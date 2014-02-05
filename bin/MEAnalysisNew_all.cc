@@ -914,7 +914,7 @@ int main(int argc, const char* argv[])
       // print the processed event number
       if(i%500==0){
 	cout << i << " (" << float(i)/float(nentries)*100 << " %)" << endl;
-      }
+      }    
 
       // set variables that are used, but for which there may be no branches in the input tree
       PUweight       = 1.0;
@@ -932,7 +932,11 @@ int main(int argc, const char* argv[])
       // read event...
       currentTree->GetEntry(i);
       
-
+      if( debug>=2 ){
+	cout << endl;
+	cout << "******************************" << endl;
+	cout << "Analyzing event " << EVENT.event << endl;
+      }
 
       // RESET VARIABLES
       nPermut_            = 0;
@@ -1087,6 +1091,7 @@ int main(int argc, const char* argv[])
       TLorentzVector genBLV   (1,0,0,1);
       TLorentzVector genBbarLV(1,0,0,1);
 
+      if(debug>=2) cout << "@A" << endl;
 
       // set-up top decay products (if available from input file...)
       // N.B. upper limit needed to prevent from using unfilled branches (<=> filled with std::max) 
@@ -1123,14 +1128,20 @@ int main(int argc, const char* argv[])
 	p4H_[3] = (genBLV+genBbarLV).M();
       }    
 
+      if(debug>=2) cout << "@B" << endl;
+
       // dummy cut (for the moment)
       bool properEventSL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
       bool properEventDL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
 
       if(!(properEventSL || properEventDL)){
 	cout << "A dummy cut has failed..." << endl;
+	cout << " => go to next event!" << endl;
+	cout << "******************************" << endl;
 	continue;
       }
+
+      if(debug>=2) cout << "@C" << endl;
 
       // define LV for the 6 (8) particles in ttbb (ttH) events
       TLorentzVector TOPHADW1(1,0,0,1);
@@ -1144,6 +1155,8 @@ int main(int argc, const char* argv[])
 
       HIGGSB1.SetPtEtaPhiM( genBLV.Pt(),    genBLV.Eta(),    genBLV.Phi(),    genBLV.M());
       HIGGSB2.SetPtEtaPhiM( genBbarLV.Pt(), genBbarLV.Eta(), genBbarLV.Phi(), genBbarLV.M());
+
+      if(debug>=2) cout << "@D" << endl;
 
       /* ////// PDG numbering: ///////
 	d  1      e-   11
@@ -1211,7 +1224,7 @@ int main(int argc, const char* argv[])
       // all the rest...
       else{}
 
-
+      if(debug>=2) cout << "@E" << endl;
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ NUs from top @@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -1244,26 +1257,38 @@ int main(int argc, const char* argv[])
 	INVISIBLE += INVISIBLE_tmp;
       }
 
+      if(debug>=2) cout << "@F" << endl;
 
       // save informations on the ttH system
       if( switchoffOL==0 && 
 	  p4T_[0]>0. && p4Tbar_[0]>0. && p4H_[0]>0. &&  
 	  TMath::Abs(HIGGSB1.Py())>0  && TMath::Abs(HIGGSB2.Py())>0){
 
-	TLorentzVector top;
+	if(debug>=2){
+	  cout <<  "p4T    = (" << p4T_   [0] << "," <<    p4T_   [1]<< "," <<    p4T_   [2] << "," <<    p4T_   [3] << ")" << endl;
+	  cout <<  "p4Tbar = (" << p4Tbar_[0] << "," <<    p4Tbar_[1]<< "," <<    p4Tbar_[2] << "," <<    p4Tbar_[3] << ")" << endl;
+	  cout <<  "p4H    = (" << p4H_   [0] << "," <<    p4H_   [1]<< "," <<    p4H_   [2] << "," <<    p4H_   [3] << ")" << endl;
+	}
+
+	TLorentzVector top(0,0,0,0);
 	top.SetPtEtaPhiM  ( p4T_   [0],    p4T_   [1],    p4T_   [2],    p4T_   [3]);
-	TLorentzVector atop;
+	TLorentzVector atop(0,0,0,0);
 	atop.SetPtEtaPhiM ( p4Tbar_[0],    p4Tbar_[1],    p4Tbar_[2],    p4Tbar_[3]);
-	TLorentzVector higgs;  
+	TLorentzVector higgs(0,0,0,0);  
 	higgs.SetPtEtaPhiM( p4H_   [0],    p4H_   [1],    p4H_   [2],    p4H_   [3]);
+
+	// this is needed because if t+t~+h has 0 pT, tot.Eta() raises a warning
+	double px = (top+atop+higgs).Px();
+	double py = (top+atop+higgs).Py();
+	double pz = (top+atop+higgs).Pz();
 
 	double x1,x2;
 	ttH_.me2_ttH  = meIntegrator->meSquaredOpenLoops( &top, &atop, &higgs, x1, x2);
 	ttH_.x1       = x1;
 	ttH_.x2       = x2;
 	ttH_.pdf      = meIntegrator->ggPdf( x1, x2, (2*MT + MH)/2. )*x1*x1*x2*x2;
-	ttH_.pt       = (top+atop+higgs).Pt();
-	ttH_.eta      = (top+atop+higgs).Eta();
+	ttH_.pt       = TMath::Sqrt( px*px + py*py );
+	ttH_.eta      = ttH_.pt>1e-03 ? (top+atop+higgs).Eta() : (top+atop+higgs).Rapidity();
 	ttH_.phi      = (top+atop+higgs).Phi();
 	ttH_.m        = (top+atop+higgs).M();
 	ttH_.me2_ttbb = meIntegrator->meSquaredOpenLoops_ttbb( &top, &atop, &HIGGSB1, &HIGGSB2, x1, x2);	
@@ -1273,6 +1298,7 @@ int main(int argc, const char* argv[])
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ GEN BHADRONS @@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
+      if(debug>=2) cout << "@G" << endl;
 
       // find out number of b-hadrons in the event...
       nSimBs_      = nSimBs;
@@ -1313,12 +1339,15 @@ int main(int argc, const char* argv[])
 	}
       }
 
+      if(debug>=2) cout << "@H" << endl;
 
       // loop over systematics
       for( unsigned int syst = 0; syst < systematics.size() ; syst++){
 
 	// which systematic is considered
 	syst_ = systematics[ syst ];
+
+	if(debug>=2) cout << "Dealing with systematics " << syst_  << endl;
 
 	// decide which analysis to run
 	doCSVup   = syst_==1 ;
@@ -1390,13 +1419,12 @@ int main(int argc, const char* argv[])
 	  properEventSL = (lepSelVtype2 && (isMC ? 1 : trigVtype2)) || (lepSelVtype3 && (isMC ? 1 : trigVtype3));	 
 	  
 	  if( debug>=2 ){
-	    cout << "******** Event " << EVENT.event << endl;	
 	    cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
 	    cout << "Lep sel. Vtype2 = " << lepSelVtype2 << ", lep sel. Vtype3 = " << lepSelVtype3 << endl;
 	    cout << "Trigger: " <<  ((isMC ? 1 : trigVtype2) || (isMC ? 1 : trigVtype3)) << endl;
 	    cout << "Passes = " << int (properEventSL) << endl;
 	  }
-	  
+
 	  // save lepton kinematics...
 	  nLep_ = 1;
 	  
@@ -1467,13 +1495,12 @@ int main(int argc, const char* argv[])
 	  properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
 	  if( debug>=2 ){
-	    cout << "******** Event " << EVENT.event << endl;	
 	    cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
 	    cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
 	    cout << "Trigger: " <<  ((isMC ? 1 : trigVtype0) || (isMC ? 1 : trigVtype1)) << endl;
 	    cout << "Passes = " << int (properEventDL) << endl;
 	  }
-	  
+
 	  // save lepton(s) kinematics into the tree...
 	  nLep_ = 2;
 	  
@@ -1499,7 +1526,11 @@ int main(int argc, const char* argv[])
     
 	// continue if leptons do not satisfy cuts
 	if( !(properEventSL || properEventDL) ){
-	  if( debug>=2 ) cout << "Rejected by lepton selection" << endl << endl;
+	  if( debug>=2 ){
+	    cout << "Rejected by lepton selection" << endl ;
+	    cout << " => go to next event!" << endl;
+	    cout << "******************************" << endl;	  
+	  }
 	  continue;
 	}
 
@@ -1856,7 +1887,11 @@ int main(int argc, const char* argv[])
 
       // continue if not enough jets
       if( jetsAboveCut<4 ){
-	if( debug>=2 ) cout << "Rejected by min jet cut" << endl << endl;
+	if( debug>=2 ){
+	  cout << "Rejected by min jet cut" << endl ;
+	  cout << " => go to next event!" << endl;
+	  cout << "******************************" << endl;	 
+	}
 	continue;
       }
       
@@ -2007,6 +2042,8 @@ int main(int argc, const char* argv[])
 	}
 	else{ 
 	  cout << "Inconsistency in selectByBTagShape... continue" << endl;
+	  cout << " => go to next event!" << endl;
+	  cout << "******************************" << endl;
 	  continue;
 	}		
 
@@ -2372,6 +2409,8 @@ int main(int argc, const char* argv[])
 	  // sanity check:
 	  if(buntag_indices.size() != 2){
 	    cout << "Inconsistency found for (analyze_type0 || analyze_type1)... continue" << endl;
+	    cout << " => go to next event!" << endl;
+	    cout << "******************************" << endl;
 	    continue;
 	  }
 
@@ -2416,6 +2455,8 @@ int main(int argc, const char* argv[])
 	  // sanity check:
 	  if(buntag_indices.size() != 1){
 	    cout << "Inconsistency found for analyze_type2... continue" << endl;
+	    cout << " => go to next event!" << endl;
+	    cout << "******************************" << endl;
 	    continue;
 	  }
 
@@ -2439,6 +2480,8 @@ int main(int argc, const char* argv[])
 	  // sanity check:
 	  if(buntag_indices.size() <= 2 ){
 	    cout << "Inconsistency found for analyze_type3... continue" << endl;
+	    cout << " => go to next event!" << endl;
+	    cout << "******************************" << endl;
 	    continue;
 	  }
 
@@ -2497,6 +2540,8 @@ int main(int argc, const char* argv[])
 	}
 	else{ 
 	  cout << "Inconsistency in the analysis... continue." << endl; 
+	  cout << " => go to next event!" << endl;
+	  cout << "******************************" << endl;
 	  continue; 
 	}
 
@@ -2504,6 +2549,8 @@ int main(int argc, const char* argv[])
 	// sanity-check
 	if(type_>=0 && type_<=3 && (ind1==999 || ind2==999)){
 	  cout << "Inconsistency found: ind1 or ind2 are not set...continue." << endl;
+	  cout << " => go to next event!" << endl;
+	  cout << "******************************" << endl;
 	  continue;
 	}
 
@@ -2922,7 +2969,7 @@ int main(int argc, const char* argv[])
 		  }
 		  
 		  // DEBUG
-		  if( debug && 0 ){
+		  if( debug >= 3 ){
 		    cout << "Hyp=" << hyp <<"  [BTag M="   << numBTagM_ << "]" << endl;
 		    cout << " bLep: p_b("   << jets_csv[pos_to_index[bLep_pos]] << ")=" << p_b_bLep;
 		    cout << " bHad: p_b("   << jets_csv[pos_to_index[bHad_pos]] << ")=" << p_b_bHad;
@@ -2932,7 +2979,7 @@ int main(int argc, const char* argv[])
 		      cout << " w1  : p_j(" << jets_csv[pos_to_index[w1_pos]]   << ")=" << p_j_w1;
 		    if(!(type_>=6 || type_==-3 || type_==1 || type_==2)) 
 		      cout << " w2  : p_j(" << jets_csv[pos_to_index[w2_pos]]   << ")=" << p_j_w2 << endl;
-		    cout << " P = "         <<  p_b_bLep * p_b_bHad * p_b_b1 * p_b_b2 * p_j_w1 * p_j_w2 << endl;
+		    cout << " P = "         <<  (p_b_bLep * p_b_bHad * p_b_b1 * p_b_b2 * p_j_w1 * p_j_w2) << endl;
 		  }
 		  
 		  // fill arrays with per-permutation probability
@@ -3140,7 +3187,9 @@ int main(int argc, const char* argv[])
 			// modufy the VEGAS parameters; 
 			ROOT::Math::VegasParameters param( *(ig2->ExtraOptions()) );			
 			ig2->SetParameters(param);			
+
 			// print both...
+			cout << endl;
 			ig2->Options().Print(std::cout);
 			ig2->ExtraOptions()->Print(std::cout);
 		      }		      
@@ -3447,6 +3496,8 @@ int main(int argc, const char* argv[])
 
       } // systematics
 
+      if(debug>=2) cout << "@I" << endl;
+
       // clean the map
       int countGSL = 0;
       for( std::map<string, ROOT::Math::GSLMCIntegrator*>::iterator x = perm_to_integrator.begin() ; 
@@ -3464,6 +3515,8 @@ int main(int argc, const char* argv[])
     // this histogram keeps track of the fraction of analyzed events per sample
     hcounter->SetBinContent(1,float(events_)/nentries);    
 
+    if(debug>=2) cout << "@L" << endl;
+
   } // samples
 
 
@@ -3474,6 +3527,8 @@ int main(int argc, const char* argv[])
   hparam  ->Write("",TObject::kOverwrite );
   tree->Write("",TObject::kOverwrite );
   fout_tmp->Close();
+
+  if(debug>=2) cout << "@M" << endl;
 
   // find out the total time needed for the job
   clock2->Stop();

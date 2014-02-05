@@ -144,6 +144,33 @@ public:
   }
 };
 
+
+class IsHiggs_decayed {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( abs(p->pdg_id())==25 && p->status()==3  && p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
+class IsTquark_decayed {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( abs(p->pdg_id())==6 && p->status()==3  && p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
+class IsWboson_decayed {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( abs(p->pdg_id())==24 && p->status()==11  && p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
+
+
 class IsHiggs {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
@@ -156,6 +183,22 @@ class IsTquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
     if ( abs(p->pdg_id())==6 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
+class IsWboson {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( abs(p->pdg_id())==24 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
+class IsZboson {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( (abs(p->pdg_id())==23 || p->pdg_id()==22)  && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
 };
@@ -205,7 +248,7 @@ int main(int argc, const char* argv[])
   /* @@@@@@@@@@@@@@@@@@@@@@@@ FWLITE @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
  
-  std::cout << "HEPMC --> Step2 converter" << std::endl;
+  std::cout << "HepMC --> ROOT Step2 converter" << std::endl;
   gROOT->SetBatch(true);
  
   gSystem->Load("libFWCoreFWLite");
@@ -227,14 +270,24 @@ int main(int argc, const char* argv[])
   
   // FLAGS
   bool   verbose             ( in.getParameter<bool>         ("verbose")   );
+  bool   topDecay            ( in.getParameter<bool>         ("topDecay")  );
+  bool   higgsDecay          ( in.getParameter<bool>         ("higgsDecay"));
 
   bool   filter              ( in.getParameter<bool>         ("filter")    );
+
   double jetRadius           ( in.getParameter<double>       ("jetRadius") );
   double ptMin               ( in.getParameter<double>       ("ptMin")     );
+
   double ptCut               ( in.getParameter<double>       ("ptCut")     );
   double etaCut              ( in.getParameter<double>       ("etaCut")    );
   int    nJetsMin            ( in.getParameter<int>          ("nJetsMin")  );
+
+  double rIsoLep             ( in.getParameter<double>       ("rIsoLep"));
+  double dRIsoLep            ( in.getParameter<double>       ("dRIsoLep"));
   double overlapLep          ( in.getParameter<double>       ("overlapLep"));
+  double ptCutLep            ( in.getParameter<double>       ("ptCutLep")     );
+  double etaCutLep           ( in.getParameter<double>       ("etaCutLep")    );
+ 
   /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
   /* @@@@@@@@@@@@@@@@@@@@@@@@@ INITIALIZE @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 
@@ -362,7 +415,7 @@ int main(int argc, const char* argv[])
   tree->Branch("vLepton_genEta",   vLepton_genEta,    "vLepton_genEta[nvlep]/F");
   tree->Branch("vLepton_genPhi",   vLepton_genPhi,    "vLepton_genPhi[nvlep]/F");
   tree->Branch("vLepton_pfCorrIso",vLepton_pfCorrIso, "vLepton_pfCorrIso[nvlep]/F");
-  tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/F");
+  tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/I");
 
   //tree->Branch("hJet_pt",          hJet_pt,         "hJet_pt[nhJets]/F");    
   //tree->Branch("hJet_eta",         hJet_eta,        "hJet_eta[nhJets]/F");    
@@ -418,8 +471,14 @@ int main(int argc, const char* argv[])
   IsLquark is_l_quark;
   IsBquark is_b_quark;
   IsCquark is_c_quark;
+
   IsTquark is_t_quark;
-  IsHiggs  is_higgs;
+  IsWboson is_w_boson;
+  IsHiggs  is_h_boson;
+
+  IsTquark_decayed is_t_quark_decayed;
+  IsWboson_decayed is_w_boson_decayed;
+  IsHiggs_decayed  is_h_boson_decayed;
   
   // total event counter
   int icount = 0;
@@ -521,14 +580,16 @@ int main(int argc, const char* argv[])
 	  // they will ahve such status ]
 	  if ( is_fs_particle(*p) && 
 	       !is_t_quark(*p) && 
-	       !is_higgs(*p) ) 
+	       !is_h_boson(*p) && 
+	       !is_w_boson(*p) ) 
 	    finalstateparticles.push_back(*p);
 
-	  if ( is_t_quark(*p) )     tquarks.push_back(*p);
 	  if ( is_b_quark(*p) )     bquarks.push_back(*p);
 	  if ( is_c_quark(*p) )     cquarks.push_back(*p);
 	  if ( is_l_quark(*p) )     lquarks.push_back(*p);
-	  if ( is_higgs(*p)   )     higgs.push_back(*p);
+
+	  if ( (!topDecay   && is_t_quark(*p)) || (topDecay   && is_t_quark_decayed(*p)) )  tquarks.push_back(*p);
+	  if ( (!higgsDecay && is_h_boson(*p)) || (higgsDecay && is_h_boson_decayed(*p)) )  higgs.push_back(*p);
 
 	}
 	
@@ -545,8 +606,11 @@ int main(int argc, const char* argv[])
 	// container of leptons 4-vectors
 	vector<TLorentzVector> leptons ;
 	
-	// contained of leptons pdgid
+	// container of leptons pdgid
 	vector<int> leptonscharge;
+
+	// container of leptons isolation
+	vector<float> leptonsiso;
 	
 	// container of jets 4-vectors
 	vector<TLorentzVector> jets ;
@@ -566,8 +630,22 @@ int main(int argc, const char* argv[])
 	// total neutrinos momentum
 	TLorentzVector invisible(0.,0.,0.,0) ;
       
-	// get the leptons, MET, and particles for jets
+	// get the particles for jets
 	vector<fastjet::PseudoJet> input_particles;
+	for ( std::list<HepMC::GenParticle*>::iterator p_fs = finalstateparticles.begin() ; 
+	      p_fs!=finalstateparticles.end() ; p_fs++  ){
+	  
+	  float px   = (*p_fs)->momentum().px();
+	  float py   = (*p_fs)->momentum().py();
+	  float pz   = (*p_fs)->momentum().pz();
+	  float e    = (*p_fs)->momentum().e();
+	  
+	  input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 	  	
+	}
+
+
+
+	// get the leptons & MET
 	for ( std::list<HepMC::GenParticle*>::iterator p_fs = finalstateparticles.begin() ; 
 	      p_fs!=finalstateparticles.end() ; p_fs++  ){
 	  
@@ -576,25 +654,52 @@ int main(int argc, const char* argv[])
 	  float eta  = (*p_fs)->momentum().eta();
 	  float phi  = (*p_fs)->momentum().phi();
 	  float m    = (*p_fs)->momentum().m();
-	  float px   = (*p_fs)->momentum().px();
-	  float py   = (*p_fs)->momentum().py();
-	  float pz   = (*p_fs)->momentum().pz();
-	  float e    = (*p_fs)->momentum().e();
 	  
-	  input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 
-	  
-	  if( (abs(pdgid)==11 || abs(pdgid)==13) && pt>30 && TMath::Abs(eta)<2.5 ){
+	  // if it is a muon or electron passing the acceptance cuts
+	  if( (abs(pdgid)==11 || abs(pdgid)==13) && pt>ptCutLep && TMath::Abs(eta)<etaCutLep ){
+
 	    TLorentzVector lep;
 	    lep.SetPtEtaPhiM( pt, eta, phi, m);
-	    leptons.push_back( lep );
-	    leptonscharge.push_back( pdgid );
+	    
+	    // calculate the relative isolation
+	    float rIso = 0.;
+	    for ( std::list<HepMC::GenParticle*>::iterator p_fs2 = finalstateparticles.begin() ; 
+		  p_fs2!=finalstateparticles.end() ; p_fs2++  ){
+	      
+	      float pt2   = (*p_fs2)->momentum().perp();
+	      float eta2  = (*p_fs2)->momentum().eta();
+	      float phi2  = (*p_fs2)->momentum().phi();
+	      float m2    = (*p_fs2)->momentum().m();
+	      
+	      TLorentzVector part;
+	      part.SetPtEtaPhiM( pt2, eta2, phi2, m2);
+	      
+	      // if the particle is close (but not overlapping)
+	      if( dR( lep, part)<1e-04 && TMath::Abs(lep.E()-part.E())/part.E()<1e-04 ) continue;
+
+	      // if the particole is in the cone, add its pt to the sum
+	      if( dR( lep , part)<dRIsoLep )  rIso += part.Pt();
+	    }
+
+	    // make relative isolation
+	    rIso /= (lep.Pt()>0 ? lep.Pt() : 1.0);
+
+	    // save only isolated leptons
+	    if( rIso < rIsoLep ){
+	      leptons.push_back( lep );
+	      leptonscharge.push_back( -pdgid );
+	      leptonsiso.push_back( rIso );
+	    }
 	  }
-	  if( (abs(pdgid)==12 || abs(pdgid)==14 || abs(pdgid)==16) ){
+
+	  else if( (abs(pdgid)==12 || abs(pdgid)==14 || abs(pdgid)==16) ){
 	    TLorentzVector nu;
 	    nu.SetPtEtaPhiM( pt, eta, phi, m);
 	    invisible += nu;
 	  }
+
 	}
+
 
 	// the sum Et 
 	float sumEt    = 0.;
@@ -771,8 +876,8 @@ int main(int argc, const char* argv[])
 	}
 	
 	for(unsigned int l = 0 ; l < (unsigned int)nvlep; l++ ){
-	  sumEt += leptons[l].Pt();
-	  vLepton_type[l]      = abs(leptonscharge[l]) ;
+	  sumEt                += leptons[l].Pt();
+	  vLepton_type[l]      = int( leptonscharge[l] ) ;
 	  vLepton_mass[l]      = leptons[l].M();
 	  vLepton_pt[l]        = leptons[l].Pt();
 	  vLepton_eta[l]       = leptons[l].Eta();
@@ -780,18 +885,18 @@ int main(int argc, const char* argv[])
 	  vLepton_genPt[l]     = leptons[l].Pt();
 	  vLepton_genEta[l]    = leptons[l].Eta();
 	  vLepton_genPhi[l]    = leptons[l].Phi();
-	  vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];
-	  vLepton_pfCorrIso[l] = 0.;
+	  vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];	 
+	  vLepton_pfCorrIso[l] = leptonsiso[l];
 	}
 	
 
-	if(nvlep==2 && abs(leptonscharge[0])==13 && abs(leptonscharge[1])==13 )
+	if(nvlep==2 && abs(leptonscharge[0])==13 && abs(leptonscharge[1])==13 && leptonscharge[0]*leptonscharge[1]<0)
 	  Vtype = 0;
-	else if(nvlep==2 && abs(leptonscharge[0])==11 && abs(leptonscharge[1])==11 )
+	else if(nvlep==2 && abs(leptonscharge[0])==11 && abs(leptonscharge[1])==11 && leptonscharge[0]*leptonscharge[1]<0 )
 	  Vtype = 1;
 	else if(nvlep==2 && ( (abs(leptonscharge[0])==13 && abs(leptonscharge[1])==11) ||
 			      (abs(leptonscharge[1])==13 && abs(leptonscharge[0])==11)
-			      ))	
+			      ) && leptonscharge[0]*leptonscharge[1]<0 )	
 	  Vtype = 4;
 	else if(nvlep==1 && abs(leptonscharge[0])==13 )
 	  Vtype = 2;
@@ -801,7 +906,7 @@ int main(int argc, const char* argv[])
 	  Vtype = -99;
 	
 	// if not enough jets, continue (unless filter=False)
-	if( jetCounter<nJetsMin /*&& filter*/ ){
+	if( jetCounter < nJetsMin && filter ){
 	  delete evt;
 	  ascii_in >> evt;
 	  continue;
@@ -870,6 +975,16 @@ int main(int argc, const char* argv[])
 	  SimBspt  [b_iter] = ((*p)->momentum()).perp();
 	  SimBseta [b_iter] = ((*p)->momentum()).eta();
 	  SimBsphi [b_iter] = ((*p)->momentum()).phi();
+
+	  //cout << "B-quark #" << b_iter << " has ancestors:" << endl;
+	  //if( (*p)->production_vertex()  ){
+	  //for ( HepMC::GenVertex::particle_iterator anc = (*p)->production_vertex()->particles_begin(HepMC::parents);
+	  //  anc != (*p)->production_vertex()->particles_end(HepMC::parents); 
+	  //  ++anc ) {
+	  //  cout << "Pdg: " << (*anc)->pdg_id() << ", status: " << (*anc)->status() << ", E: " << (*anc)->momentum().e() << endl; 
+	  //}
+	  //}	    
+
 	  b_iter++;
 	}
 
@@ -917,9 +1032,15 @@ int main(int argc, const char* argv[])
 	for ( std::list<HepMC::GenParticle*>::iterator h = higgs.begin() ; h!=higgs.end() ; h++ ){
 
 	  if ( (*h)->end_vertex() ) {
-	    for ( HepMC::GenVertex::particle_iterator des = (*h)->end_vertex()->particles_begin(HepMC::descendants);
-		  des != (*h)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
-	      if( abs((*des)->pdg_id())==+5 && (*des)->status()==1 ){
+
+	    if(verbose ) cout << "Children of the higgs " << (*h)->pdg_id()  << ":" << endl;
+	    
+	    for ( HepMC::GenVertex::particle_iterator des = (*h)->end_vertex()->particles_begin(HepMC::children);
+		  des != (*h)->end_vertex()->particles_end(HepMC::children); ++des ) {
+
+	      if(verbose ) cout << " > ID " << (*des)->pdg_id() << ", status " << (*des)->status()<< ", mass " << (*des)->momentum().m() << endl;
+
+	      if( (*des)->pdg_id()==+5 && (*des)->status()==11 ){
 		genB.mass   = (*des)->momentum().m();
 		genB.pt     = (*des)->momentum().perp();
 		genB.eta    = (*des)->momentum().eta();
@@ -928,7 +1049,7 @@ int main(int argc, const char* argv[])
 		genB.charge = +2/3;
 		genB.momid  = (*h)->pdg_id();
 	      }
-	      if( abs((*des)->pdg_id())==-5 && (*des)->status()==1 ){
+	      if( (*des)->pdg_id()==-5 && (*des)->status()==11 ){
 		genBbar.mass   = (*des)->momentum().m();
 		genBbar.pt     = (*des)->momentum().perp();
 		genBbar.eta    = (*des)->momentum().eta();
@@ -1006,11 +1127,16 @@ int main(int argc, const char* argv[])
 	  }
 	  
 	  if ( (*t)->end_vertex() ) {
-	    for ( HepMC::GenVertex::particle_iterator des = (*t)->end_vertex()->particles_begin(HepMC::descendants);
-		  des != (*t)->end_vertex()->particles_end(HepMC::descendants); ++des ) {
+
+	    if(verbose ) cout << "Children of the top " <<  pdg << ":" << endl;
+
+	    for ( HepMC::GenVertex::particle_iterator des = (*t)->end_vertex()->particles_begin(HepMC::children);
+		  des != (*t)->end_vertex()->particles_end(HepMC::children); ++des ) {
 	      
+	      if(verbose ) cout << " > ID " << (*des)->pdg_id() << ", status " << (*des)->status()<< ", mass " << (*des)->momentum().m() << endl;
+
 	      // first, deal w/ the b-quark
-	      if( abs((*des)->pdg_id())==5 && (*des)->status()==1 ){
+	      if( abs((*des)->pdg_id())==5 && (*des)->status()==11 ){
 		thetop->bmass   = (*des)->momentum().m();
 		thetop->bpt     = (*des)->momentum().perp();
 		thetop->beta    = (*des)->momentum().eta();
@@ -1019,21 +1145,29 @@ int main(int argc, const char* argv[])
 	      }
 
 	      // then, deal w/ the W boson
-	      if( abs((*des)->pdg_id())==24 && (*des)->status()==1 && (*des)->end_vertex()!=0 ){
+	      if( is_w_boson_decayed( (*des) ) ){
+
+		if(verbose ) cout << "    Children of the W :" << endl;
+
 		int countdau = 0;
-		for ( HepMC::GenVertex::particle_iterator des2 = (*des)->end_vertex()->particles_begin(HepMC::descendants);
-		      des2 != (*des)->end_vertex()->particles_end(HepMC::descendants); ++des2 ) {
-		  int pdg2 = (*des2)->pdg_id();
-		  int isWdaughter = abs(pdg2)<=5 || ( abs(pdg2)>=11 && abs(pdg2)<=16 ) ;
+		for ( HepMC::GenVertex::particle_iterator des2 = (*des)->end_vertex()->particles_begin(HepMC::children);
+		      des2 != (*des)->end_vertex()->particles_end(HepMC::children); ++des2 ) {
+
+		  int status  = (*des2)->status();
+		  int pdg2    = (*des2)->pdg_id();
+		  int isWdaughter = status==11 && (abs(pdg2)<5 || ( abs(pdg2)>=11 && abs(pdg2)<=16 )) ;
+
+		  if(verbose ) cout << "     > ID " << (*des2)->pdg_id() << ", status " << (*des2)->status() << ", mass " << (*des2)->momentum().m() << endl;
+
 		  if(isWdaughter && countdau==0){
-		    thetop->wdau1mass   = (*des2)->momentum().m();
+		    thetop->wdau1mass   = (*des2)->momentum().m()>0 ? (*des2)->momentum().m() : 0.;
 		    thetop->wdau1pt     = (*des2)->momentum().perp();
 		    thetop->wdau1eta    = (*des2)->momentum().eta();
 		    thetop->wdau1phi    = (*des2)->momentum().phi();
 		    thetop->wdau1id     = (*des2)->pdg_id();
 		  }
 		  else if(isWdaughter && countdau==1){
-		    thetop->wdau2mass   = (*des2)->momentum().m();
+		    thetop->wdau2mass   = (*des2)->momentum().m()>0 ? (*des2)->momentum().m() : 0.;
 		    thetop->wdau2pt     = (*des2)->momentum().perp();
 		    thetop->wdau2eta    = (*des2)->momentum().eta();
 		    thetop->wdau2phi    = (*des2)->momentum().phi();
