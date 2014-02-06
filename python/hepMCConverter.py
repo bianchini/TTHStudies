@@ -8,11 +8,21 @@ process.fwliteInput = cms.PSet(
     # input file names
     pathToFile    = cms.vstring(
     #'./root/S_1.hepmc2g',
-    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_uweighted.hepmc2g'
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.1.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.2.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.3.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.4.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.5.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.6.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.7.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.8.hepmc2g',
+    '/shome/bianchi/Generators/Sherpa_run/ttH_LO/sample_LOPS_ttH_unweighted.9.hepmc2g',
     ),
 
     # output file name
-    outFileName   = cms.string("./root/DiJetPt_TTH_HToBB_M-125_sherpa_uweighted.root"),
+    outFileName   = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/DiJetPt_TTH125_sherpa_unweighted.root"),
+    #outFileName   = cms.string("./root/TEST.root"),
 
     # print out intermediate steps
     verbose       = cms.bool(False),
@@ -39,9 +49,9 @@ process.fwliteInput = cms.PSet(
     etaCutLep     = cms.double(2.5),
 
     # FastJet parameters
-    jetRadius     = cms.double(0.4),
+    jetRadius     = cms.double(0.5),
 
-    # save onlt jets with pt in excess of...
-    ptMin         = cms.double(20.0),
+    # save only jets with pt in excess of...
+    ptMin         = cms.double(10.0),
 
     )

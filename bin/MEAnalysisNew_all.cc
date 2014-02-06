@@ -1767,12 +1767,12 @@ int main(int argc, const char* argv[])
 	  float sumEt_PU_ran = nPU_ran*20.;
 
 	  // add the extra smear
-	  MET_sumEt_ += sumEt_PU_ran;
+	  //MET_sumEt_ += sumEt_PU_ran;
 	  deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	  deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	  
 	  // keep it fixed to a value such that sx~29 GeV
-	  MET_sumEt_ = 1800.;
+	  //MET_sumEt_ = 1800.;
 	  
 	  // add to invisble particles pt the extra smearing coming from jets
 	  float metPx = ( INVISIBLE.Px() - deltaPx /*- (nLep_==1 ? lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) : (lepton_pt_[0]*TMath::Cos(lepton_phi_[0]) + lepton_pt_[1]*TMath::Cos(lepton_phi_[1])) )*/ );
@@ -1806,12 +1806,14 @@ int main(int argc, const char* argv[])
 	nuPy -= deltaPy;
 	
 	float nuE  = TMath::Sqrt(nuPx*nuPx+nuPy*nuPy);
-	neutrinoLV.SetPxPyPzE(nuPx,nuPy,0. ,nuE);
+	if( doGenLevelAnalysis==0 ) neutrinoLV.SetPxPyPzE(nuPx,nuPy,0. ,nuE);
 	
-	// save MET kinematics into the tree...
-	MET_pt_    = neutrinoLV.Pt();
-	MET_phi_   = neutrinoLV.Phi();
-	MET_sumEt_ = METtype1p2corr.sumet; 
+	if( doGenLevelAnalysis==0 ){
+	  // save MET kinematics into the tree...
+	  MET_pt_    = neutrinoLV.Pt();
+	  MET_phi_   = neutrinoLV.Phi();
+	  MET_sumEt_ = METtype1p2corr.sumet; 
+	}
 	
 	// save invisible particles kinematics into the tree...
 	Nus_pt_    = INVISIBLE.Pt();

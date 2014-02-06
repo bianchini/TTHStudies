@@ -119,6 +119,14 @@ public:
   }
 };
 
+class IsInvisible {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+    if ( ( abs( p->pdg_id() )==12 || abs(p->pdg_id())==14 || abs(p->pdg_id())==16 ) && p->status()==1 && !p->end_vertex() ) return 1; // check here !!!
+    return 0;
+  }
+};
+
 
 class IsLquark {
 public:
@@ -346,21 +354,6 @@ int main(int argc, const char* argv[])
   Float_t vLepton_genPhi    [2];
   Float_t vLepton_charge    [2];
   Float_t vLepton_pfCorrIso [2];
-  //Float_t hJet_pt           [999];
-  //Float_t hJet_eta          [999];
-  //Float_t hJet_phi          [999];
-  //Float_t hJet_e            [999];
-  //Float_t hJet_flavour      [999];
-  //Float_t hJet_puJetIdL     [999];
-  //Float_t hJet_csv_nominal  [999];
-  //Float_t hJet_csv_upBC     [999];
-  //Float_t hJet_csv_downBC   [999];
-  //Float_t hJet_csv_upL      [999];
-  //Float_t hJet_csv_downL    [999];
-  //Float_t hJet_JECUnc       [999];
-  //Float_t hJet_genPt        [999];
-  //Float_t hJet_genEta       [999];
-  //Float_t hJet_genPhi       [999];
   Float_t aJet_pt           [NJETSMAX];
   Float_t aJet_eta          [NJETSMAX];
   Float_t aJet_phi          [NJETSMAX];
@@ -417,22 +410,6 @@ int main(int argc, const char* argv[])
   tree->Branch("vLepton_pfCorrIso",vLepton_pfCorrIso, "vLepton_pfCorrIso[nvlep]/F");
   tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/I");
 
-  //tree->Branch("hJet_pt",          hJet_pt,         "hJet_pt[nhJets]/F");    
-  //tree->Branch("hJet_eta",         hJet_eta,        "hJet_eta[nhJets]/F");    
-  //tree->Branch("hJet_phi",         hJet_phi,        "hJet_phi[nhJets]/F");    
-  //tree->Branch("hJet_e",           hJet_e,          "hJet_e[nhJets]/F"); 
-  //tree->Branch("hJet_flavour",     hJet_flavour,    "hJet_flavour[nhJets]/F");    
-  //tree->Branch("hJet_puJetIdL",    hJet_puJetIdL,   "hJet_puJetIdL[nhJets]/F");
-  //tree->Branch("hJet_csv_nominal", hJet_csv_nominal,"hJet_csv_nominal[nhJets]/F");
-  //tree->Branch("hJet_csv_upBC",    hJet_csv_upBC,   "hJet_csv_upBC[nhJets]/F");
-  //tree->Branch("hJet_csv_downBC",  hJet_csv_downBC, "hJet_csv_downBC[nhJets]/F");
-  //tree->Branch("hJet_csv_upL",     hJet_csv_upL,    "hJet_csv_upL[nhJets]/F");
-  //tree->Branch("hJet_csv_downL",   hJet_csv_downL,  "hJet_csv_downL[nhJets]/F");
-  //tree->Branch("hJet_JECUnc",      hJet_JECUnc,     "hJet_JECUnc[nhJets]/F");
-  //tree->Branch("hJet_genPt",       hJet_genPt,      "hJet_genPt[nhJets]/F");
-  //tree->Branch("hJet_genEta",      hJet_genEta,     "hJet_genEta[nhJets]/F");
-  //tree->Branch("hJet_genPhi",      hJet_genPhi,     "hJet_genPhi[nhJets]/F");
-
   tree->Branch("aJet_pt",          aJet_pt,         "aJet_pt[naJets]/F");    
   tree->Branch("aJet_eta",         aJet_eta,        "aJet_eta[naJets]/F");    
   tree->Branch("aJet_phi",         aJet_phi,        "aJet_phi[naJets]/F");    
@@ -468,6 +445,8 @@ int main(int argc, const char* argv[])
   IsDLEvent    is_DL_event;
   IsStateFinal is_fs_particle;
   
+  IsInvisible is_invisible;
+
   IsLquark is_l_quark;
   IsBquark is_b_quark;
   IsCquark is_c_quark;
@@ -640,7 +619,12 @@ int main(int argc, const char* argv[])
 	  float pz   = (*p_fs)->momentum().pz();
 	  float e    = (*p_fs)->momentum().e();
 	  
-	  input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 	  	
+	  // don't throw in neutrinos !
+	  if( ! is_invisible(*p_fs) )
+	    input_particles.push_back(fastjet::PseudoJet(px,py,pz,e)); 	  	
+	  else{
+	    if( verbose ) cout << "jet inputs: this is invisible (pdgid = " << (*p_fs)->pdg_id() << ") : don't consider it!" << endl;
+	  }
 	}
 
 
@@ -687,7 +671,7 @@ int main(int argc, const char* argv[])
 	    // save only isolated leptons
 	    if( rIso < rIsoLep ){
 	      leptons.push_back( lep );
-	      leptonscharge.push_back( -pdgid );
+	      leptonscharge.push_back( pdgid );
 	      leptonsiso.push_back( rIso );
 	    }
 	  }
@@ -733,8 +717,10 @@ int main(int argc, const char* argv[])
 	  if( verbose ) cout << "Jet #" << j << ": (" << jet_j.Pt() << "," << jet_j.Eta() << "," << jet_j.Phi() << "," << jet_j.M() << ")" << endl; 
 
 	  // loop over selected leptons
+	  float deltaR = -99;
 	  for(unsigned int l = 0 ; l < leptons.size() ; l++){
-	    if( dR( leptons[l],jet_j) < overlapLep ) overlap++;
+	    deltaR = dR( leptons[l],jet_j);
+	    if( deltaR < overlapLep ) overlap++;
 	  }
 
 	  // if the jet does NOT overlap, then...
@@ -760,7 +746,7 @@ int main(int argc, const char* argv[])
 	      fastjet::PseudoJet const_k = constituents_j[k] ;	
 	      TLorentzVector p_k( const_k.px(),  const_k.py(),  const_k.pz(),  const_k.e() );
 
-	      if( verbose ) cout << "Const #" << k << ": (" << p_k.Pt() << "," << p_k.Eta() << "," << p_k.Phi() << "," << p_k.M() << ")" << endl; 
+	      if( verbose ) cout << " > const #" << k << ": (" << p_k.Pt() << "," << p_k.Eta() << "," << p_k.Phi() << "," << p_k.M() << ")" << endl; 
 
 	      // make sure each constituent is unambiguously identified
 	      int matches = 0;
@@ -776,7 +762,7 @@ int main(int argc, const char* argv[])
 		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04 ){
 		  numLs++;
 		  matches++;
-		  if(verbose) cout << "... matches with ligh-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		  if(verbose) cout << "  ... matches with ligh-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
 		}
 	      }
 	      
@@ -789,7 +775,7 @@ int main(int argc, const char* argv[])
 		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04  ){
 		  numCs++;
 		  matches++;
-		  if(verbose) cout << "... matches with c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		  if(verbose) cout << "  ... matches with c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
 		}
 	      }
 	      
@@ -802,11 +788,11 @@ int main(int argc, const char* argv[])
 		if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04  ){
 		  numBs++;
 		  matches++;
-		  if(verbose) cout << "... matches with b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+		  if(verbose) cout << "  ... matches with b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
 		}
 	      }
 
-	      if(matches>1) cout << "Ambiguous match of jet constituent..." << endl;
+	      if(matches>1) cout << "*** Ambiguous match of jet constituent ***" << endl;
 	      
 	    }
 	    
@@ -853,14 +839,25 @@ int main(int argc, const char* argv[])
 
 	  // save the results
 	  if( verbose ) cout << closestPdg << endl;
+
+	  if     ( numBs>0 ) closestPdg = 5;
+	  else if( numCs>0 ) closestPdg = 4;
+	  else if( numLs>0 ) closestPdg = 21;
+	  else closestPdg = -99;
+
 	  jetscharge.push_back( closestPdg );
 	  jetsnBs.push_back( numBs );
 	  jetsnCs.push_back( numCs );
 	  jetsnLs.push_back( numLs );
 	  
 	  }
+	  else{
+	    if( verbose ) cout << "Pseudo-jet matches within " << deltaR << " with a lepton: skip it!" << endl;
+	  }
+
 	} // incluisve_jets
 	
+	if( verbose ) cout << "Total number of jets after cleaning: " << jets.size() << endl;
 	
 	/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 	/* @@@@@@@@@@@@@@@@@@@@@@@@@ FILL !!!! @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */      
@@ -877,7 +874,7 @@ int main(int argc, const char* argv[])
 	
 	for(unsigned int l = 0 ; l < (unsigned int)nvlep; l++ ){
 	  sumEt                += leptons[l].Pt();
-	  vLepton_type[l]      = int( leptonscharge[l] ) ;
+	  vLepton_type[l]      = abs( leptonscharge[l] ) ;
 	  vLepton_mass[l]      = leptons[l].M();
 	  vLepton_pt[l]        = leptons[l].Pt();
 	  vLepton_eta[l]       = leptons[l].Eta();
@@ -919,29 +916,7 @@ int main(int argc, const char* argv[])
 	for(unsigned int j = 0 ; j < (unsigned int)TMath::Min( naJets , NJETSMAX ) /*jets.size()*/ ; j++){
 	  
 	  sumEt += jets[j].Pt();
-	  
-	  // fill hJets
-	  /*
-	    if( j<2 ){
-	    hJet_pt [j]     = jets[j].Pt();
-	    hJet_eta[j]     = jets[j].Eta();
-	    hJet_phi[j]     = jets[j].Phi();
-	    hJet_e  [j]     = jets[j].E();
-	    hJet_flavour[j] = jetscharge[j];
-	    
-	    hJet_puJetIdL[j]   = 1.0;
-	    hJet_csv_nominal[j]= 1.0;
-	    hJet_csv_upBC[j]   = 1.0;
-	    hJet_csv_downBC[j] = 1.0;
-	    hJet_csv_upL[j]    = 1.0;
-	    hJet_csv_downL[j]  = 1.0;
-	    hJet_JECUnc[j]     = 1.0;
-	    hJet_genPt[j]      = jets[j].Pt();
-	    hJet_genEta [j]    = jets[j].Eta();
-	    hJet_genPhi [j]    = jets[j].Phi();
-	    }
-	  */
-	  
+	  		  
 	  // fill aJets
 	  aJet_pt [j]     = jets[j].Pt();
 	  aJet_eta[j]     = jets[j].Eta();
@@ -975,16 +950,6 @@ int main(int argc, const char* argv[])
 	  SimBspt  [b_iter] = ((*p)->momentum()).perp();
 	  SimBseta [b_iter] = ((*p)->momentum()).eta();
 	  SimBsphi [b_iter] = ((*p)->momentum()).phi();
-
-	  //cout << "B-quark #" << b_iter << " has ancestors:" << endl;
-	  //if( (*p)->production_vertex()  ){
-	  //for ( HepMC::GenVertex::particle_iterator anc = (*p)->production_vertex()->particles_begin(HepMC::parents);
-	  //  anc != (*p)->production_vertex()->particles_end(HepMC::parents); 
-	  //  ++anc ) {
-	  //  cout << "Pdg: " << (*anc)->pdg_id() << ", status: " << (*anc)->status() << ", E: " << (*anc)->momentum().e() << endl; 
-	  //}
-	  //}	    
-
 	  b_iter++;
 	}
 
