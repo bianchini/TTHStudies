@@ -177,6 +177,7 @@ int main(int argc, const char* argv[])
 
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
+  int smearJets          ( in.getUntrackedParameter<int>    ("smearJets",  doGenLevelAnalysis));
 
   int   print            ( in.getUntrackedParameter<int>    ("printout", 0));
   int   debug            ( in.getUntrackedParameter<int>    ("debug",    0));
@@ -1720,7 +1721,7 @@ int main(int argc, const char* argv[])
 	      float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
 	      
 	      // !!! smear the jet energy !!!
-	      pt *= (e_smear/e);
+	      if(smearJets) pt *= (e_smear/e);
 
 	      // add the jet transverse energy to the sumEt
 	      MET_sumEt_ += pt;

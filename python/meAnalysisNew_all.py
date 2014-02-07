@@ -11,7 +11,8 @@ process = cms.Process("MEAnalysisNewall")
 process.fwliteInput = cms.PSet(
 
     # output file name
-    outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
+    #outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
+    outFileName   = cms.string("/scratch/bianchi/Trees/MEM/MEAnalysisNewTEST_Sherpa_Had.root"),
 
     # path to the TF root file
     pathToTF      = cms.string("./root/transferFunctionsTEST.root"),
@@ -24,7 +25,8 @@ process.fwliteInput = cms.PSet(
 
     # input file directory
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
-    pathToFile    = cms.string("./root/"),
+    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
+    pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
 
     # a name tag for the input files
     ordering      = cms.string("DiJetPt_"),
@@ -398,7 +400,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(False),  
-    name     = cms.string('TTH_HToBB_M-125_sherpa'+VType),
+    name     = cms.string('TTH125_sherpa_LOPSUEHAD_unweighted'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
     xSec     = cms.double(0.1302*0.569)
@@ -406,7 +408,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTbb_sherpa'+VType),
+    name     = cms.string('TTbb_sherpa_unweighted'+VType),
     nickName = cms.string('TTbb'),
     color    = cms.int32(41),
     xSec     = cms.double(6.76)
@@ -457,18 +459,18 @@ process.fwliteInput = cms.PSet(
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
 
     # skip VEGAS call
-    speedup       = cms.untracked.int32(0), ###### CHECK HERE
+    speedup       = cms.untracked.int32(1), ###### CHECK HERE
 
     # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets       
     doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
-    doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
-    doType2       = cms.untracked.int32(0),  #SL(4,1)
-    doType3       = cms.untracked.int32(0),  #SL(4,3) 
+    doType1       = cms.untracked.int32(1),  #SL(4,2)  w/o W-tag
+    doType2       = cms.untracked.int32(1),  #SL(4,1)
+    doType3       = cms.untracked.int32(1),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
-    doType6       = cms.untracked.int32(0),  #DL(4,X)
+    doType6       = cms.untracked.int32(1),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
     doType0ByBTagShape = cms.untracked.int32(0),
     doType1ByBTagShape = cms.untracked.int32(0),
@@ -494,7 +496,7 @@ process.fwliteInput = cms.PSet(
 
     # b-tag thresholds (for jet counting)
     csv_WP_L         = cms.untracked.double( 0.244 ),
-    csv_WP_M         = cms.untracked.double( 0.5 ),
+    csv_WP_M         = cms.untracked.double( 0.50 ),
     csv_WP_T         = cms.untracked.double( 0.898 ),
 
     # if selectByBTagShape, choose cut-value
@@ -506,7 +508,7 @@ process.fwliteInput = cms.PSet(
     useRegression    = cms.untracked.int32(0),
 
     # print out the integral at run-time
-    printout     = cms.untracked.int32(1),
+    printout     = cms.untracked.int32(0),
 
     # various degrees of verbosity
     debug        = cms.untracked.int32(0),   
@@ -533,10 +535,10 @@ process.fwliteInput = cms.PSet(
 
     # if 1, process evLimits[1]-evLimits[0] events passing the selection cuts
     # if 0, process all events in the tree from evLimits[0] to evLimits[1]
-    fixNumEvJob    = cms.untracked.int32(1),
+    fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0,1),
+    evLimits       = cms.vint32(0,-1),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -554,6 +556,9 @@ process.fwliteInput = cms.PSet(
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets
     doGenLevelAnalysis  = cms.untracked.int32(1),
+
+    # if 1 and doGenLevelAnalysis, jet energy gets smeared by TF_smear
+    smearJets           = cms.untracked.int32(1),
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
