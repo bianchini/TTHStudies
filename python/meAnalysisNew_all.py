@@ -24,6 +24,7 @@ process.fwliteInput = cms.PSet(
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
     # input file directory
+    #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_new/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
@@ -520,6 +521,16 @@ process.fwliteInput = cms.PSet(
     MH           = cms.untracked.double(125.00),
     MT           = cms.untracked.double(174.30),
     MW           = cms.untracked.double( 80.19),
+
+    # lepton selection cut thresholds
+    lepPtLoose   = cms.untracked.double(20),
+    lepPtTight   = cms.untracked.double(30),
+    lepIsoLoose  = cms.untracked.double(0.2),
+    lepIsoTight   = cms.untracked.double(0.12),
+    elEta         = cms.untracked.double(2.5),
+    muEtaTight   = cms.untracked.double(2.1),
+    muEtaLoose   = cms.untracked.double(2.4),
+
 
     # needed for category classification
     MwL          = cms.untracked.double(60),

@@ -108,7 +108,7 @@ int main(int argc, const char* argv[])
   bool   verbose             ( in.getParameter<bool>         ("verbose" ) );
   
   // PARAMETERS
-  double lumi               ( in.getUntrackedParameter<double> ("lumi",   12.1));
+  double lumi               ( in.getUntrackedParameter<double> ("lumi",   19.04));
   float  MH                 ( in.getUntrackedParameter<double> ("MH",     125.));
   float  MT                 ( in.getUntrackedParameter<double> ("MT",    174.3));
   float  MW                 ( in.getUntrackedParameter<double> ("MW",    80.19));
@@ -123,6 +123,14 @@ int main(int argc, const char* argv[])
   float  csv_WP_L           ( in.getUntrackedParameter<double> ("csv_WP_L",      0.244));
   float  csv_WP_M           ( in.getUntrackedParameter<double> ("csv_WP_M",      0.679));
   float  csv_WP_T           ( in.getUntrackedParameter<double> ("csv_WP_T",      0.898));
+
+  double lepPtLoose   ( in.getUntrackedParameter<double> ("lepPtLoose", 20.));
+  double lepPtTight   ( in.getUntrackedParameter<double> ("lepPtTight", 30.));
+  double lepIsoLoose  ( in.getUntrackedParameter<double> ("elIsoLoose", 0.2));
+  double lepIsoTight   ( in.getUntrackedParameter<double> ("elIsoTight", 0.12));
+  double elEta         ( in.getUntrackedParameter<double> ("elEta", 2.5));
+  double muEtaLoose   ( in.getUntrackedParameter<double> ("muEtaLoose", 2.4));
+  double muEtaTight   ( in.getUntrackedParameter<double> ("muEtaTight", 2.1));
 
   vector<int> systematics   ( in.getParameter<vector<int> > ("systematics"));
 
@@ -542,6 +550,8 @@ int main(int argc, const char* argv[])
   int Vtype_;
   // event-dependent weight (for normalization)
   float weight_;
+  // additional gen top PT scale factor                                                                                                                                     
+  float weightTopPt_;
   // cpu time
   float time_;
   // event information
@@ -620,6 +630,7 @@ int main(int argc, const char* argv[])
   tree->Branch("nSimBs",       &nSimBs_,        "nSimBs/I");
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,   "nMatchSimBs/I");
   tree->Branch("weight",       &weight_,        "weight/F");
+  tree->Branch("weightTopPt",  &weightTopPt_,   "weightTopPt/F");
   tree->Branch("time",         &time_,          "time/F");
   tree->Branch("flag_type0",   &flag_type0_,    "flag_type0/I");
   tree->Branch("flag_type1",   &flag_type1_,    "flag_type1/I");
@@ -790,6 +801,8 @@ int main(int argc, const char* argv[])
     Float_t vLepton_genPhi    [2];
     Float_t vLepton_charge    [2];
     Float_t vLepton_pfCorrIso [2];
+    Float_t vLepton_wp80      [2];
+    Float_t vLepton_wp95      [2];
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
     Float_t hJet_phi          [999];
@@ -856,6 +869,9 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("vLepton_charge",   vLepton_charge);
     currentTree->SetBranchAddress("vLepton_pfCorrIso",vLepton_pfCorrIso);
     currentTree->SetBranchAddress("vLepton_type",     vLepton_type);
+    currentTree->SetBranchAddress("vLepton_wp80",     vLepton_wp80);
+    currentTree->SetBranchAddress("vLepton_wp95",     vLepton_wp95);
+    
     if( currentTree->GetBranch("hJet_pt") ){
       currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
       currentTree->SetBranchAddress("hJet_eta",         hJet_eta);    
@@ -961,6 +977,7 @@ int main(int argc, const char* argv[])
 
       counter_            = counter;
       weight_             = scaleFactor;
+      weightTopPt_        = 1;
       nPVs_               = nPVs;
       Vtype_              = Vtype;
 
@@ -1130,6 +1147,27 @@ int main(int argc, const char* argv[])
       }    
 
       if(debug>=2) cout << "@B" << endl;
+
+      // Compute SF to correct gen top pT                                                                                                                                   
+      float weightTPt = 1;
+      float weightTbarPt = 1;
+
+      if(p4T_[0] > 0){
+        if(p4T_[0] < 463.312)
+          weightTPt = 1.18246 + 2.10061*1e-6*p4T_[0]*(p4T_[0] - 2*463.312);
+        else
+          weightTPt = 0.732;
+      }
+      if(p4Tbar_[0] > 0){
+        if(p4T_[0] < 463.312)
+          weightTbarPt = 1.18246 + 2.10061*1e-6*p4Tbar_[0]*(p4Tbar_[0] - 2*463.312);
+	else
+          weightTbarPt = 0.732;
+      }
+      weightTopPt_ = weightTPt*weightTbarPt;
+
+      if(debug>=2) std::cout<<"top weight = "<<weightTopPt_<<std::endl;
+      //------------------------------------------
 
       // dummy cut (for the moment)
       bool properEventSL = (genBLV.Pt()>0 && genBbarLV.Pt()>0 && topBLV.Pt()>0 && topW1LV.Pt()>0 && topW2LV.Pt()>0 && atopBLV.Pt()>0 && atopW1LV.Pt()>0 && atopW2LV.Pt()>0);
@@ -1382,13 +1420,27 @@ int main(int argc, const char* argv[])
 	TLorentzVector leptonLV, leptonLV2;
 	TLorentzVector neutrinoLV;
 
+	int numLooseLep = 0;
+	for( int k = 0; k < nvlep ; k++){ //count the number of loose leptons (muons or electrons) in the event
+	  float lep_pt = vLepton_pt[k];
+          float lep_eta = vLepton_eta[k];
+          float lep_type = vLepton_type[k];
+          float lep_iso = vLepton_pfCorrIso[k];
 
+          if( (lep_type==13 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<muEtaLoose && lep_iso < lepIsoLoose) ||
+              (lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
+               lep_iso < lepIsoLoose && vLepton_wp95[k] > 0)
+	      ) 
+            numLooseLep++;
+        }
+
+	std::cout<<"nlep = "<<nvlep<<", n loose lep = "<<numLooseLep<<std::endl;
 	///////////////////////////////////
 	//         SL events             //
 	///////////////////////////////////
-	
+
 	properEventSL = false;      
-	if( nvlep==1 && (Vtype==2 || Vtype==3) ){
+	if( numLooseLep==1 && (Vtype==2 || Vtype==3) ){
 	  
 	  // first lepton...
 	  leptonLV.SetPtEtaPhiM(vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
@@ -1402,15 +1454,17 @@ int main(int argc, const char* argv[])
 	      leptonLV.SetPtEtaPhiM( 5., 0., 0., 0. );	  
 	  }
 	  
-	  // cut on lepton (SL)
-	  int lepSelVtype2 =  (Vtype==2 && vLepton_type[0]==13 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.1 && vLepton_pfCorrIso[0]<0.10);
-	  int lepSelVtype3 =  (Vtype==3 && vLepton_type[0]==11 && leptonLV.Pt()>30 && TMath::Abs(leptonLV.Eta())<2.5 && !(TMath::Abs(leptonLV.Eta())>1.442 &&  TMath::Abs(leptonLV.Eta())<1.566) && vLepton_pfCorrIso[0]<0.10) ;
+	  // tight cuts on lepton (SL)
+	  int lepSelVtype2 =  (Vtype==2 && vLepton_type[0]==13 && leptonLV.Pt()>lepPtTight && 
+			       TMath::Abs(leptonLV.Eta())<muEtaTight && vLepton_pfCorrIso[0]<lepIsoTight);
+	  int lepSelVtype3 =  (Vtype==3 && vLepton_type[0]==11 && leptonLV.Pt()>lepPtTight && 
+			       vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0);
 	  
 	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
 	  int trigVtype2 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
 	  
 	  // OR of two trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*", "HLT_Ele27_WP80_v.*"
-	  int trigVtype3 =  (Vtype==3 && ( triggerFlags[3]>0 || triggerFlags[44]>0 ) );
+	  int trigVtype3 =  (Vtype==3 &&  triggerFlags[44]>0 );
 	  
 	  // for the moment, don't cut on trigger bit (save and cut offline)
 	  trigVtype2 = 1; 
@@ -1445,7 +1499,7 @@ int main(int argc, const char* argv[])
 	///////////////////////////////////
 	
 	properEventDL = false;
-	if( nvlep>=2 && (Vtype==0 || Vtype==1)){
+	if( numLooseLep==2 && (Vtype==0 || Vtype==1)){
 	  
 	  // first lepton...
 	  leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
@@ -1469,17 +1523,13 @@ int main(int argc, const char* argv[])
 
 	  // cut on leptons (DL)
 	  int lepSelVtype0 = ( Vtype==0 && vLepton_type[0]==13 && vLepton_type[1]==13 && 
-			       ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.1 && vLepton_pfCorrIso[0]<0.10 &&
-				  leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.4 && vLepton_pfCorrIso[1]<0.20) ||
-				 (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.4 && vLepton_pfCorrIso[0]<0.20 &&
-				  leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.1 && vLepton_pfCorrIso[1]<0.10) )
+			       ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <muEtaTight && vLepton_pfCorrIso[0]<lepIsoTight) ||
+				 (leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<muEtaTight && vLepton_pfCorrIso[1]<lepIsoTight) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[0]==11 && 
-			       ( (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.10 &&
-				  leptonLV2.Pt()>10 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.20) ||
-				 (leptonLV.Pt() >10 && TMath::Abs(leptonLV.Eta()) <2.5 && vLepton_pfCorrIso[0]<0.20 &&
-				  leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<2.5 && vLepton_pfCorrIso[1]<0.10) )
+			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0) ||
+				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp80[1]>0) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
