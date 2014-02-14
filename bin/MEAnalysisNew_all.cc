@@ -1434,7 +1434,6 @@ int main(int argc, const char* argv[])
             numLooseLep++;
         }
 
-	std::cout<<"nlep = "<<nvlep<<", n loose lep = "<<numLooseLep<<std::endl;
 	///////////////////////////////////
 	//         SL events             //
 	///////////////////////////////////
