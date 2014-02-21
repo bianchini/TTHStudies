@@ -11,8 +11,8 @@ process = cms.Process("MEAnalysisNewall")
 process.fwliteInput = cms.PSet(
 
     # output file name
-    #outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
-    outFileName   = cms.string("/scratch/bianchi/Trees/MEM/MEAnalysisNewTEST_Sherpa_Had.root"),
+    outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
+    #outFileName   = cms.string("/scratch/bianchi/Trees/MEM/MEAnalysisNewTEST_Sherpa_Had.root"),
 
     # path to the TF root file
     pathToTF      = cms.string("./root/transferFunctionsTEST.root"),
@@ -25,9 +25,10 @@ process.fwliteInput = cms.PSet(
 
     # input file directory
     #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_new/"),
-    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
-    pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
+    #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
+    #pathToFile    = cms.string("/shome/bianchi/CMSSW_5_3_3_patch2_New/src/VHbbAnalysis/VHbbDataFormats/bin/"),
 
     # a name tag for the input files
     ordering      = cms.string("DiJetPt_"),
@@ -163,7 +164,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6_v2'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -400,9 +401,9 @@ process.fwliteInput = cms.PSet(
     # GEN LEVEL STUDIES
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH125_sherpa_LOPSUEHAD_unweighted'+VType),
-    nickName = cms.string('TTH125'),
+    nickName = cms.string('sherpa_tth'),
     color    = cms.int32(2),
     xSec     = cms.double(0.1302*0.569)
     ),
@@ -410,7 +411,7 @@ process.fwliteInput = cms.PSet(
     cms.PSet(
     skip     = cms.bool(True),  
     name     = cms.string('TTbb_sherpa_unweighted'+VType),
-    nickName = cms.string('TTbb'),
+    nickName = cms.string('sherpa_ttbb'),
     color    = cms.int32(41),
     xSec     = cms.double(6.76)
     ),
@@ -495,13 +496,16 @@ process.fwliteInput = cms.PSet(
     # select events based on btag LLR
     selectByBTagShape= cms.untracked.int32(0),
 
+    # recover >4 btag events
+    recoverTopBTagBin = cms.untracked.int32(1),
+
     # b-tag thresholds (for jet counting)
     csv_WP_L         = cms.untracked.double( 0.244 ),
-    csv_WP_M         = cms.untracked.double( 0.50 ),
+    csv_WP_M         = cms.untracked.double( 0.679 ),
     csv_WP_T         = cms.untracked.double( 0.898 ),
 
     # if selectByBTagShape, choose cut-value
-    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ), #0.96675
+    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ),
     btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
     btag_prob_cut_4jets = cms.untracked.double( 0.95295 ), 
 
@@ -526,11 +530,10 @@ process.fwliteInput = cms.PSet(
     lepPtLoose   = cms.untracked.double(20),
     lepPtTight   = cms.untracked.double(30),
     lepIsoLoose  = cms.untracked.double(0.2),
-    lepIsoTight   = cms.untracked.double(0.12),
-    elEta         = cms.untracked.double(2.5),
+    lepIsoTight  = cms.untracked.double(0.12),
+    elEta        = cms.untracked.double(2.5),
     muEtaTight   = cms.untracked.double(2.1),
     muEtaLoose   = cms.untracked.double(2.4),
-
 
     # needed for category classification
     MwL          = cms.untracked.double(60),
@@ -566,14 +569,14 @@ process.fwliteInput = cms.PSet(
 
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets
-    doGenLevelAnalysis  = cms.untracked.int32(1),
+    doGenLevelAnalysis  = cms.untracked.int32(0),
 
     # if 1 and doGenLevelAnalysis, jet energy gets smeared by TF_smear
-    smearJets           = cms.untracked.int32(1),
+    smearJets           = cms.untracked.int32(0),
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(1),
+    ntuplizeAll         = cms.untracked.int32(0),
     
     )
 

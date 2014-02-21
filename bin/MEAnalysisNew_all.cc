@@ -70,6 +70,14 @@
 // a global flag to select RECO or GEN+SMEAR analysis
 //#define DOGENLEVELANALYSIS 0
 
+// allow for different channels events
+#define ENABLE_EM   0
+#define ENABLE_EJ   1
+#define ENABLE_MJ   1
+#define ENABLE_EE   1
+#define ENABLE_MM   1
+#define ENABLE_JJ   0
+
 
 using namespace std;
 
@@ -124,13 +132,13 @@ int main(int argc, const char* argv[])
   float  csv_WP_M           ( in.getUntrackedParameter<double> ("csv_WP_M",      0.679));
   float  csv_WP_T           ( in.getUntrackedParameter<double> ("csv_WP_T",      0.898));
 
-  double lepPtLoose   ( in.getUntrackedParameter<double> ("lepPtLoose", 20.));
-  double lepPtTight   ( in.getUntrackedParameter<double> ("lepPtTight", 30.));
-  double lepIsoLoose  ( in.getUntrackedParameter<double> ("elIsoLoose", 0.2));
-  double lepIsoTight   ( in.getUntrackedParameter<double> ("elIsoTight", 0.12));
-  double elEta         ( in.getUntrackedParameter<double> ("elEta", 2.5));
-  double muEtaLoose   ( in.getUntrackedParameter<double> ("muEtaLoose", 2.4));
-  double muEtaTight   ( in.getUntrackedParameter<double> ("muEtaTight", 2.1));
+  double lepPtLoose         ( in.getUntrackedParameter<double>  ("lepPtLoose", 20.));
+  double lepPtTight         ( in.getUntrackedParameter<double>  ("lepPtTight", 30.));
+  double lepIsoLoose        ( in.getUntrackedParameter<double>  ("elIsoLoose", 0.2));
+  double lepIsoTight        ( in.getUntrackedParameter<double>  ("elIsoTight", 0.12));
+  double elEta              ( in.getUntrackedParameter<double>  ("elEta",      2.5));
+  double muEtaLoose         ( in.getUntrackedParameter<double>  ("muEtaLoose", 2.4));
+  double muEtaTight         ( in.getUntrackedParameter<double>  ("muEtaTight", 2.1));
 
   vector<int> systematics   ( in.getParameter<vector<int> > ("systematics"));
 
@@ -140,6 +148,7 @@ int main(int argc, const char* argv[])
   int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB",  1));
   int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          1));
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
+  int   recoverTopBTagBin( in.getUntrackedParameter<int>    ("recoverTopBTagBin",0));
   int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
 
   int   doTypeBTag4      ( in.getUntrackedParameter<int>    ("doTypeBTag4", 0));
@@ -758,6 +767,16 @@ int main(int argc, const char* argv[])
   }
   else{
     cout << "Problems... leaving" << endl;
+
+    fout_tmp->Close();  
+    cout << "Delete meIntegrator..." << endl;
+    delete meIntegrator;
+    delete clock; delete clock2;
+    if(ran!=0)       delete ran;
+    if(jet_smear!=0) delete jet_smear;
+    cout << "Finished!!!" << endl;
+    cout << "*******************" << endl;
+
     return 0;
   }
 
@@ -786,11 +805,12 @@ int main(int argc, const char* argv[])
     genTopInfo      genTop, genTbar;
     metInfo         METtype1p2corr;
     EventInfo       EVENT;
-    int             nvlep, nSimBs, /*nC, nCTop,*/ nhJets, naJets, nPVs, Vtype;
+    int             nvlep, nalep, nSimBs, /*nC, nCTop,*/ nhJets, naJets, nPVs, Vtype;
     float           PUweight, PUweightP, PUweightM;
     float           lheNj;
     float           weightTrig2012;
     UChar_t         triggerFlags[70];
+
     Int_t   vLepton_type      [2];
     Float_t vLepton_mass      [2];
     Float_t vLepton_pt        [2];
@@ -803,6 +823,26 @@ int main(int argc, const char* argv[])
     Float_t vLepton_pfCorrIso [2];
     Float_t vLepton_wp80      [2];
     Float_t vLepton_wp95      [2];
+    Float_t vLepton_dxy       [2];
+    Float_t vLepton_dz        [2];
+    //Float_t vLepton_id2012tight[2];
+
+    Int_t   aLepton_type      [999];
+    Float_t aLepton_mass      [999];
+    Float_t aLepton_pt        [999];
+    Float_t aLepton_eta       [999];
+    Float_t aLepton_phi       [999];
+    Float_t aLepton_genPt     [999];
+    Float_t aLepton_genEta    [999];
+    Float_t aLepton_genPhi    [999];
+    Float_t aLepton_charge    [999];
+    Float_t aLepton_pfCorrIso [999];
+    Float_t aLepton_wp80      [999];
+    Float_t aLepton_wp95      [999];
+    Float_t aLepton_dxy       [999];
+    Float_t aLepton_dz        [999];
+    //Float_t aLepton_id2012tight[999];
+
     Float_t hJet_pt           [999];
     Float_t hJet_eta          [999];
     Float_t hJet_phi          [999];
@@ -852,6 +892,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("nSimBs",           &nSimBs);
     currentTree->SetBranchAddress("nvlep",            &nvlep);
+    currentTree->SetBranchAddress("nalep",            &nalep);
     if   ( currentTree->GetBranch("nPVs") )           currentTree->SetBranchAddress("nPVs",             &nPVs);
     currentTree->SetBranchAddress("genB",             &genB);
     currentTree->SetBranchAddress("genBbar",          &genBbar);
@@ -871,6 +912,25 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("vLepton_type",     vLepton_type);
     currentTree->SetBranchAddress("vLepton_wp80",     vLepton_wp80);
     currentTree->SetBranchAddress("vLepton_wp95",     vLepton_wp95);
+    currentTree->SetBranchAddress("vLepton_dxy",      vLepton_dxy);
+    currentTree->SetBranchAddress("vLepton_dz",       vLepton_dz);
+    //currentTree->SetBranchAddress("vLepton_id2012tight",vLepton_id2012tight);
+    currentTree->SetBranchAddress("aLepton_charge",   aLepton_charge);
+    currentTree->SetBranchAddress("aLepton_mass"  ,   aLepton_mass);
+    currentTree->SetBranchAddress("aLepton_pt"    ,   aLepton_pt);
+    currentTree->SetBranchAddress("aLepton_eta"   ,   aLepton_eta);
+    currentTree->SetBranchAddress("aLepton_phi"   ,   aLepton_phi);
+    currentTree->SetBranchAddress("aLepton_genPt" ,   aLepton_genPt);
+    currentTree->SetBranchAddress("aLepton_genEta",   aLepton_genEta);
+    currentTree->SetBranchAddress("aLepton_genPhi",   aLepton_genPhi);
+    currentTree->SetBranchAddress("aLepton_charge",   aLepton_charge);
+    currentTree->SetBranchAddress("aLepton_pfCorrIso",aLepton_pfCorrIso);
+    currentTree->SetBranchAddress("aLepton_type",     aLepton_type);
+    currentTree->SetBranchAddress("aLepton_wp80",     aLepton_wp80);
+    currentTree->SetBranchAddress("aLepton_wp95",     aLepton_wp95);
+    currentTree->SetBranchAddress("aLepton_dxy",      aLepton_dxy);
+    currentTree->SetBranchAddress("aLepton_dz",       aLepton_dz);
+    //currentTree->SetBranchAddress("aLepton_id2012tight",aLepton_id2012tight);
     
     if( currentTree->GetBranch("hJet_pt") ){
       currentTree->SetBranchAddress("hJet_pt",          hJet_pt);    
@@ -1149,8 +1209,8 @@ int main(int argc, const char* argv[])
       if(debug>=2) cout << "@B" << endl;
 
       // Compute SF to correct gen top pT                                                                                                                                   
-      float weightTPt = 1;
-      float weightTbarPt = 1;
+      float weightTPt    = 1.;
+      float weightTbarPt = 1.;
 
       if(p4T_[0] > 0){
         if(p4T_[0] < 463.312)
@@ -1164,9 +1224,9 @@ int main(int argc, const char* argv[])
 	else
           weightTbarPt = 0.732;
       }
-      weightTopPt_ = weightTPt*weightTbarPt;
+      weightTopPt_ = weightTPt /**weightTbarPt */ ;
 
-      if(debug>=2) std::cout<<"top weight = "<<weightTopPt_<<std::endl;
+      if(debug>=2) std::cout << "top weight = " << weightTopPt_ << " = " << weightTPt << "(*" << weightTbarPt << ")" <<  std::endl;
       //------------------------------------------
 
       // dummy cut (for the moment)
@@ -1319,7 +1379,7 @@ int main(int argc, const char* argv[])
 	// this is needed because if t+t~+h has 0 pT, tot.Eta() raises a warning
 	double px = (top+atop+higgs).Px();
 	double py = (top+atop+higgs).Py();
-	double pz = (top+atop+higgs).Pz();
+	//double pz = (top+atop+higgs).Pz();
 
 	double x1,x2;
 	ttH_.me2_ttH  = meIntegrator->meSquaredOpenLoops( &top, &atop, &higgs, x1, x2);
@@ -1420,26 +1480,63 @@ int main(int argc, const char* argv[])
 	TLorentzVector leptonLV, leptonLV2;
 	TLorentzVector neutrinoLV;
 
+	//count the number of loose leptons (muons or electrons) in the event
 	int numLooseLep = 0;
-	for( int k = 0; k < nvlep ; k++){ //count the number of loose leptons (muons or electrons) in the event
-	  float lep_pt = vLepton_pt[k];
-          float lep_eta = vLepton_eta[k];
-          float lep_type = vLepton_type[k];
-          float lep_iso = vLepton_pfCorrIso[k];
 
-          if( (lep_type==13 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<muEtaLoose && lep_iso < lepIsoLoose) ||
-              (lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
-               lep_iso < lepIsoLoose && vLepton_wp95[k] > 0)
-	      ) 
+	for( int k = 0; k < nvlep ; k++){ 
+
+	  float lep_pt   = vLepton_pt[k];
+          float lep_eta  = vLepton_eta[k];
+          float lep_type = vLepton_type[k];
+          float lep_iso  = vLepton_pfCorrIso[k];
+	  float lep_dxy  = TMath::Abs(vLepton_dxy[k]);
+	  float lep_dz   = TMath::Abs(vLepton_dz[k]);
+
+          if( 
+	     // muons
+	     (lep_type==13 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<muEtaLoose && lep_iso < lepIsoLoose  && lep_dxy < 0.2 && lep_dz<0.5) ||
+             
+	     // electrons [FIX ME: dxy/dz for electron buggy]
+	     (lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
+	      lep_iso < lepIsoLoose && vLepton_wp95[k] > 0 /*&& lep_dxy < 0.02 && lep_dz<1*/)
+
+	     ) 
             numLooseLep++;
         }
 
+	//count the number of loose electrons in the event
+	int numLooseAElec = 0;
+	int aEle_index    = -99;
+
+	for( int k = 0; k < nalep ; k++){ 
+
+	  float lep_pt   = aLepton_pt[k];
+          float lep_eta  = aLepton_eta[k];
+          float lep_type = aLepton_type[k];
+          float lep_iso  = aLepton_pfCorrIso[k];
+	  //float lep_dxy  = TMath::Abs(aLepton_dxy[k]);
+	  //float lep_dz   = TMath::Abs(aLepton_dz[k]);
+	  //float lep_2012tight = aLepton_id2012tight[k];
+	  
+          if(  lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
+               lep_iso < lepIsoLoose && aLepton_wp95[k] > 0.5 ){
+            numLooseAElec++;
+	    aEle_index  = k;
+	  }
+
+        }
+
+	if(  debug>=2 && Vtype==2 && numLooseAElec>0){
+	  cout << numLooseLep << " loose leptons, "<< numLooseAElec << " loose electron(s) found in aLepton collection" << endl;
+	}
+
+
 	///////////////////////////////////
-	//         SL events             //
+	//         SL events:  e+j/m+j   //
 	///////////////////////////////////
 
 	properEventSL = false;      
-	if( numLooseLep==1 && (Vtype==2 || Vtype==3) ){
+	if( (ENABLE_EJ && numLooseLep==1 && Vtype==3) || (ENABLE_MJ && numLooseLep==1 && numLooseAElec<1 && Vtype==2) ){
 	  
 	  // first lepton...
 	  leptonLV.SetPtEtaPhiM(vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
@@ -1492,13 +1589,12 @@ int main(int argc, const char* argv[])
 	  
 	}
 
-
 	///////////////////////////////////
-	//         DL events             //
+	//         DL events:  mm/ee     //
 	///////////////////////////////////
 	
 	properEventDL = false;
-	if( numLooseLep==2 && (Vtype==0 || Vtype==1)){
+	if( numLooseLep==2 && ( (ENABLE_MM && Vtype==0) || (ENABLE_EE && Vtype==1) )){
 	  
 	  // first lepton...
 	  leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
@@ -1526,7 +1622,7 @@ int main(int argc, const char* argv[])
 				 (leptonLV2.Pt()>20 && TMath::Abs(leptonLV2.Eta())<muEtaTight && vLepton_pfCorrIso[1]<lepIsoTight) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
-	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[0]==11 && 
+	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[1]==11 && 
 			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0) ||
 				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp80[1]>0) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
@@ -1574,6 +1670,60 @@ int main(int argc, const char* argv[])
 	  
 	}
     
+
+	///////////////////////////////////
+	//         DL events:  em        //
+	///////////////////////////////////
+
+	if( ENABLE_EM && Vtype==2 && numLooseLep==1 && numLooseAElec==1 && aEle_index>=0){
+
+	  // flag these events with different type
+	  Vtype_ = 4;
+
+	  // first lepton...
+	  leptonLV.SetPtEtaPhiM (vLepton_pt[0],vLepton_eta[0],vLepton_phi[0],vLepton_mass[0]);
+	  lep_index.push_back( 0 );   
+	  
+	  // second lepton...
+	  leptonLV2.SetPtEtaPhiM(aLepton_pt[aEle_index],aLepton_eta[aEle_index],aLepton_phi[aEle_index],aLepton_mass[aEle_index]);
+	  lep_index.push_back( -aEle_index-1 );
+
+	  if(doGenLevelAnalysis){
+	    if( vLepton_genPt[0]>5.) 
+	      leptonLV. SetPtEtaPhiM(vLepton_genPt[0], vLepton_genEta[0], vLepton_genPhi[0], (vLepton_type[0]==13 ? 0.105 : 0.0005 )  ); 
+	    else 
+	      leptonLV. SetPtEtaPhiM( 5., 0., 0., 0. );
+	    if( aLepton_genPt[aEle_index]>5.) 
+	      leptonLV2.SetPtEtaPhiM(aLepton_genPt[aEle_index], aLepton_genEta[aEle_index], aLepton_genPhi[aEle_index], (aLepton_type[aEle_index]==13 ? 0.105 : 0.0005 )  ); 
+	    else 
+	      leptonLV2.SetPtEtaPhiM( 5., 0., 0., 0. );	  
+	  }
+
+	  int lepSelVtype4 = (Vtype==2 && vLepton_type[0]==13 && aLepton_type[aEle_index]==11 &&
+			      (leptonLV.Pt() >20 && TMath::Abs(leptonLV.Eta()) <muEtaTight && vLepton_pfCorrIso[0]<lepIsoTight)
+			      /* do something for electrons ? */
+			      && vLepton_charge[0]*aLepton_charge[aEle_index]<0
+			      );
+
+	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
+	  int trigVtype4 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
+
+	  // for the moment, don't cut on trigger bit (save and cut offline)
+	  trigVtype4 = 1; 
+
+	  // ID && trigger
+	  properEventDL = lepSelVtype4 && (isMC ? 1 : trigVtype4) ;
+
+	  if( debug>=2 ){
+	    cout << "nvlep=" << nvlep << ", nalep=" << nalep  << ", Vtype=" << Vtype << endl;
+	    cout << "Lep sel. Vtype4 = " << lepSelVtype4 << endl;
+	    cout << "Trigger: " <<  (isMC ? 1 : trigVtype4)  << endl;
+	    cout << "Passes = " << int (properEventDL) << endl;
+	  }
+
+	}
+
+
 	// continue if leptons do not satisfy cuts
 	if( !(properEventSL || properEventDL) ){
 	  if( debug>=2 ){
@@ -1811,13 +1961,12 @@ int main(int argc, const char* argv[])
 
 
 	  // assume 16 average PU
-	  int nPU_ran        = ran->Poisson(16);
-	  
+	  //int nPU_ran        = ran->Poisson(16);	  
 	  // assume each PU gives 50 GeV of sumEt
-	  float sumEt_PU_ran = nPU_ran*20.;
-
+	  //float sumEt_PU_ran = nPU_ran*20.;
 	  // add the extra smear
 	  //MET_sumEt_ += sumEt_PU_ran;
+
 	  deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	  deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	  
@@ -1879,7 +2028,7 @@ int main(int argc, const char* argv[])
 	// if use btag shape, order by decreasing CSV 
 	// <=> when considering only a subset of the jets, this ensures that the combination
 	// obtained from CSVM only jets is among those considered
-	if( selectByBTagShape )
+	if( selectByBTagShape || recoverTopBTagBin)
 	  std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
 
 
@@ -1965,6 +2114,9 @@ int main(int argc, const char* argv[])
       // this vector contains the indices of up to 6 jets failing the CSVM(L) b-tag selection... 
       vector<unsigned int> buntag_indices;
       vector<unsigned int> buntagLoose_indices;
+
+      // this vector contains the indices of those jets that should be preferred when looking at untag jets
+      vector<unsigned int> buntag_indices_favorite;
 
       // this vector contains the indices of up to 12 jets passing ANY b-tag selection... 
       vector<unsigned int> banytag_indices;  
@@ -2136,7 +2288,7 @@ int main(int argc, const char* argv[])
 	      p_pos =  p_b_bLep * p_b_bHad * p_b_b1 * p_b_b2 * p_j_w1 * p_j_w2; 
 	      p_bb += p_pos;
 
-	      // look for a maximum
+	      // look for a global maximum
 	      if(  p_pos > max_p_bb ){
 		max_p_bb      = p_pos;
 		selected_comb = pos;
@@ -2221,6 +2373,34 @@ int main(int argc, const char* argv[])
       // SEMILEPTONIC EVENTS                            //
       //        FULLLEPTONIC EVENTS                     //
       ////////////////////////////////////////////////////
+
+      // if doing a cut-based analysis, reshuffle extra btag jets to recover >4 btag jets
+      if( recoverTopBTagBin && !selectByBTagShape && numJets30BtagM>4 ){
+
+	if( debug>=1 )
+	  cout << numJets30BtagM << "(" << numJets30UntagM << ") b-tag(untag) jets found: trade the extra ones for light jets" << endl;
+
+	unsigned int extra = 0;
+	for( unsigned int w = 0; w<btag_indices.size(); w++){
+	  if( w > 3){
+	    buntag_indices.insert( buntag_indices.begin() , btag_indices[w] );
+	    buntag_indices_favorite.push_back( extra ); // because we fill the vector from the top... 
+	    extra++;
+	  }
+	}
+	
+	// restore naive counting to make the event pass the cuts
+	numJets30BtagM  = 4;
+	numJets30UntagM = buntag_indices.size();
+
+	if( debug>=1 ){
+	  cout << "  After reshuffling:" << endl;
+	  cout << "  --> numBTagM = "  << numJets30BtagM  << endl;
+	  cout << "  --> numUntag = "  << numJets30UntagM << endl;
+	}
+
+      }
+
 
       // categories defined by jet and btagged jet multiplicity (Nj,Nb)
       bool analyze_type0       = properEventSL && numJets30BtagM==4 && numJets30UntagM==2  && doType0;
@@ -2543,18 +2723,57 @@ int main(int argc, const char* argv[])
 	  
 	  // find out which are ind1 and ind2...
 	  float minDiff     = 99999.;
-	  for(unsigned int uj1 = 0; uj1<buntag_indices.size()-1; uj1++){
-	    for(unsigned int uj2 = uj1+1; uj2<buntag_indices.size(); uj2++){
+
+	  // if 5 btag jets found, we choose to treat the 5th as untagged jet (is a c-quark ?)  
+	  if( buntag_indices_favorite.size()==1 ){
+	    
+	    ind1 =  buntag_indices[ buntag_indices_favorite[0] ];
+	    
+	    if( debug>=1 ) 
+	      cout << "Select the jet with index " <<  ind1 << " as first untagged jet...csv=" << jets_csv[ind1] <<  endl;
+
+	    for(unsigned int uj2 = 0; uj2<buntag_indices.size(); uj2++){
 	      
-	      float WMass12 = (jets_p4[ buntag_indices[uj1] ]+jets_p4[ buntag_indices[uj2] ]).M();
+	      if( buntag_indices[uj2]==ind1 ) continue;
+	      
+	      float WMass12 = (jets_p4[ ind1 ]+jets_p4[ buntag_indices[uj2] ]).M();
 	      if( TMath::Abs(WMass12-MW)<minDiff ){
 		minDiff = TMath::Abs(WMass12-MW);
-		ind1 = buntag_indices[uj1];
 		ind2 = buntag_indices[uj2];
 	      }
 	      
 	    }
-	  }	  
+	  }
+	  
+	  // if 6 btag jets found, we choose to treat the 5th and 6th as untagged jet (is a c/s-quark ?)  
+	  else if( buntag_indices_favorite.size()==2 ){
+	    ind1 =  buntag_indices[ buntag_indices_favorite[0] ];
+	    ind2 =  buntag_indices[ buntag_indices_favorite[1] ];
+	    if( debug>=1 ) 
+	      cout << "Select the jet(s) with index(es) " <<  ind1 << "," << ind2 << " as untagged jets...csv=" << jets_csv[ind1] << "," << jets_csv[ind2] <<  endl;
+
+	  }
+	  
+	  // else just choose those w/ mass closest to MW
+	  else{
+	    
+	    for(unsigned int uj1 = 0; uj1<buntag_indices.size()-1; uj1++){
+	      for(unsigned int uj2 = uj1+1; uj2<buntag_indices.size(); uj2++){
+		
+		float WMass12 = (jets_p4[ buntag_indices[uj1] ]+jets_p4[ buntag_indices[uj2] ]).M();
+		if( TMath::Abs(WMass12-MW)<minDiff ){
+		  minDiff = TMath::Abs(WMass12-MW);
+		  ind1 = buntag_indices[uj1];
+		  ind2 = buntag_indices[uj2];
+		}
+		
+	      }
+	    }	  
+	  }
+
+
+
+
 	  /////////////////////////////////////////////////////
 	  type_       =  3;
 	  nPermut_    = 12;
@@ -2637,7 +2856,8 @@ int main(int argc, const char* argv[])
 		 << jets_p4[ buntag_indices_backup[jj] ].M() << "), CSV= " 
 		 << jets_csv[buntag_indices_backup[jj] ] << endl;
 	  cout << "     btag probability is " << btag_LR_ << endl;
-	  if(passes_btagshape){
+
+	  if(passes_btagshape && selectByBTagShape){
 	    cout << "     @@@@@ the jet collection has been re-ordered according to btag probability @@@@@@" << endl;
 	    cout << "     b-tagged: " << endl;
 	    for( unsigned int jj = 0; jj < btag_indices.size(); jj++){
@@ -2825,7 +3045,7 @@ int main(int argc, const char* argv[])
 	
 	/////////////////////////////////////////////////////////////
 	
-	// check if there is a tag-untag pair that satisfies the "cs-tag" 
+	// check if there is ***at least one*** tag-untag pair that satisfies the "cs-tag" 
 	for( unsigned int w = 0; w<btag_indices.size(); w++){
 	  
 	  // this is needed if type>3
@@ -2834,21 +3054,21 @@ int main(int argc, const char* argv[])
 	  float m1 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind1] ).M();
 	  float m2 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind2] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind2] ).M();
 	  
-	  if( ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 0 ){
+	  if( flag_type0_<0 && ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 0 ){
 	    flag_type0_ = 0; 
 	    if( jets_csv[btag_indices[w]]<0.95 ) flag_type0_ = 1; 
 	    if( jets_csv[btag_indices[w]]<0.90 ) flag_type0_ = 2; 
 	    if( jets_csv[btag_indices[w]]<0.85 ) flag_type0_ = 3;
 	    if( jets_csv[btag_indices[w]]<0.80 ) flag_type0_ = 4;  
 	  }
-	  if( ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 1 ){
+	  if( flag_type1_<0 && ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 1 ){
 	    flag_type1_ = 0; 
 	    if( jets_csv[btag_indices[w]]<0.95 ) flag_type1_ = 1; 
 	    if( jets_csv[btag_indices[w]]<0.90 ) flag_type1_ = 2; 
 	    if( jets_csv[btag_indices[w]]<0.85 ) flag_type1_ = 3;
 	    if( jets_csv[btag_indices[w]]<0.80 ) flag_type1_ = 4;  
 	  }
-	  if( ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 2 ){
+	  if( flag_type2_<0 && ((m1>(MwL+5) && m1<(MwH-5)) || (m2>(MwL+5) && m2<(MwH-5))) && type_== 2 ){
 	    flag_type2_ = 0; 
 	    if( jets_csv[btag_indices[w]]<0.95 ) flag_type2_ = 1; 
 	    if( jets_csv[btag_indices[w]]<0.90 ) flag_type2_ = 2; 
