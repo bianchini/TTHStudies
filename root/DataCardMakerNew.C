@@ -41,8 +41,14 @@
 
 typedef TMatrixT<double> TMatrixD;
 
-#define CREATEDATACARDS 1
-#define RUNONDATA       0
+#define CREATEDATACARDS   1
+#define USESHIFTEDSAMPLES 1
+#define USEALLSAMPLES     1
+
+#define RUNONDATA         1
+
+#define VERBOSE           1
+
 
 
 // function that interpolates quadratically around a global maximum
@@ -220,14 +226,14 @@ void bbb( TH1F* hin, TH1F* hout_Down, TH1F* hout_Up, int bin){
   hout_Down->Add(hin,1.0);
 
   // ... and then shift down the bin content by -1sigma
-  hout_Down->SetBinContent(bin, TMath::Max(bin_down,0.01));
+  hout_Down->SetBinContent(bin, TMath::Max(bin_down,float(0.01)));
 
   // just copy the nominal histogram...
   hout_Up->Reset();
   hout_Up->Add(hin,1.0);
 
   // ... and then shift up the bin content by +1sigma
-  hout_Up->SetBinContent  (bin, TMath::Max(bin_up,0.01));
+  hout_Up->SetBinContent  (bin, TMath::Max(bin_up,float(0.01)));
 
   return;
 
@@ -273,13 +279,15 @@ void draw(vector<float> param, TTree* t = 0, TString var = "", TH1F* h = 0, TCut
 }
 
 
-void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, bool isMC=1){
+void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1){
 
   // needed as usual to copy a tree
   TFile* dummy = new TFile("dummy.root","RECREATE");
 
   // tree of events in the category
   TTree* t = (TTree*)tFull->CopyTree( cut );
+
+  if(VERBOSE) cout << " > cut: " << string(cut.GetTitle()) << endl;
 
   // ME probability  
   float p_vsMH_s[999];
@@ -304,6 +312,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   float weight;
   float PUweight;
   float trigger;
+  float weightTopPt;
 
   // event information
   EventInfo EVENT;
@@ -321,9 +330,13 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   t->SetBranchAddress("PUweight",     &PUweight);
   t->SetBranchAddress("trigger",      &trigger);
   t->SetBranchAddress("EVENT",        &EVENT);
-  
+  if( t->GetBranch("weightTopPt") )    
+    t->SetBranchAddress("weightTopPt",        &weightTopPt);
+  else 
+    weightTopPt = 1.0;
+
   Long64_t nentries = t->GetEntries(); 
-  cout << "Total entries: " << nentries << endl;
+  if(VERBOSE) cout << " > total entries: " << nentries << endl;
   
   // a temporary histogram that contains the prob. vs mass
   TH1F* hTmp      = new TH1F("hTmp", "", 500,0,500);
@@ -337,6 +350,9 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     hTmp->Reset();
 
     float fill_weight = isMC ? weight*PUweight*trigger : 1.0;
+
+    // if tt+jets, apply extra top pt reweighting
+    if(isMC==2) fill_weight *= weightTopPt;
 
     // if doing a mass analysis... ( 0 = scan over mH ; -1 = scan over mT )
     if( abs(analysis)==1 ){
@@ -399,7 +415,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
 	float ME_prob = p_vsM[mH_it*nPermut + maxPerm];
 	float bb_prob =  p_tt_bb[maxPerm] ;
 	float norm    = xsec!=0 ? 1./xsec->Eval( mH ) : 1.0;	
-	double p =  ME_prob*bb_prob*norm;       
+	double p      =  ME_prob*bb_prob*norm;       
 
 	// fill the histogram
 	hTmp->Fill( mH, p );
@@ -477,7 +493,8 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
       }
       
       // if not splitting the first bin, just fill with the weight
-      if( param->size()==3 || (abs(analysis)!=2) ) h->Fill( w, fill_weight);
+      if( param->size()==3 || (abs(analysis)!=2) ) 
+	h->Fill( w, fill_weight);
       
       else{
 	
@@ -514,6 +531,9 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
 
   } // entries
 
+
+  dummy->Close();
+  delete dummy;
   return;
 
 }
@@ -573,33 +593,47 @@ void produceNew(// main name of the trees
   //  3 = ttbb/ttjj
   //  (if unbiased, MEM -> -MEM)
 
+  cout << endl;
+  cout << "\e[1;32m>>>>>> produceNew will be exectuted <<<<<<\e[0m" << endl << endl;
 
   // cout the version
-  cout << "Use trees " << name << " (version " << version << "): category " << category << endl;
-  cout << "FOM index = " << doMEM << endl;
+  if(VERBOSE) {
+    cout << "Use trees " << name << " (version " << version << "): category " << category << endl;
+    cout << "FOM index = " << doMEM << endl;
+  }
+
+  bool useHistos = false;
+
 
   // input files path
-  //TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov21_2013/BTagLoose/";
-  TString inputpath = "./";
+  //TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Feb24_2014/"; //"Nov21_2013/BTagLoose/";
+  TString inputpath = "./files/byLLR/";
 
   // selection cut
   string basecut = cut;
-  
+  if( USEALLSAMPLES ){
+    basecut = basecut+string(Form(" && syst==%d",0));
+  }
+
   // name of the main background (needed because one could use TTJetsSemiLept, TTJetsFullLept, ...)
   TString ttjets = "_TTJets";
+
+  // name tag for the nominal samples
+  TString nominal = USEALLSAMPLES ? "_all" : "_"+string(fname.Data())+"_nominal";
 
   // strength modifiers 
   float scaleTTH      = 1.0;//4.7;
   float scaleTTJetsLF = 1.0;//3.9;
   float scaleTTJetsHF = 1.0;//3.9;
 
-  cout << "*****************************************************" << endl;
-  cout << "Attention!!! The following rescaling will be applied:" << endl;
-  cout << "TTH:       " << scaleTTH << endl;
-  cout << "TTJets LF: " << scaleTTJetsLF << endl;
-  cout << "TTJets HF: " << scaleTTJetsHF << endl;
-  cout << "*****************************************************" << endl;
-
+  if(VERBOSE){
+    cout << "\e[1;31m*****************************************************\e[0m" << endl;
+    cout << "\e[1;31mAttention!!! The following rescaling will be applied:\e[0m" << endl;
+    cout << "\e[1;31mTTH:       \e[0m" << scaleTTH << endl;
+    cout << "\e[1;31mTTJets LF: \e[0m" << scaleTTJetsLF << endl;
+    cout << "\e[1;31mTTJets HF: \e[0m" << scaleTTJetsHF << endl;
+    cout << "\e[1;31m*****************************************************\e[0m" << endl;
+  }
 
   // if doing the ME analysis, we first derive normalization factors to
   // properly nornalize the ME weights. They are defined such that:
@@ -620,54 +654,115 @@ void produceNew(// main name of the trees
   
   if(abs(doMEM)>1){
 
-    TFile* f_B = TFile::Open(inputpath+"MEAnalysis"+name+"_"+fname+"_nominal"+version+ttjets+".root", "OPEN");
+    TFile* f_B = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+ttjets+".root", "OPEN");
     if( f_B==0 || f_B->IsZombie() ){
       cout << "Could not find f_B" << endl;
       return;
     }
     TTree* tB = (TTree*)f_B->Get("tree");
 
-    TFile* f_S = TFile::Open(inputpath+"MEAnalysis"+name+"_"+fname+"_nominal"+version+"_TTH125.root");
+    TFile* f_S = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+"_TTH125.root");
     if( f_S==0 || f_S->IsZombie() ){
       cout << "Could not find f_S" << endl;
       return;
     }
     TTree* tS = (TTree*)f_S->Get("tree");
     
-    TH1F* hInt = new TH1F("hInt","",200,-100,100);  
-    
-    tS->Draw("log(p_125_all_s_ttbb)>>hInt", TCut((basecut+" && nSimBs>=2 && p_125_all_s_ttbb>0").c_str())); 
-    S_bb     = TMath::Exp(hInt->GetMean());
-    Int_S_bb = hInt->Integral();
-    cout << "S_bb = " << S_bb <<endl;
-    hInt->Reset();
-    
-    tB->Draw("log(p_125_all_b_ttbb)>>hInt", TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2 && p_125_all_b_ttbb>0").c_str())); 
-    B_bb     = TMath::Exp(hInt->GetMean());
-    Int_B_bb = hInt->Integral();
-    cout << "B_bb = " << B_bb <<endl;
-    hInt->Reset();
-    
-    tB->Draw("log(p_125_all_b_ttjj)>>hInt", TCut((basecut+" && nMatchSimBs<2  && nSimBs==2 && p_125_all_b_ttjj>0").c_str())); 
-    B_jj     = TMath::Exp(hInt->GetMean());
-    Int_B_jj = hInt->Integral();
-    cout << "B_jj = " << B_jj <<endl;
-    hInt->Reset();
-    
-    cout << "Ratio S_bb/B_bb=" << S_bb/B_bb << endl;
-    cout << "Ratio S_bb/B_jj=" << S_bb/B_jj << endl;
-    cout << "Ratio bb/(bb+jj)=" << Int_B_bb << "/(" << Int_B_bb << "+" << Int_B_jj << ")=" << Int_B_bb/(Int_B_bb+Int_B_jj) << endl;       
+    if( useHistos ){
+
+      TH1F* hInt = new TH1F("hInt","",200,-100,100);  
+      
+      tS->Draw("log(p_125_all_s_ttbb)>>hInt", TCut((basecut+" && nSimBs>=2 && p_125_all_s_ttbb>0").c_str())); 
+      S_bb     = TMath::Exp(hInt->GetMean());
+      Int_S_bb = hInt->Integral();
+      if(VERBOSE) cout << "S_bb = " << S_bb <<endl;
+      hInt->Reset();
+      
+      tB->Draw("log(p_125_all_b_ttbb)>>hInt", TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2 && p_125_all_b_ttbb>0").c_str())); 
+      B_bb     = TMath::Exp(hInt->GetMean());
+      Int_B_bb = hInt->Integral();
+      if(VERBOSE) cout << "B_bb = " << B_bb <<endl;
+      hInt->Reset();
+      
+      tB->Draw("log(p_125_all_b_ttjj)>>hInt", TCut((basecut+" && nMatchSimBs<2  && nSimBs==2 && p_125_all_b_ttjj>0").c_str())); 
+      B_jj     = TMath::Exp(hInt->GetMean());
+      Int_B_jj = hInt->Integral();
+      if(VERBOSE) cout << "B_jj = " << B_jj <<endl;
+      hInt->Reset();
+      
+      delete hInt;
+    }
+    else{
+      
+      // needed as usual to copy a tree
+      TFile* dummy = new TFile("dummy.root","RECREATE");
+
+      // tree of events in the category
+      S_bb = 0;
+      TTree* tS_cut = (TTree*)tS->CopyTree( TCut((basecut+" && nSimBs>=2").c_str()) );
+      float p_125_all_s_ttbb;
+      tS_cut->SetBranchAddress("p_125_all_s_ttbb",   &p_125_all_s_ttbb );
+      for (Long64_t i = 0; i < tS_cut->GetEntries() ; i++){
+	tS_cut->GetEntry(i);
+	S_bb += p_125_all_s_ttbb;
+      }
+      if(tS_cut->GetEntries()>0) S_bb /= tS_cut->GetEntries();
+      if(VERBOSE) cout << "S_bb = " << S_bb <<endl;
+
+      B_bb     = 0;
+      Int_B_bb = 0;
+      TTree* tBbb_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2").c_str()) );
+      float p_125_all_b_ttbb;
+      tBbb_cut->SetBranchAddress("p_125_all_b_ttbb",   &p_125_all_b_ttbb );
+      for (Long64_t i = 0; i < tBbb_cut->GetEntries() ; i++){
+	tBbb_cut->GetEntry(i);
+	B_bb     += p_125_all_b_ttbb;
+	Int_B_bb += 1;
+      }
+      if(tBbb_cut->GetEntries()>0) B_bb /= tBbb_cut->GetEntries();
+      	if(VERBOSE) cout << "B_bb = " << B_bb <<endl;
+	    
+      B_jj     = 0;
+      Int_B_jj = 0;
+      TTree* tBjj_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs<2 && nSimBs==2").c_str()) );
+      float p_125_all_b_ttjj;
+      tBjj_cut->SetBranchAddress("p_125_all_b_ttjj",   &p_125_all_b_ttjj );
+      for (Long64_t i = 0; i < tBjj_cut->GetEntries() ; i++){
+	tBjj_cut->GetEntry(i);
+	B_jj     += p_125_all_b_ttjj;
+	Int_B_jj += 1;
+      }
+      if(tBjj_cut->GetEntries()>0) B_jj /= tBjj_cut->GetEntries();
+      if(VERBOSE) cout << "B_jj = " << B_jj <<endl;
+
+      dummy->Close();
+      delete dummy;
+    }   
+
+    f_S->Close();
+    f_B->Close();
+
+    if(VERBOSE){
+      cout << "Ratio S_bb/B_bb=" << S_bb/B_bb << endl;
+      cout << "Ratio S_bb/B_jj=" << S_bb/B_jj << endl;
+      cout << "Ratio bb/(bb+jj)=" << Int_B_bb << "/(" << Int_B_bb << "+" << Int_B_jj << ")=" << Int_B_bb/(Int_B_bb+Int_B_jj) << endl;       
+    }
 
     param.push_back( fact1 );
-    param.push_back( (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)) );
-    param.push_back( (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) );
+    if(abs(doMEM)!=3){
+      param.push_back( TMath::Abs(fact2)<=1 ? (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)) : 1.0);
+      param.push_back( TMath::Abs(fact2)<=1 ? (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) : 0.0);
+    }
+    else{
+      param.push_back( TMath::Abs(fact2)<=1 ? (1-fact2)*S_bb/B_bb : 1.0);
+      param.push_back( TMath::Abs(fact2)<=1 ? (1+fact2)*S_bb/B_jj : 0.0);
+    }
 
     if(abs(doMEM)==2 && splitFirstBin){
       param.push_back( B_bb/B_jj*factbb );
       param.push_back( 0.50 );
     }
 
-    delete hInt;
   }
   else{
     param.clear();
@@ -677,7 +772,7 @@ void produceNew(// main name of the trees
   bool normalbinning = ( param.size()==3 || abs(doMEM)!=2 );
 
   // output file with shapes
-  TFile* fout = new TFile("datacards/"+fname+"_"+name+version+extraname+".root","UPDATE");
+  TFile* fout = new TFile("datacards/Feb24_2014/"+fname+"_"+name+version+extraname+".root","UPDATE");
 
   // directory for this particular category
   TDirectory* dir =  fout->GetDirectory( fname+"_"+category); 
@@ -686,7 +781,7 @@ void produceNew(// main name of the trees
   // fix the binning
   TArrayF bins (nBins+1);
   TArrayF bins2(nBins+2);
-  cout << "Making histograms with " << nBins << " bins:" << endl;
+  if(VERBOSE) cout << "Making histograms with " << nBins << " bins:" << endl;
 
   // if do not split, then...
   if( normalbinning ){
@@ -712,9 +807,9 @@ void produceNew(// main name of the trees
     for(int b = 0; b < nBins+2; b++){
       if(b<=2) bins2[b] = b*0.5/(nBins);
       else     bins2[b] = (b-1)*1.0/(nBins);
-      cout <<  bins2[b] << ", ";
+      if(VERBOSE) cout <<  bins2[b] << ", ";
     }
-    cout << endl;
+    if(VERBOSE) cout << endl;
   }
 
   // master histogram (all other histograms are a clone of this one)
@@ -722,23 +817,26 @@ void produceNew(// main name of the trees
 		     normalbinning ? nBins : nBins+1 ,  
 		     normalbinning ? bins.GetArray() : bins2.GetArray());
 
+
   // the observable when doing the ME analysis for cat2 (workaround)
   TString var("");
-  var  = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
-		      fact1, (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)), (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) ));
 
   // the observable when doing the ME analysis for ttbb/ttjj separation
-  TString var2("");
-  var2 = TString(Form("%f*p_125_all_b_ttbb/(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj)", 
-		      (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)), (1-fact2)*S_bb/B_bb*(Int_B_bb/(Int_B_bb+Int_B_jj)), (1+fact2)*S_bb/B_jj*(Int_B_jj/(Int_B_bb+Int_B_jj)) ));
-  
+  TString var2("");  
   
   if(abs(doMEM)==1)
-    cout << "Variable = Higgs mass estimator" << endl;
-  else if(abs(doMEM)==2)
-    cout << "Variable = " << string(var.Data()) << endl;
-  if(abs(doMEM)==3)
-    cout << "Variable = " << string(var2.Data()) << endl;
+    if(VERBOSE) cout << "Variable = Higgs mass estimator" << endl;
+  else if(abs(doMEM)==2){
+    var  = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
+			param[0], param[1], param[2] ));
+    if(VERBOSE) cout << "Variable = " << string(var.Data()) << endl;
+    
+  }
+  if(abs(doMEM)==3){
+    var2 = TString(Form("%f*p_125_all_b_ttbb/(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj)", 
+			param[1], param[1], param[2] ));
+    if(VERBOSE) cout << "Variable = " << string(var2.Data()) << endl;
+  }
   else{}
 
   // list of MC processes that will be considered 
@@ -755,11 +853,13 @@ void produceNew(// main name of the trees
 
   // if run on data, add the samples (Single-Lep or Double-lep depending on analysis)
   if(RUNONDATA){
-    if( string(fname.Data()).find("SL")!=string::npos ){
+    if( ! (string(category.Data()).find("cat6")!=string::npos ||  
+	   string(category.Data()).find("cat7")!=string::npos) ){
       samples.push_back("Run2012_SingleMu");
       samples.push_back("Run2012_SingleElectron");
     }
-    if( string(fname.Data()).find("DL")!=string::npos ){
+    if( string(category.Data()).find("cat6")!=string::npos || 
+	string(category.Data()).find("cat7")!=string::npos ){
       samples.push_back("Run2012_SingleMu");
       samples.push_back("Run2012_DoubleElectron");
     }
@@ -811,12 +911,25 @@ void produceNew(// main name of the trees
       datacard_name = "TTJetsLF";
     }
     if( sample.find("Run2012")!=string::npos ){
+
       datacard_name = "data_obs";
-      TCut triggerVtype0 = TCut("(Vtype==0 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ))");
-      TCut triggerVtype1 = TCut("(Vtype==1 && ( triggerFlags[5]>0 || triggerFlags[6]>0 ) )");
-      TCut triggerVtype2 = TCut("(Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ))");
-      TCut triggerVtype3 = TCut("(Vtype==3 && ( triggerFlags[3]>0 || triggerFlags[44]>0 ) )");
-      sample_cut = sample_cut && (triggerVtype0 || triggerVtype1 || triggerVtype2 || triggerVtype3);
+
+      TCut triggerVtype0 = TCut("(Vtype==0 && ( triggerFlags[22]>0 || triggerFlags[23]>0  ))");
+      TCut triggerVtype1 = TCut("(Vtype==1 && ( triggerFlags[6]>0 ) )");
+      TCut triggerVtype2 = TCut("(Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[47]>0 ))");
+      TCut triggerVtype3 = TCut("(Vtype==3 && ( triggerFlags[44]>0 ) )");
+
+      if( sample.find("SingleMu")!=string::npos       && (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos))
+	sample_cut = sample_cut && triggerVtype0;
+      if( sample.find("SingleMu")!=string::npos       && !(string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos))
+	sample_cut = sample_cut && triggerVtype2;
+      if( sample.find("DoubleElectron")!=string::npos && (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos))
+	sample_cut = sample_cut && triggerVtype1;
+      if( sample.find("SingleElectron")!=string::npos && !(string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos))
+	sample_cut = sample_cut && triggerVtype3;
+     
+      //sample_cut = sample_cut && (triggerVtype0 || triggerVtype1 || triggerVtype2 || triggerVtype3);
+
       countRun2012samples++;
     }
 
@@ -829,24 +942,78 @@ void produceNew(// main name of the trees
     vector<string> systematics;
 
     // provided only for tt+jets and ttH at the moment
-    if(  sample.find("TTH")!=string::npos ||  sample.find("TTJets")!=string::npos ){
-      systematics.push_back("nominal");
-      //systematics.push_back("csvUp");
-      //systematics.push_back("csvDown");
-      //systematics.push_back("JECUp");
-      //systematics.push_back("JECDown");
+    if(USEALLSAMPLES){
+      systematics.push_back("all");  // nominal
+      if(sample.find("Run2012")==string::npos){
+	systematics.push_back("all");// cvsUp
+	systematics.push_back("all");// csvDown
+	systematics.push_back("all");// JESUp
+	systematics.push_back("all");// JESDown
+	systematics.push_back("all");// JERUp
+	systematics.push_back("all");// JERDown
+      }
     }
+    
+    else if( !USEALLSAMPLES && USESHIFTEDSAMPLES ){
+      systematics.push_back("nominal");
+      if( (sample.find("TTH")!=string::npos || sample.find("TTJets")!=string::npos) ){
+	systematics.push_back("csvUp");
+	systematics.push_back("csvDown");
+	systematics.push_back("JECUp");
+	systematics.push_back("JECDown");
+      }
+    }
+    
     else{
       systematics.push_back("nominal");
     }
-
+    
+    
     // loop over the systematics
     for( unsigned int sy = 0 ; sy < systematics.size(); sy++){
       
-      string sys = systematics[sy];
+      string sys        = systematics[sy];
+
+      string syst_name = sys;
+      if( USEALLSAMPLES ){
+	switch( sy ){
+	case 0:
+	  syst_name = "nominal";
+	  break;
+	case 1:
+	  syst_name = "csvUp";
+	  break;
+	case 2:
+	  syst_name = "csvDown";
+	  break;
+	case 3:
+	  syst_name = "JECUp";
+	  break;
+	case 4:
+	  syst_name = "JECDown";
+	  break;
+	case 5:
+	  syst_name = "JERUp";
+	  break;
+	case 6:
+	  syst_name = "JERDown";
+	  break;
+	default:
+	  break;	  
+	}
+      }
+
+      string event_type = !USEALLSAMPLES ? "_"+string(fname.Data()) : "";
+
+
+      TCut syst_sample_cut = sample_cut;
+      if( USEALLSAMPLES ){
+	syst_sample_cut = sample_cut && TCut(Form("syst==%d",sy));
+      }
+      
 
       // input file
-      string inputfilename = string(inputpath.Data())+"MEAnalysis"+name+"_"+string(fname.Data())+"_"+sys+""+version+"_"+sample+".root";
+      string inputfilename = string(inputpath.Data())+"MEAnalysis"+name+event_type+"_"+sys+""+version+"_"+sample+".root";
       TFile* f = TFile::Open(inputfilename.c_str());
       
       if(f==0 || f->IsZombie()){
@@ -854,7 +1021,7 @@ void produceNew(// main name of the trees
 	continue;
       }
       else{
-	cout << "Doing sample " << sample << " and analysis " << sys <<  endl;
+	if(VERBOSE) cout << "\e[1;34mDoing......... sample=" << sample << "  process=" << datacard_name << "  analysis=" << syst_name << "\e[0m" << endl;
       }
       
       // the input tree
@@ -874,8 +1041,13 @@ void produceNew(// main name of the trees
       //}
       //else{
       
+      // decide if this is data or MC (or tt+jets, in which case apply top pt reweighting)
+      int isMC = 0;
+      if( sample.find("Run2012")==string::npos ) isMC++;
+      if( sample.find("TTJets")!=string::npos )  isMC++;
 
-      fill( tree, h_tmp, sample_cut, doMEM, &param, xsec, sample.find("Run2012")==string::npos);
+      // fill the histogram
+      fill( tree, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC );
       
       // add underflow bin to the first bin...
       int firstBin              =  1;
@@ -897,7 +1069,7 @@ void produceNew(// main name of the trees
       dir->cd();
       
       // if doing nominal analysis, save histogram...
-      if( sys.find("nominal")!=string::npos ){
+      if( sy==0 ){
 	
 	// if doing a MC sample, just overwrite the directory
 	if(sample.find("Run2012")==string::npos ) 
@@ -925,7 +1097,7 @@ void produceNew(// main name of the trees
       // if doing systematic analysis, save histogram with correct label and continue
       // no need to code for Run2012 occurrence...
       else{
-	h_tmp->Write((datacard_name+"_"+sys).c_str(), TObject::kOverwrite);
+	h_tmp->Write((datacard_name+"_"+syst_name).c_str(), TObject::kOverwrite);
 	continue;      
       }
       
@@ -965,7 +1137,7 @@ void produceNew(// main name of the trees
   // keep track of missing files
   int errFlag = 0 ;
 
-  cout << "************************" << endl;
+  cout << "Yields:" << endl;
   for( unsigned int s = 0 ; s < datacard_samples.size(); s++){
 
     // get the histogram
@@ -974,7 +1146,7 @@ void produceNew(// main name of the trees
       errFlag++;
       continue;
     }
-    cout << string(datacard_samples[s].Data()) << ": " << h_tmp->Integral() << endl;
+    cout << " > " << string(datacard_samples[s].Data()) << ": \e[1;34m" << h_tmp->Integral() << "\e[0m" << endl;
 
     // add the histogram to the map
     aMap[datacard_samples[s]] = h_tmp;
@@ -995,7 +1167,7 @@ void produceNew(// main name of the trees
     
 
   }
-  cout << "************************" << endl;
+  //cout << "************************" << endl;
 
 
   if(errFlag>0){
@@ -1019,7 +1191,7 @@ void produceNew(// main name of the trees
 
  
   // the text file for the datacard
-  ofstream out(Form("datacards/%s_%s.txt",(fname+"_"+category).Data(), (name+version+extraname).c_str()));
+  ofstream out(Form("datacards/Feb24_2014/%s_%s.txt",(fname+"_"+category).Data(), (name+version+extraname).c_str()));
   out.precision(8);
 
 
@@ -1093,36 +1265,75 @@ void produceNew(// main name of the trees
 
   // LUMINOSITY
   line = "lumi                  lnN  ";
-  if( aMap["TTH125"]->Integral()>0 )     line += "1.022      ";
-  if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.022      ";
-  if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.022      ";
-  if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.022      ";
-  if( aMap["TTV"]->Integral()>0 )        line += "1.022      ";
-  if( aMap["SingleT"]->Integral()>0 )    line += "1.022      ";
+  if( aMap["TTH125"]->Integral()>0 )     line += "1.026      ";
+  if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.026      ";
+  if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.026      ";
+  if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.026      ";
+  if( aMap["TTV"]->Integral()>0 )        line += "1.026      ";
+  if( aMap["SingleT"]->Integral()>0 )    line += "1.026      ";
   out<<line;
   out<<endl;
 
-  // BTAGGING
-  line = "csv                   shape  ";                              
-  if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";       
-  if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
-  if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
-  if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
-  if( aMap["TTV"]->Integral()>0 )        line += " -         ";
-  if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
-  out<<line;
-  out<<endl;
+  if( USESHIFTEDSAMPLES ){
 
-  // JET ENERGY SCALE
-  line = "JEC                   shape  ";                             
-  if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";
-  if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";
-  if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";
-  if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";
-  if( aMap["TTV"]->Integral()>0 )        line += " -         ";
-  if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
-  out<<line;
-  out<<endl;
+    // BTAGGING
+    line = "csv                   shape  ";                              
+    if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";       
+    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
+    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
+    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
+    if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
+    if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+    out<<line;
+    out<<endl;
+    
+    // JET ENERGY SCALE
+    line = "JEC                   shape  ";                             
+    if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";
+    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";
+    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";
+    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";
+    if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
+    if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+    out<<line;
+    out<<endl;
+
+    // JET ENERGY RESOLUTION
+    line = "JER                   shape  ";                             
+    if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";
+    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";
+    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";
+    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";
+    if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
+    if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+    out<<line;
+    out<<endl;
+
+  }
+  else{
+
+    // BTAGGING
+    line = "csv                   lnN  ";                              
+    if( aMap["TTH125"]->Integral()>0 )     line += "1.2        ";       
+    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.2        ";       
+    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.2        ";       
+    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.2        ";       
+    if( aMap["TTV"]->Integral()>0 )        line += "1.2        ";
+    if( aMap["SingleT"]->Integral()>0 )    line += "1.2        ";
+    out<<line;
+    out<<endl;
+    
+    // JET ENERGY SCALE
+    line = "JEC                   lnN  ";                             
+    if( aMap["TTH125"]->Integral()>0 )     line += "1.05       ";
+    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.05       ";
+    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.05       ";
+    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.05       ";
+    if( aMap["TTV"]->Integral()>0 )        line += "1.05       ";
+    if( aMap["SingleT"]->Integral()>0 )    line += "1.05       ";
+    out<<line;
+    out<<endl;
+  }
 
   // TTBB CROSS-SECTION
   line = "Norm_TTbb             lnN    ";
@@ -1310,10 +1521,12 @@ void produceNew(// main name of the trees
   cout << " > Category = " << category << endl;
   cout << " > Cut = (" << cut  << ")" << endl;
   cout << " > Histo = h(" << h->GetNbinsX() << "," << h->GetXaxis()->GetXmin() << "," <<  h->GetXaxis()->GetXmax() << ")" << endl;
-  cout << " > Lumi = " << lumiScale*12.1 << " fb-1" << endl << endl;
+  cout << " > Lumi = " << lumiScale*12.1 << " fb-1" << endl ;
+  cout << " > S_bb/B_bb = " << S_bb/B_bb << ", S_bb/B_jj = " << S_bb/B_jj << ", B_bb/B_jj = " << B_bb/B_jj << endl << endl;
 
   // close the output file
   fout->Close();
+  delete fout;
 
   return;
 }
@@ -1336,12 +1549,12 @@ void produceAllNew(string name = "New", string version = "_v2_reg",  string extr
   xsec = 0;
 
   if(doMEM){
-    //produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", doMEM, 2.2, 0.00, 0.2 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2", doMEM, 1.7, 0.15, 0.5 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3", doMEM, 2.2, 0.00, 0.5 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4", doMEM, 2.0, 0.30, 0.5 , LumiScale   , 6,  1);
-    //produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5", doMEM, 5.5, 0.00, 0.5 , LumiScale   , 7,  1);
-    produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f",                  0.953), "cat6", doMEM, 2.2, 0.00, 0.1 , LumiScale*2 , 5,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", doMEM, 2.2, 0.00, 0.2 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2", doMEM, 1.7, 0.15, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3", doMEM, 2.2, 0.00, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4", doMEM, 2.0, 0.30, 0.5 , LumiScale   , 6,  1);
+    produceNew( name, version, extraname,  "SL", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5", doMEM, 5.5, 0.00, 0.5 , LumiScale   , 7,  1);
+    produceNew( name, version, extraname,  "DL", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6", doMEM, 2.2, 0.00, 0.1 , LumiScale*2 , 5,  1);
   }
   else{
     produceNew( name, version, extraname,  "SL", "type==0",                                  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
@@ -1351,6 +1564,94 @@ void produceAllNew(string name = "New", string version = "_v2_reg",  string extr
   }
 
 }
+
+
+
+void produceAllNew_byCSV(string name = "New", string version = "_rec_std",  string extraname = "", 
+			 float LumiScale = 19.04/12.1, int doMEM = 3 ){
+
+  vector<float> binvec;
+  binvec.push_back( 55.);
+  binvec.push_back( 75.);
+  binvec.push_back( 95.);
+  binvec.push_back(115.);
+  binvec.push_back(135.);
+  binvec.push_back(155.);
+  binvec.push_back(175.);
+  binvec.push_back(195.);
+
+  TF1* xsec = new TF1("xsec",Form("x^(-%f)", 1. ), 20, 500);
+  xsec = 0;
+
+  extraname = "_byCSV_sb";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat1",  2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat2",  2,   0.5, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=4", -99.), "cat3",  2,   0.2, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=4", -99.), "cat4",  2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat5",  2,   0.9, 0.00, 1 , LumiScale   , 7,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 -99.), "cat6",  2,   0.2, 0.00, 1 , LumiScale   , 5,  0);
+
+  extraname = "_byCSV_sb_nb";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat1", -2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat2", -2,   0.5, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=4", -99.), "cat3", -2,   0.2, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=4", -99.), "cat4", -2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat5", -2,   0.9, 0.00, 1 , LumiScale   , 7,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 -99.), "cat6", -2,   0.2, 0.00, 1 , LumiScale   , 5,  0);
+
+  extraname = "_byCSV_bj";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat1",  3,   0.3, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat2",  3,   0.5, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=4", -99.), "cat3",  3,   0.2, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=4", -99.), "cat4",  3,   0.3, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=4",                  -99.), "cat5",  3,   0.9, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 -99.), "cat6",  3,   0.2, 0.00, 1 , LumiScale   , 2,  0);
+
+}
+
+
+void produceAllNew_byLLR(string name = "New", string version = "_rec_std",  string extraname = "", 
+			 float LumiScale = 19.04/12.1, int doMEM = 3 ){
+
+  vector<float> binvec;
+  binvec.push_back( 55.);
+  binvec.push_back( 75.);
+  binvec.push_back( 95.);
+  binvec.push_back(115.);
+  binvec.push_back(135.);
+  binvec.push_back(155.);
+  binvec.push_back(175.);
+  binvec.push_back(195.);
+
+  TF1* xsec = new TF1("xsec",Form("x^(-%f)", 1. ), 20, 500);
+  xsec = 0;
+
+  extraname = "_byLLR_sb";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1",  2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2",  2,   0.5, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3",  2,   0.2, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4",  2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5",  2,   0.9, 0.00, 1 , LumiScale   , 7,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6",  2,   0.2, 0.00, 1 , LumiScale   , 5,  0);
+
+  extraname = "_byLLR_sb_nb";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", -2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2", -2,   0.5, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3", -2,   0.2, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4", -2,   0.3, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5", -2,   0.9, 0.00, 1 , LumiScale   , 7,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6", -2,   0.2, 0.00, 1 , LumiScale   , 5,  0);
+
+  extraname = "_byLLR_bj";
+  produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1",  3,   0.3, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2",  3,   0.5, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3",  3,   0.2, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4",  3,   0.3, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5",  3,   0.9, 0.00, 1 , LumiScale   , 2,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6",  3,   0.2, 0.00, 1 , LumiScale   , 2,  0);
+
+}
+
 
 
 void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",  string extraname = "", 
@@ -1374,7 +1675,7 @@ void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",
     //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2>0 && btag_LR>=%f", btag_LRs[it]),                  "cat3", doMEM, 2.2, 0.0, 0.5 , LumiScale   , 6,  1);
     //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==2 && flag_type2<=0 && btag_LR>=%f", btag_LRs[it]),                 "cat4", doMEM, 2.0, 0.0, 0.5 , LumiScale   , 6,  1);
     //produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", Form("type==3 && flag_type3>0 && p_125_all_s>0 && btag_LR>=%f", btag_LRs[it]), "cat5", doMEM, 5.5, 0.0, 0.5 , LumiScale   , 7,  1);
-    produceNew( name, "_v3_reg" , extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", btag_LRs[it]),                                 "cat6", doMEM, 2.2, 0.0, 0.1 , LumiScale*2 , 5,  1);
+    //produceNew( name, "_v3_reg" , extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", btag_LRs[it]),                                 "cat6", doMEM, 2.2, 0.0, 0.1 , LumiScale*2 , 5,  1);
   }
 
   // cat1 0.975
@@ -1523,5 +1824,107 @@ void optimize_mem_category_rel_bbjj(string name = "New", string version = "_v2_r
   for(int it = 0; it<rels.size() ; it++){    
     produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", Form("type==6 && btag_LR>=%f", 0.950 ), "cat6", doMEM, 2.2 , rels[it], 0.1 , LumiScale*2   , 5,  1);
   }
+
+}
+
+
+
+void produceAllNew_WS(string name = "New", string version = "_v4_gen_std",  string extraname = "", 
+		      float LumiScale = 19.5/12.1, int doMEM = 2 ){
+
+  vector<float> binvec;
+  binvec.push_back( 55.);
+  binvec.push_back( 75.);
+  binvec.push_back( 95.);
+  binvec.push_back(115.);
+  binvec.push_back(135.);
+  binvec.push_back(155.);
+  binvec.push_back(175.);
+  binvec.push_back(195.);
+
+  TF1* xsec = new TF1("xsec",Form("x^(-%f)", 1. ), 20, 500);
+  xsec = 0;
+
+  float cutval = 0.60;
+
+  string cat1 = string( Form("type==0 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat2 = string( Form("type==1 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat3 = string( Form("type==2 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat6 = string( Form("type==6 && (jet_csv[2]>=%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",                                    cutval,cutval,cutval,cutval));
+
+  if(abs(doMEM)==2){
+
+    extraname = doMEM>0 ? "_MEM" : "_MEM_nb";
+
+    produceNew( name, version, extraname,  "SL", cat1,  "cat1", doMEM, 0.020 , 99. , 0.0 , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "SL", cat2,  "cat2", doMEM, 0.020,  99. , 0.0 , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "SL", cat3,  "cat4", doMEM, 0.025,  99. , 0.0 , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "DL", cat6,  "cat6", doMEM, 0.030,  99,   0.0 , LumiScale*2 , 6,  0);
+  }
+  if(abs(doMEM)==3){
+
+    extraname = doMEM>0 ? "_bbjj" : "_bbjj_nb";
+    
+    produceNew( name, version, extraname,  "SL", cat1,  "cat1", doMEM, 1 , 0. , 0. , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "SL", cat2,  "cat2", doMEM, 1,  0. , 0. , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "SL", cat3,  "cat4", doMEM, 1,  0. , 0. , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname,  "DL", cat6,  "cat6", doMEM, 1,  0. , 0. , LumiScale*2 , 6,  0);
+  }
+  if(abs(doMEM)==1){
+
+    extraname = doMEM>0 ? "_MH" : "_MH_nb";
+    name      = name+"_MHscan";
+
+    produceNew( name, version, extraname,  "SL", cat1,  "cat1", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
+
+    produceNew( name, version, extraname,  "SL", cat3,  "cat3", doMEM, 0.0, 0.0, 0.0 , LumiScale   , binvec.size()-1,  0, &binvec);
+
+    produceNew( name, version, extraname,  "DL", cat6,  "cat6", doMEM, 0.0, 0.0, 0.0 , LumiScale*2 , binvec.size()-1,  0, &binvec);
+  }
+
+
+}
+
+
+void optimize_mem_category_rel_WS(string name = "New", string version = "_v4_gen_std",  string extraname = "", 
+				  float LumiScale = 19.5/12.1, int doMEM = 2){
+  
+  vector<float> rels;
+  rels.push_back(0.008);
+  rels.push_back(0.012);
+  rels.push_back(0.016);
+  rels.push_back(0.020);
+  rels.push_back(0.024);
+  rels.push_back(0.028);
+  rels.push_back(0.032);
+
+  float cutval = 0.60;
+
+  string cat1 = string( Form("type==0 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat2 = string( Form("type==1 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat3 = string( Form("type==2 && (jet_csv[2]>=%f && jet_csv[3]<%f && jet_csv[4]<%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",  cutval,cutval,cutval,cutval,cutval,cutval));
+  string cat6 = string( Form("type==6 && (jet_csv[2]>=%f && jet_csv[5]>=%f && jet_csv[6]>=%f && jet_csv[7]>=%f)",                                    cutval,cutval,cutval,cutval));
+
+
+  for(int it = 0; it<rels.size() ; it++){    
+
+    extraname = doMEM>0 ? "_MEM" : "_MEM_nb";
+    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", cat1,  "cat1", doMEM, rels[it] , 99. , 0.0 , LumiScale   , 6,  0);
+    
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", cat2,  "cat2", doMEM, rels[it],  99. , 0.0 , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "SL", cat3,  "cat4", doMEM, rels[it],  99. , 0.0 , LumiScale   , 6,  0);
+
+    produceNew( name, version, extraname+string(Form("_%d", it)),  "DL", cat6,  "cat6", doMEM, rels[it],  99,   0.0 , LumiScale*2 , 6,  0);
+
+  }
+
 
 }
