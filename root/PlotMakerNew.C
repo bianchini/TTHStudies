@@ -13,6 +13,7 @@
 #include "TString.h"
 #include "TSystem.h"
 #include "TROOT.h"
+#include "TROOT.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -23,6 +24,7 @@
 #include "TCanvas.h"
 #include "TStyle.h"
 #include "TPad.h"
+#include "TKey.h"
 #include "TList.h"
 #include "TCollection.h"
 #include "TObject.h"
@@ -34,6 +36,8 @@
 #include "TMultiGraph.h"
 #include "TArrayF.h"
 #include "TLine.h"
+
+#include "TIterator.h"
 
 #include "TRandom3.h"
 
@@ -180,6 +184,7 @@ pair<double,double> getMaxValue( TH1F* hMassProb){
 
 void plot_category(string type = "SL", 
 		   string cat  = "cat1",
+		   string tag = "New_rec_std_byLLR_bj",
 		   string header = "Cat 1",
 		   string fname  = "",
 		   int    drawseparation = 1,
@@ -201,8 +206,6 @@ void plot_category(string type = "SL",
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleOffset(1.3,"y");
 
-  string tag = "New_v1_gen_std";
-
   TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
   c1->SetGrid(0,0);
   c1->SetFillStyle(4000);
@@ -216,34 +219,137 @@ void plot_category(string type = "SL",
   leg->SetFillColor(10);
   leg->SetTextSize(0.04); 
 
-  THStack* aStack = new THStack("aStack","Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1};  L_{S}/(L_{S}+L_{B}) ; events ");
+  THStack* aStack = new THStack("aStack","CMS preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1};  L_{S}/(L_{S}+L_{B}) ; events ");
 
   vector<string> samples;
-  if( type.find("SL")!=string::npos ){
-    samples.push_back("SingleT");
-    samples.push_back("TTV");
-    samples.push_back("TTJetsHFbb");
-    samples.push_back("TTJetsHFb");
-    samples.push_back("TTJetsLF");
-    samples.push_back("TTH125");
-    if(RUNONDATA)  samples.push_back("data_obs");
-  }
-  if( type.find("DL")!=string::npos ){
-    samples.push_back("SingleT");
-    samples.push_back("TTV");
-    samples.push_back("TTJetsHFbb");
-    samples.push_back("TTJetsHFb");
-    samples.push_back("TTJetsLF");
-    samples.push_back("TTH125");
-    if(RUNONDATA)  samples.push_back("data_obs");
-  }
+  samples.push_back("SingleT");
+  samples.push_back("TTV");
+  samples.push_back("TTJetsHFbb");
+  samples.push_back("TTJetsHFb");
+  samples.push_back("TTJetsLF");
+  samples.push_back("TTH125");
+  if(RUNONDATA)  samples.push_back("data_obs");
+
 
   TH1F* hS    = 0;
   TH1F* hData = 0;
   TH1F* hErr  = 0;
 
-  TFile* f = TFile::Open(("datacards/"+type+"_"+tag+".root").c_str());
+  TFile* f = TFile::Open(("datacards/Feb24_2014/"+type+"_"+tag+".root").c_str());
   if(f==0 || f->IsZombie() ) return;
+
+
+  ////////////////////////////////////////////////////////////////////////
+
+  TH1F* h_csvUp                 = 0;
+  TH1F* h_JECUp                 = 0;
+  TH1F* h_JERUp                 = 0;
+  TH1F* h_lumiUp                = 0;
+  TH1F* h_pdf_ggUp              = 0;
+  TH1F* h_Norm_TTVUp            = 0;
+  TH1F* h_Norm_SingleTUp        = 0;
+  TH1F* h_QCDscale_TTHUp        = 0;
+  TH1F* h_QCDscale_TTbbUp       = 0;
+  TH1F* h_QCDscale_TTbUp        = 0;
+  TH1F* h_QCDscale_TTJetsHFUp   = 0;
+  TH1F* h_QCDscale_TTJetsLFUp   = 0;
+
+
+  f->cd( (type+"_"+cat).c_str());
+ 
+  TIter iter( gDirectory->GetListOfKeys()  );
+  TKey *key;
+  
+  while ( (key = (TKey*)iter.Next()) ){
+    
+    TH1F* hist =  (TH1F*)key->ReadObj();    
+    string hname = string(hist->GetName());
+
+    if( hname.find("TTJetsHFbb")!=string::npos){
+      hist->Scale( rescaleTTbb);
+      //cout << hname << " scaled by " << rescaleTTbb << endl;
+    }
+    else if(hname.find("TTJetsHFb")!=string::npos){
+      hist->Scale( rescaleTTb);
+      //cout << hname << " scaled by " << rescaleTTb << endl;
+    }
+    else if(hname=="TTJetsLF" || hname.find("TTJetsLF_")!=string::npos ){
+      hist->Scale( rescaleTTjj );
+      //cout << hname << " scaled by " << rescaleTTjj << endl;
+    }
+    
+    if( hname.find("csvUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_csvUp==0 ) h_csvUp = (TH1F*)hist->Clone("csvUp");
+      else             h_csvUp->Add( hist );
+      cout << "Merge csvUp" << endl; 
+    }
+
+    if( hname.find("JECUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_JECUp==0 ) h_JECUp = (TH1F*)hist->Clone("JECUp");
+      else             h_JECUp->Add( hist );	    	
+      cout << "Merge JECUp" << endl; 
+    }
+
+    if( hname.find("JERUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_JERUp==0 ) h_JERUp = (TH1F*)hist->Clone("JERUp");
+      else             h_JERUp->Add( hist );
+      cout << "Merge JERUp" << endl; 	    	
+    }
+
+    if( hname.find("lumiUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_lumiUp==0 ) h_lumiUp = (TH1F*)hist->Clone("lumiUp");
+      else              h_lumiUp->Add( hist );	    	
+    }
+
+    if( hname.find("pdf_ggUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_pdf_ggUp==0 ) h_pdf_ggUp = (TH1F*)hist->Clone("pdf_ggUp");
+      else                h_pdf_ggUp->Add( hist );	    	
+      cout << "Merge lumiUp" << endl; 
+    }
+
+    if( hname.find("QCDscale_TTbbUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_QCDscale_TTbbUp==0 ) h_QCDscale_TTbbUp = (TH1F*)hist->Clone("QCDscale_TTbbUp");
+      else                h_QCDscale_TTbbUp->Add( hist );	    	
+      cout << "Merge QCDscale_TTbbUp" << endl; 
+    }
+
+   if( hname.find("QCDscale_TTbUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_QCDscale_TTbUp==0 ) h_QCDscale_TTbUp = (TH1F*)hist->Clone("QCDscale_TTbUp");
+      else             h_QCDscale_TTbUp->Add( hist );	  
+      cout << "Merge QCDscale_TTbUp" << endl;   	
+    }
+
+   if( hname.find("QCDscale_TTJetsHFUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_QCDscale_TTJetsHFUp==0 ) h_QCDscale_TTJetsHFUp = (TH1F*)hist->Clone("QCDscale_TTJetsHFUp");
+      else             h_QCDscale_TTJetsHFUp->Add( hist );
+      cout << "Merge QCDscale_TTJetsHFUp" << endl; 	    	
+    }
+   
+   if( hname.find("QCDscale_TTJetsLFUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_QCDscale_TTJetsLFUp==0 ) h_QCDscale_TTJetsLFUp = (TH1F*)hist->Clone("QCDscale_TTJetsLFUp");
+      else             h_QCDscale_TTJetsLFUp->Add( hist );
+      cout << "Merge QCDscale_TTJetsLFUp" << endl; 	    		    	
+    }
+
+   if( hname.find("Norm_TTVUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_Norm_TTVUp==0 ) h_Norm_TTVUp = (TH1F*)hist->Clone("Norm_TTVUp");
+      else             h_Norm_TTVUp->Add( hist );
+      cout << "Merge Norm_TTVUp" << endl; 	    		    	
+    }
+
+   if( hname.find("Norm_SingleTUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
+      if( h_Norm_SingleTUp==0 ) h_Norm_SingleTUp = (TH1F*)hist->Clone("Norm_SingleTUp");
+      else             h_Norm_SingleTUp->Add( hist );
+      cout << "Merge Norm_SingleTUp" << endl; 	    		    		    	
+    }
+
+  }
+  
+
+  
+  ////////////////////////////////////////////////////////////////////////
+
+
 
   for(unsigned int sample = 0; sample < samples.size(); sample++){
 
@@ -256,7 +362,8 @@ void plot_category(string type = "SL",
       continue;
     }
     cout << "Events = $" << h->Integral() << " \\pm " << (h->GetEntries()>0 ? sqrt(h->GetEntries())*h->Integral()/h->GetEntries() : 0.0 ) << " $" << endl;
-   
+
+
     if( samples[sample].find("TTH125") != string::npos ){
       hS = (TH1F*)h->Clone("hS");
       hS->Reset();
@@ -272,19 +379,19 @@ void plot_category(string type = "SL",
     }
     if( samples[sample].find("TTJetsHFbb") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + bb", "F");
-      h->Scale( rescaleTTbb );
+      //h->Scale( rescaleTTbb );
       h->SetLineColor( 16 );
       h->SetFillColor( 16 );
     }
     else if( samples[sample].find("TTJetsHFb") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + b", "F");
-      h->Scale( rescaleTTb );
+      //h->Scale( rescaleTTb );
       h->SetLineColor( 17 );
       h->SetFillColor( 17 );
     }
     if( samples[sample].find("TTJetsLF") != string::npos ){
       leg->AddEntry(h, "t#bar{t} + jj", "F");
-      h->Scale( rescaleTTjj );
+      //h->Scale( rescaleTTjj );
       h->SetLineColor( 18 );
       h->SetFillColor( 18 );
     }    
@@ -313,7 +420,7 @@ void plot_category(string type = "SL",
       //cout <<  hData->GetNbinsX() << endl;
       hData->Sumw2();
       hData->SetMarkerStyle(kFullCircle);
-      hData->SetMarkerSize(1.8);
+      hData->SetMarkerSize(1.5);
       hData->SetMarkerColor(kBlack);
       //hData->SetBinContent( hData->GetNbinsX()   , 0.);
       //hData->SetBinContent( hData->GetNbinsX()-1 , 0.);
@@ -330,7 +437,7 @@ void plot_category(string type = "SL",
 	hErr->Reset();
 	hErr->SetFillStyle(0);
 	hErr->SetLineColor(kBlack);
-	leg->AddEntry(hErr, "MC unc. (stat.)", "L");
+	//leg->AddEntry(hErr, "MC unc. (stat.)", "L");
       }
       hErr->Add( h, 1.0);
     }
@@ -341,23 +448,56 @@ void plot_category(string type = "SL",
 
   if(hErr==0 || hS==0) return;
 
+  for(int b = 1; b <= hErr->GetNbinsX() ; b++){
+    float syst_b2 = 0.;
+    if( h_csvUp ) syst_b2 += (hErr->GetBinContent(b)-h_csvUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_csvUp->GetBinContent(b));
+    if( h_JECUp ) syst_b2 += (hErr->GetBinContent(b)-h_JECUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JECUp->GetBinContent(b));
+    if( h_JERUp ) syst_b2 += (hErr->GetBinContent(b)-h_JERUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JERUp->GetBinContent(b));
+    if( h_lumiUp ) syst_b2 += (hErr->GetBinContent(b)-h_lumiUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_lumiUp->GetBinContent(b));
+    if( h_pdf_ggUp ) syst_b2 += (hErr->GetBinContent(b)-h_pdf_ggUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_pdf_ggUp->GetBinContent(b));
+    if( h_QCDscale_TTbbUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTbbUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTbbUp->GetBinContent(b));
+    if( h_QCDscale_TTbUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTbUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTbUp->GetBinContent(b));
+    if( h_QCDscale_TTJetsHFUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTJetsHFUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTJetsHFUp->GetBinContent(b));
+    if( h_QCDscale_TTJetsLFUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b));
+    if( h_Norm_TTVUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b));
+    if( h_Norm_SingleTUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b));
+
+    hErr->SetBinError(b, sqrt(hErr->GetBinError(b)*hErr->GetBinError(b) + syst_b2) );
+  }
+
+
   hErr->GetYaxis()->SetTitle("Events");
-  if(type.find("SL")!=string::npos) 
-    hErr->GetXaxis()->SetTitle("P_{s/b}(y)");
+  if( tag.find("_sb") == string::npos )
+    hErr->GetXaxis()->SetTitle("P_{s/b}");
+  if( tag.find("_bj") == string::npos )
+    hErr->GetXaxis()->SetTitle("P_{b/j}");
+
+  if(RUNONDATA==0)
+    hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
   else
-    hErr->GetXaxis()->SetTitle("P_{s/b}(y)");
-  hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+    hErr->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
   hErr->SetTitleSize  (0.04,"X");
   hErr->SetTitleOffset(0.95,"X");
   float max =  TMath::Max(float(hErr->GetMaximum()*1.35),(hData!=0 ? hData->GetMaximum()*1.35 : -1.));
   hErr->GetYaxis()->SetRangeUser(0., max );
   hErr->SetLineColor(kBlack);
-  hErr->Draw("HISTE1");
+
+  hErr->Draw("HIST");
+  TH1D* hErr_clone = (TH1D*)hErr->Clone("hErr_clone");
+  hErr_clone  ->SetFillColor(kBlack);
+  hErr_clone  ->SetFillStyle(3004);
+  hErr_clone  ->SetLineWidth(1);
+  hErr_clone  ->Draw("E2SAME");
+  leg->AddEntry(hErr_clone, "Bkg unc.", "F");
+
+  //hErr->Draw("HISTE1");
   aStack->Draw("HISTSAME");
   leg->SetHeader( header.c_str() );
   leg->AddEntry(hS, "signal x 5", "L");
   hS->Draw("HISTSAME");
-  hErr->Draw("HISTE1SAME");
+  hErr_clone  ->Draw("E2SAME");
+
+
   if(hData!=0) hData->Draw("ESAME");
   leg->Draw();
 
@@ -365,7 +505,6 @@ void plot_category(string type = "SL",
   line->SetLineWidth(4);
   line->SetLineStyle(kSolid);
   line->SetLineColor(kBlack);
-  //if(type.find("SL")!=string::npos) 
   if(drawseparation) line->Draw("SAME");
 
   TPaveText *pt1 = new TPaveText(0.101, 0.839161, 0.198142, 0.895105,"brNDC");
@@ -382,15 +521,13 @@ void plot_category(string type = "SL",
   pt2->SetTextSize(0.03); 
   pt2->AddText("P_{b/j}>0.5");
  
-  //if(   type.find("SL")!=string::npos ){
   if(drawseparation) pt1->Draw();
   if(drawseparation) pt2->Draw();
-  //}
 
   cout << "Signal = " << hS->Integral()/5. << endl;
 
   if(1){
-    c1->SaveAs(  ("Plots/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
+    c1->SaveAs(  ("Plots/Feb24_2014/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
   }
 
 }
@@ -399,54 +536,546 @@ void plot_category(string type = "SL",
 void plotAll(){
 
 
-  
-  plot_category( "SL", 
-		   "cat1",
-		   "Cat1 (4b2j W-tag)",
-		   "Plot_SL_Cat1"
-		   );
-  
-  
-  plot_category( "SL", 
-		   "cat2",
-		   "Cat2 (4b2j !W-tag)",
-		   "Plot_SL_Cat2"
-		   );
-  
+/////////////////////////////////////////////
 
-  plot_category( "SL", 
-		   "cat3",
-		   "Cat3 (4b1j cs-tag)",
-		   "Plot_SL_Cat3"
-		   );
-  
 
-  plot_category( "SL", 
-		   "cat4",
-		   "Cat4 (4b1j !cs-tag)",
-		   "Plot_SL_Cat4"
-		   );
-  
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
 
-  plot_category( "SL", 
-		   "cat5",
-		   "Cat5 (4b3j)",
-		   "Plot_SL_Cat5"
-		   );
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_reg_byLLR_sb",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  return;
+  ////////////////////////////////////////
   
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 5 (4b3j)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 6 (4b)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  /////////////////////////////////////////////
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 1 (4b2j W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 5 (4b3j)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 6 (4b)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  /////////////////////////////////////////////
+
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byLLR_sb_nb",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  /////////////////////////////////////////////
+
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byLLR_bj",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+
+ 
   
-  plot_category( "DL", 
-		   "cat6",
-		   "Cat6 (4b)",
-		   "Plot_DL_Cat6"
-		   );  
+  //\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+ 
+ 
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 5 (4b3j)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 6 (4b)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  /////////////////////////////////////////////
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 1 (4b2j W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 5 (4b3j)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 6 (4b)",
+		 "Scale",
+		 0, 
+		 1.6, 1.6, 1.0
+		 );
+
+
+  /////////////////////////////////////////////
+
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byCSV_sb_nb",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  /////////////////////////////////////////////
+
+  
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byCSV_bj",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
 
 }
 
 
 
 
-void plot_limit(string version = "_New"){
+void plot_limit(string version = "_New", 
+		int doExpOnly = 1, int doMLFit = 0,
+		float minY = 0.8, float maxY=40, 
+		int compare = 1){
 
   gStyle->SetPaintTextFormat("g");
 
@@ -456,9 +1085,9 @@ void plot_limit(string version = "_New"){
   c1->SetFillColor(10);
   c1->SetTicky();
   c1->SetObjectStat(0);
-  c1->SetLogy(1);
+  c1->SetLogy(!doMLFit);
   
-  TLegend* leg = new TLegend(0.120743,0.153846,0.321981, 0.26049, NULL,"brNDC");
+  TLegend* leg = new TLegend(0.121,0.154,0.32, 0.29, NULL,"brNDC");
   leg->SetBorderSize(0);
   leg->SetTextSize(0.04);
   leg->SetFillColor(0);
@@ -466,6 +1095,7 @@ void plot_limit(string version = "_New"){
 
   float X[]        = {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5 };
   float expY[]     = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float obsY[]     = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
   float expY1sL[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
   float expY1sH[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
   float expY2sL[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
@@ -476,22 +1106,24 @@ void plot_limit(string version = "_New"){
 
 
   vector<string> categories;        vector<string> names;
-  categories.push_back("SL_cat1"+version);  names.push_back("Cat 1");
-  categories.push_back("SL_cat2"+version);  names.push_back("Cat 2");
-  categories.push_back("SL_cat3"+version);  names.push_back("Cat 3");
-  categories.push_back("SL_cat4"+version);  names.push_back("Cat 4");
-  categories.push_back("SL_cat5"+version);  names.push_back("Cat 5");
-  categories.push_back("DL_cat6"+version);  names.push_back("Cat 6"); 
-  categories.push_back("SL"+version);       names.push_back("SL comb.");
+  categories.push_back("MEM_cat1"+version);  names.push_back("Cat 1");
+  categories.push_back("MEM_cat2"+version);  names.push_back("Cat 2");
+  categories.push_back("MEM_cat3"+version);  names.push_back("Cat 3");
+  categories.push_back("MEM_cat4"+version);  names.push_back("Cat 4");
+  categories.push_back("MEM_cat5"+version);  names.push_back("Cat 5");
+  categories.push_back("MEM_cat6"+version);  names.push_back("Cat 6"); 
+  categories.push_back("MEM_SL"+version);       names.push_back("SL comb.");
   //categories.push_back("DL_cat7");names.push_back();
-  categories.push_back("DL"+version);       names.push_back("DL comb."); 
-  categories.push_back("COMB"+version);     names.push_back("All comb.");
+  categories.push_back("MEM_DL"+version);       names.push_back("DL comb."); 
+  categories.push_back("MEM_COMB"+version);     names.push_back("All comb.");
 
   int nBins = categories.size();
 
   for( int b = 0; b < nBins; b++){
 
-    TFile* f = TFile::Open(("datacards/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
+    TFile* f = doMLFit ? 
+      TFile::Open(("datacards/higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
+      TFile::Open(("datacards/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
     if( f==0 ) continue;
     
     Double_t r;
@@ -500,11 +1132,19 @@ void plot_limit(string version = "_New"){
 
     for(int k = 0 ; k< limit->GetEntries() ; k++){
       limit->GetEntry(k);
-      if(k==0) expY2sL[b] = r;
-      if(k==1) expY1sL[b] = r;
-      if(k==2) expY[b]    = r;
-      if(k==3) expY1sH[b] = r;
-      if(k==4) expY2sH[b] = r;
+      if(!doMLFit){
+	if(k==0) expY2sL[b] = r;
+	if(k==1) expY1sL[b] = r;
+	if(k==2) expY[b]    = r;
+	if(k==3) expY1sH[b] = r;
+	if(k==4) expY2sH[b] = r;
+	if(k==5) obsY[b]    = r;
+      }
+      else{
+	if(k==0) expY[b]    = r;
+	if(k==1) expY1sL[b] = r;
+	if(k==2) expY1sH[b] = r;	
+      }
     }
 
 
@@ -520,8 +1160,9 @@ void plot_limit(string version = "_New"){
 
 
   TMultiGraph *mg = new TMultiGraph();
-  mg->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+  mg->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
 
+  TGraphAsymmErrors* observed = new TGraphAsymmErrors(10, X, obsY, expXs ,expXs,  expYs,   expYs);
   TGraphAsymmErrors* expected = new TGraphAsymmErrors(10, X, expY, expXs ,expXs,  expYs,   expYs);
   TGraphAsymmErrors* oneSigma = new TGraphAsymmErrors(10, X, expY, expXs, expXs,  expY1sL, expY1sH);
   TGraphAsymmErrors* twoSigma = new TGraphAsymmErrors(10, X, expY, expXs, expXs,  expY2sL, expY2sH);
@@ -542,13 +1183,25 @@ void plot_limit(string version = "_New"){
   expected->SetMarkerSize(1.0);
   expected->SetLineColor(kBlack);
   expected->SetLineWidth(2);
+
+  observed->SetMarkerColor(kBlack);
+  observed->SetMarkerStyle(kFullCircle);
+  observed->SetMarkerSize(1.0);
+  observed->SetLineColor(kBlack);
+  observed->SetLineWidth(2);
  
-  mg->Add(twoSigma);
+  if(!doMLFit)
+    mg->Add(twoSigma);
   mg->Add(oneSigma);
   mg->Add(expected);
+  if( doExpOnly==0 && !doMLFit  )
+    mg->Add(observed);
 
   mg->Draw("a2");  
   expected->Draw("pSAME");
+  if( doExpOnly==0  && !doMLFit )
+    observed->Draw("pSAME");
+  
 
   TH1F* hT = new TH1F("hT", "", nBins, 0, nBins);
   for(int k = 1; k <= hT->GetNbinsX(); k++){
@@ -569,14 +1222,14 @@ void plot_limit(string version = "_New"){
   lineML->SetLineStyle(kDashed);
   lineML->SetLineWidth(3);
 
-  lineML->Draw("SAME");
+  if(compare) lineML->Draw("SAME");
 
   TF1 *lineTTH = new TF1("lineTTH","4.1",0,nBins);
   lineTTH->SetLineColor(kMagenta);
   lineTTH->SetLineStyle(kDashed);
   lineTTH->SetLineWidth(3);
 
-  lineTTH->Draw("SAME");
+  if(compare) lineTTH->Draw("SAME");
 
   c1->cd();
   gPad->Modified();
@@ -588,16 +1241,29 @@ void plot_limit(string version = "_New"){
     mg->GetXaxis()->SetBinLabel(b+1, names[b].c_str() );
   }
 
-  float maxY = 40;
-
   mg->GetYaxis()->SetTitleOffset(0.97);
-  mg->SetMinimum(0.8);
+  mg->SetMinimum( minY);
   mg->SetMaximum( maxY );
   mg->GetXaxis()->SetTitle("");
-  mg->GetYaxis()->SetTitle("95% CL upper limit on #mu = #sigma/#sigma_{SM}");
+  if(!doMLFit) 
+    mg->GetYaxis()->SetTitle("95% CL upper limit on #mu = #sigma/#sigma_{SM}");
+  else
+    mg->GetYaxis()->SetTitle("ML fit of #mu = #sigma/#sigma_{SM}");
 
-  leg->AddEntry( lineTTH, "HIG-13-019 (post-fit)", "L");
-  leg->AddEntry( lineML,  "HIG-13-020 (post-fit)", "L");
+  if( doExpOnly==0 && !doMLFit ){
+    leg->AddEntry( observed, "MEM observed", "P");
+    leg->AddEntry( expected, "MEM expected (post-fit)", "P");
+  }
+  else if(!doMLFit)
+    leg->AddEntry( expected, "MEM expected (pre-fit)", "P");
+  else 
+    leg->AddEntry( expected, "observed", "P");
+
+  if(compare){
+    leg->AddEntry( lineTTH, "HIG-13-019 (post-fit)", "L");
+    leg->AddEntry( lineML,  "HIG-13-020 (post-fit)", "L");
+  }
+
   leg->Draw();
 
   TPaveText *pt = new TPaveText(0.106811,0.155594,0.407121,0.286713,"brNDC");
@@ -606,9 +1272,11 @@ void plot_limit(string version = "_New"){
   pt->SetFillColor(10);
   pt->SetTextSize(0.04);
   pt->SetTextAlign(11);
-  pt->AddText(Form("Comb: #mu < %.1f at 95%% CL", expY[categories.size()-1]))->SetTextColor(kRed);
-  pt->AddText(Form("(SL: #mu < %.1f)", expY[categories.size()-3]))->SetTextColor(kBlack);
-  pt->AddText(Form("(DL: #mu < %.1f)", expY[categories.size()-2]))->SetTextColor(kBlack);
+  if(!doMLFit){
+    pt->AddText(Form("Comb: #mu < %.1f at 95%% CL", expY[categories.size()-1]))->SetTextColor(kRed);
+    pt->AddText(Form("(SL: #mu < %.1f)", expY[categories.size()-3]))->SetTextColor(kBlack);
+    pt->AddText(Form("(DL: #mu < %.1f)", expY[categories.size()-2]))->SetTextColor(kBlack);
+  }
 
   //pt->Draw();
 
@@ -640,11 +1308,29 @@ void plot_limit(string version = "_New"){
   //del2_->Draw("SAME");
 
   if(1){
-    c1->SaveAs("datacards/Limits"+TString(version.c_str())+".png");
+    c1->SaveAs("Plots/Feb24_2014/Limits"+TString(version.c_str())+".png");
     //c1->SaveAs("datacards/Limits"+TString(version.c_str())+".pdf");
   }
 
 }
+
+
+void plot_limitAll(){
+
+  // exp limits
+  plot_limit("_New_rec_std_byCSV_sb",    1, 0, 0.8, 40, 1);
+  plot_limit("_New_rec_std_byLLR_sb",    1, 0, 0.8, 40, 1);
+  plot_limit("_New_rec_reg_byLLR_sb",    1, 0, 0.8, 40, 1);
+  plot_limit("_New_rec_reg_byLLR_sb_scaleUp_TTbb",    1, 0, 0.8, 40, 1);
+  plot_limit("_New_rec_std_byCSV_sb_nb", 1, 0, 0.8, 40, 1);
+  plot_limit("_New_rec_std_byLLR_sb_nb", 1, 0, 0.8, 40, 1);
+
+
+  // ML fit
+  plot_limit("_New_rec_std_byLLR_bj",    0, 1, 0., 4, 0);
+  plot_limit("_New_rec_std_byCSV_bj",    0, 1, 0., 4, 0);
+}
+
 
 
 void plot_syst(string type = "SL",
@@ -750,7 +1436,7 @@ void plot_syst(string type = "SL",
       hU->GetXaxis()->SetTitle("P_{s/b}(y)");
     else
       hU->GetXaxis()->SetTitle("P_{s/b}(y)");
-    hU->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+    hU->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
     hU->SetTitleSize  (0.04,"X");
     hU->SetTitleOffset(0.95,"X");
     hU->Draw("HISTE");
@@ -764,7 +1450,7 @@ void plot_syst(string type = "SL",
       hD->GetXaxis()->SetTitle("P_{s/b}(y)");
     else
       hD->GetXaxis()->SetTitle("P_{s/b}(y)");
-    hD->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+    hD->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
     hD->SetTitleSize  (0.04,"X");
     hD->SetTitleOffset(0.95,"X");
     hD->Draw("HISTE");
@@ -841,12 +1527,14 @@ void plot_systAll(){
 }
 
 
+
+
 void plot_BTag( TString extraname = "",	       
 	       int flag = 0,
 	       int plotDistr = 0){
 
   int nmax = 2000;
-  if(flag>=6) nmax = 10000;
+  if(flag>=8) nmax = 4000;
 
   if(plotDistr==1){
     nmax = 100;
@@ -879,12 +1567,12 @@ void plot_BTag( TString extraname = "",
   leg->SetBorderSize(0);
   leg->SetFillColor(10);
   leg->SetTextSize(0.04); 
-  if(flag<3) 
-    leg->SetHeader("SL: N_{jet}=6, N_{CSVM}#geq2");
-  else if(flag>=3 && flag<6)   
-    leg->SetHeader("SL: N_{jet}=5, N_{CSVM}#geq2");
-  else if(flag>=6 && flag<9)   
-    leg->SetHeader("DL: N_{jet}=4, N_{CSVM}#geq2");
+  if(flag<4) 
+    leg->SetHeader("Single-lepton, N_{jet}=6");
+  else if(flag>=4 && flag<8)   
+    leg->SetHeader("Single-lepton, N_{jet}=5");
+  else if(flag>=8 && flag<12)   
+    leg->SetHeader("Double-lepton, N_{jet}=4");
 
   float kappa1 = 1;
 
@@ -897,21 +1585,25 @@ void plot_BTag( TString extraname = "",
   
   float xM[3], yM[3];
 
+  float xWP[1], yWP[1];
+  xWP[0] = -99;
+  yWP[0] = -99;
+
   int oldFiles = 0;
   vector<string> files;
   string path = oldFiles ? "~/public/BTagging/Nov04_2013/" : "~/public/BTagging/Nov21_2013/";
   string name =  "New" ;
   string jets =  "J" ;
 
-  if(flag<3){
+  if(flag<4){
     files.push_back(path+"MEAnalysis"+name+"_TTH_6"+jets+".root");
     files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_6"+jets+".root");
   }
-  else if(flag>=3 && flag<6){
+  else if(flag>=4 && flag<8){
     files.push_back(path+"MEAnalysis"+name+"_TTH_5"+jets+".root");
     files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_5"+jets+".root");
   }
-  else if(flag>=6 && flag<9){
+  else if(flag>=8 && flag<12){
     files.push_back(path+"MEAnalysis"+name+"_TTH_4"+jets+".root");
     files.push_back(path+"MEAnalysis"+name+"_TTJETS"+"_4"+jets+".root");
   }
@@ -928,6 +1620,7 @@ void plot_BTag( TString extraname = "",
     int nPermut_b;
     int numBTagM,numBTagL,numBTagT;
     int nSimBs;
+    int nMatchSimBs;
 
     t->SetBranchAddress("p_tt_bb", p_tt_bb);
     t->SetBranchAddress("p_tt_jj", p_tt_jj);
@@ -938,6 +1631,7 @@ void plot_BTag( TString extraname = "",
     t->SetBranchAddress("numBTagT",&numBTagT);
     t->SetBranchAddress("numBTagL",&numBTagL);
     t->SetBranchAddress("nSimBs",  &nSimBs);
+    t->SetBranchAddress("nMatchSimBs",  &nMatchSimBs);
     
     int counter2M = 0;
     int counter3M = 0;
@@ -950,9 +1644,10 @@ void plot_BTag( TString extraname = "",
 
       t->GetEntry(i);
       
-      if(j==1 && (flag==0 || flag==3 || flag==6) && nSimBs==0) continue;
-      if(j==1 && (flag==1 || flag==4 || flag==7) && nSimBs >2) continue;
-      if(j==1 && (flag==2 || flag==5 || flag==8) && nSimBs==2) continue;
+      if(j==1 && flag%4==0     && nSimBs==0) continue; // tt+X
+      if(j==1 && (flag-1)%4==0 && nSimBs >2) continue; // tt+LF
+      if(j==1 && (flag-2)%4==0 && (nSimBs==2 || (nSimBs >2 && nMatchSimBs>=2) )) continue; // tt+b
+      if(j==1 && (flag-3)%4==0 && (nSimBs==2 || (nSimBs >2 && nMatchSimBs<2) ))  continue; // tt+bb
 
       counter++;
 
@@ -1016,6 +1711,23 @@ void plot_BTag( TString extraname = "",
     x[b-1] = intS;
     y[b-1] = intB;				
     if((b%2)==0) cout << "At x>" << hS->GetBinCenter(b) << " => Eff.=" << intS << " -- vs -- FkR.=" << intB << endl;
+
+    if( flag<=4 &&  hS->GetBinCenter(b)>0.974 &&   hS->GetBinCenter(b)<0.976 && xWP[0]<0 ){
+      xWP[0] = intS;
+      yWP[0] = intB;
+      cout << "\e[1;32m" << intS << " --- " << intB << "\e[0m" << endl;
+    }
+    if( flag>4 && flag<=8 &&  hS->GetBinCenter(b)>0.989 &&   hS->GetBinCenter(b)<0.991 && xWP[0]<0 ){
+      xWP[0] = intS;
+      yWP[0] = intB;
+      cout << "\e[1;32m" << intS << " --- " << intB << "\e[0m" << endl;
+    }
+    if(flag>8 && flag<=11  &&  hS->GetBinCenter(b)>0.952 &&   hS->GetBinCenter(b)<0.954 && xWP[0]<0 ){
+      xWP[0] = intS;
+      yWP[0] = intB;
+      cout << "\e[1;32m" << intS << " --- " << intB << "\e[0m" << endl;
+    }
+
   }
   x[nmax]=0.00;
   y[nmax]=0.00;
@@ -1024,10 +1736,11 @@ void plot_BTag( TString extraname = "",
 
   ///////////////////////////////////////
 
-  TString title("Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H; selection efficiency in t#bar{t}+jets");
-  if( flag == 0 || flag == 3 || flag==6) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H; selection efficiency in t#bar{t}+jets";
-  if( flag == 1 || flag == 4 || flag==7) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H; selection efficiency in t#bar{t}+jj";
-  if( flag == 2 || flag == 5 || flag==8) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H; selection efficiency in t#bar{t}+b#bar{b}";
+  TString title("Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H ( #it{PITHYA} ); selection efficiency in t#bar{t}+jets ( #it{MadGraph} )");
+  if( flag%4==0    ) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H ( #it{PITHYA} ); selection efficiency in t#bar{t}+jets ( #it{MadGraph} )";
+  if( (flag-1)%4==0) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H ( #it{PITHYA} ); selection efficiency in t#bar{t}+jj ( #it{MadGraph} )";
+  if( (flag-2)%4==0) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H ( #it{PITHYA} ); selection efficiency in t#bar{t}+b ( #it{MadGraph} ) ";
+  if( (flag-3)%4==0) title = "Simulation #sqrt{s}=8 TeV; selection efficiency in t#bar{t}H ( #it{PITHYA} ); selection efficiency in t#bar{t}+b#bar{b} ( #it{MadGraph} )";
 
   TH1F* h = new TH1F("h",title, 100, 0.0, 0.3);  
   if(flag==0){
@@ -1039,33 +1752,48 @@ void plot_BTag( TString extraname = "",
     h->SetMaximum(0.10);
   }
   if(flag==2){
-    h->SetMinimum(0.01);
+    h->SetMinimum(0.001);
     h->SetMaximum(0.20);
   }
   if(flag==3){
-    h->SetMinimum(0.001);
-    h->SetMaximum(0.20);
+    h->SetMinimum(0.04);
+    h->SetMaximum(0.30);
   }
+
   if(flag==4){
+    h->SetMinimum(0.001);
+    h->SetMaximum(0.10);
+  }
+  if(flag==5){
     h->SetMinimum(0.0002);
     h->SetMaximum(0.10);
   }
- if(flag==5){
-    h->SetMinimum(0.005);
+ if(flag==6){
+    h->SetMinimum(0.001);
     h->SetMaximum(0.20);
   }
- if(flag==6){
+ if(flag==7){
+    h->SetMinimum(0.005);
+    h->SetMaximum(0.30);
+  }
+
+ if(flag==8){
     h->SetMinimum(0.001);
     h->SetMaximum(0.05);
   }
- if(flag==7){
+ if(flag==9){
     h->SetMinimum(0.0001);
     h->SetMaximum(0.05);
   }
- if(flag==8){
-    h->SetMinimum(0.01);
+ if(flag==10){
+    h->SetMinimum(0.001);
     h->SetMaximum(0.20);
   }
+ if(flag==11){
+   h->SetMinimum(0.04);
+   h->SetMaximum(0.30);
+ }
+
   h->Draw();
   TGraph* hROC = new TGraph(nmax+1, x, y);
   hROC->SetLineWidth(2);
@@ -1076,16 +1804,24 @@ void plot_BTag( TString extraname = "",
  
   TGraph* hROCM = new TGraph(3, xM, yM);
   hROCM->SetMarkerStyle(kFullCircle);
+  hROCM->SetMarkerSize(1.3);
   hROCM->SetMarkerColor(kBlue);
   hROCM->Draw("PSAME");
+
+  TGraph* hWP = new TGraph(1, xWP, yWP);
+  hWP->SetMarkerStyle(kFullCross);
+  hWP->SetMarkerSize(2);
+  hWP->SetMarkerColor(kRed);
+  hWP->Draw("PSAME");
 
   cout << "2CSVM:" << xM[0] << "-" << yM[0] << "  ";
   cout << "3CSVM:" << xM[1] << "-" << yM[1] << "  ";
   cout << "4CSVM:" << xM[2] << "-" << yM[2] << endl;
 
   if(plotDistr==0){
-   leg->AddEntry(hROCM, "cut-and-count","P");
-   leg->AddEntry(hROC, "LIkelihood ratio","L");
+   leg->AddEntry(hROCM, "cut-and-count: 4L3M, 4M, 4M2T","P");
+   leg->AddEntry(hROC, "btag-LR","L");
+   leg->AddEntry(hWP, "btag-LR WP","P");
    leg->Draw();
   }
 
@@ -1157,6 +1893,24 @@ void plot_BTag( TString extraname = "",
     pos3[3] = 0.47;
   }
   if( flag==3 ){
+    pos1[0] = 0.61;  
+    pos1[1] = 0.70;  
+    pos1[2] = 0.83;  
+    pos1[3] = 0.78;
+
+    pos2[0] = 0.10;  
+    pos2[1] = 0.31;  
+    pos2[2] = 0.41;  
+    pos2[3] = 0.43;
+
+    pos3[0] = 0.31;  
+    pos3[1] = 0.40;  
+    pos3[2] = 0.48;  
+    pos3[3] = 0.47;
+  }
+
+
+  if( flag==4 ){
     pos1[0] = 0.49;  
     pos1[1] = 0.55;  
     pos1[2] = 0.71;  
@@ -1171,22 +1925,6 @@ void plot_BTag( TString extraname = "",
     pos3[1] = 0.22;  
     pos3[2] = 0.36;  
     pos3[3] = 0.29;
-  }
-  if( flag==4 ){
-    pos1[0] = 0.50;  
-    pos1[1] = 0.64;  
-    pos1[2] = 0.73;  
-    pos1[3] = 0.72;
-
-    pos2[0] = 0.33;  
-    pos2[1] = 0.18;  
-    pos2[2] = 0.64;  
-    pos2[3] = 0.29;
-
-    pos3[0] = 0.21;  
-    pos3[1] = 0.34;  
-    pos3[2] = 0.38;  
-    pos3[3] = 0.41;
   }
   if( flag==5 ){
     pos1[0] = 0.50;  
@@ -1236,7 +1974,56 @@ void plot_BTag( TString extraname = "",
     pos3[2] = 0.38;  
     pos3[3] = 0.41;
   }
- if( flag==8 ){
+
+  if( flag==8 ){
+    pos1[0] = 0.50;  
+    pos1[1] = 0.64;  
+    pos1[2] = 0.73;  
+    pos1[3] = 0.72;
+
+    pos2[0] = 0.33;  
+    pos2[1] = 0.18;  
+    pos2[2] = 0.64;  
+    pos2[3] = 0.29;
+
+    pos3[0] = 0.21;  
+    pos3[1] = 0.34;  
+    pos3[2] = 0.38;  
+    pos3[3] = 0.41;
+  }
+  if( flag==9 ){
+    pos1[0] = 0.50;  
+    pos1[1] = 0.64;  
+    pos1[2] = 0.73;  
+    pos1[3] = 0.72;
+
+    pos2[0] = 0.33;  
+    pos2[1] = 0.18;  
+    pos2[2] = 0.64;  
+    pos2[3] = 0.29;
+
+    pos3[0] = 0.21;  
+    pos3[1] = 0.34;  
+    pos3[2] = 0.38;  
+    pos3[3] = 0.41;
+  }
+ if( flag==10 ){
+    pos1[0] = 0.37;  
+    pos1[1] = 0.59;  
+    pos1[2] = 0.60;  
+    pos1[3] = 0.67;
+
+    pos2[0] = 0.33;  
+    pos2[1] = 0.18;  
+    pos2[2] = 0.64;  
+    pos2[3] = 0.29;
+
+    pos3[0] = 0.21;  
+    pos3[1] = 0.34;  
+    pos3[2] = 0.38;  
+    pos3[3] = 0.41;
+  }
+ if( flag==11 ){
     pos1[0] = 0.37;  
     pos1[1] = 0.59;  
     pos1[2] = 0.60;  
@@ -1261,7 +2048,7 @@ void plot_BTag( TString extraname = "",
   pt->SetTextSize(0.04);
   pt->SetTextAlign(11);
   pt->AddText("N_{CSVL}#geq4, N_{CSVM}#geq3")->SetTextColor(kBlue);
-  if(plotDistr==0) pt->Draw();
+  //if(plotDistr==0) pt->Draw();
 
   TPaveText *pt2 = new TPaveText(pos2[0], pos2[1], pos2[2], pos2[3],"brNDC");
   pt2->SetFillStyle(0);
@@ -1270,7 +2057,7 @@ void plot_BTag( TString extraname = "",
   pt2->SetTextSize(0.04);
   pt2->SetTextAlign(11);
   pt2->AddText("N_{CSVM}#geq4, N_{CSVT}#geq2")->SetTextColor(kBlue);
-   if(plotDistr==0) pt2->Draw();
+  //if(plotDistr==0) pt2->Draw();
 
   TPaveText *pt3 = new TPaveText(pos3[0], pos3[1], pos3[2], pos3[3],"brNDC");
   pt3->SetFillStyle(0);
@@ -1279,17 +2066,17 @@ void plot_BTag( TString extraname = "",
   pt3->SetTextSize(0.04);
   pt3->SetTextAlign(11);
   pt3->AddText("N_{CSVM}#geq4")->SetTextColor(kBlue);
-   if(plotDistr==0) pt3->Draw();
+  //if(plotDistr==0) pt3->Draw();
 
-  if(0){
-    c1->SaveAs("Plots/Plot_BTag_ROC_"+extraname+".png");
+  if(1){
+    c1->SaveAs("Plots/Feb24_2014/Plot_BTag_ROC_"+extraname+".png");
   }
 
 }
 
 void plot_BTagAll(){
   
-  for(int a = 0; a<9; a++){
+  for(int a = 0; a<12; a++){
     for(int b = 0; b<2; b++){
       plot_BTag(TString(Form("%d_%d",a,b)),a,b);
     }
@@ -1298,20 +2085,14 @@ void plot_BTagAll(){
 }
 
 
-void plot_match( TString fname = "SL", 
+void plot_match( TString fname = "all_rec_std", 
 		string cut = "type==0", 
 		TString category = "cat0",
 		string header = "",
 		int doSgn = 1){
   
 
-  string version = (string(fname.Data())).find("SL")!=string::npos ? "_v1" : "_v1";
-
-  cout << "Doing version " << version << " and category " << category << endl;
-
   string basecut = cut;
-  TString ttjets = (string(fname.Data())).find("SL")!=string::npos ? "_TTJets" : "_TTJets";
-
 
   gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
@@ -1341,9 +2122,9 @@ void plot_match( TString fname = "SL",
   leg->SetTextSize(0.04); 
   leg->SetHeader(header.c_str());
 
-  TFile* f_B = TFile::Open("MEAnalysisNew_"+fname+"_nominal"+version+ttjets+".root");
+  TFile* f_B = TFile::Open("files/byLLR/MEAnalysisNew_"+fname+"_TTJets.root");
   TTree* tB = (TTree*)f_B->Get("tree");
-  TFile* f_S = TFile::Open("MEAnalysisNew_"+fname+"_nominal"+version+"_TTH125.root");
+  TFile* f_S = TFile::Open("files/byLLR/MEAnalysisNew_"+fname+"_TTH125.root");
   TTree* tS = (TTree*)f_S->Get("tree");
 
   TTree* tree = doSgn ? tS : tB;
@@ -1462,52 +2243,33 @@ void plot_match( TString fname = "SL",
   //leg->AddEntry(hS, "MC matching efficiency","P");
   leg->Draw();
 
-  if(1){
-    c1->SaveAs("Plots/Plot_Match_"+category+".png");
+  if(0){
+    c1->SaveAs("Plots/Feb24_2014/Plot_Match_"+category+".png");
+    delete c1;
   }
-
 }
 
 void plot_matchAll(){
 
-  plot_match("SL", "type==0", "cat1_s", "Cat 1, t#bar{t}H",     1);
-  plot_match("SL", "type==0", "cat1_b", "Cat 1, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==0", "cat1_s_byLLR", "Cat 1, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==0", "cat1_b_byLLR", "Cat 1, t#bar{t}+jets", 0);
 
-  plot_match("SL", "type==1", "cat2_s", "Cat 2, t#bar{t}H",     1);
-  plot_match("SL", "type==1", "cat2_b", "Cat 2, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==1", "cat2_s_byLLR", "Cat 2, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==1", "cat2_b_byLLR", "Cat 2, t#bar{t}+jets", 0);
 
-  plot_match("SL", "type==2 && flag_type2>0", "cat3_s", "Cat 3, t#bar{t}H",     1);
-  plot_match("SL", "type==2 && flag_type2>0", "cat3_b", "Cat 3, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==2 && flag_type2>0", "cat3_s_byLLR", "Cat 3, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==2 && flag_type2>0", "cat3_b_byLLR", "Cat 3, t#bar{t}+jets", 0);
 
-  plot_match("SL", "type==2 && flag_type2<=0", "cat4_s", "Cat 4, t#bar{t}H",     1);
-  plot_match("SL", "type==2 && flag_type2<=0", "cat4_b", "Cat 4, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==2 && flag_type2<=0", "cat4_s_byLLR", "Cat 4, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==2 && flag_type2<=0", "cat4_b_byLLR", "Cat 4, t#bar{t}+jets", 0);
 
-  plot_match("SL", "type==3 && flag_type3>0 && p_125_all_s>0", "cat5_s", "Cat 5, t#bar{t}H",     1);
-  plot_match("SL", "type==3 && flag_type3>0 && p_125_all_s>0", "cat5_b", "Cat 5, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==3", "cat5_s_byLLR", "Cat 5, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==3", "cat5_b_byLLR", "Cat 5, t#bar{t}+jets", 0);
 
-  plot_match("DL", "type==6", "cat6_s", "Cat 6, t#bar{t}H",     1);
-  plot_match("DL", "type==6", "cat6_b", "Cat 6, t#bar{t}+jets", 0);
+  plot_match("all_rec_std", "syst==0 && type==6", "cat6_s_byLLR", "Cat 6, t#bar{t}H",     1);
+  plot_match("all_rec_std", "syst==0 && type==6", "cat6_b_byLLR", "Cat 6, t#bar{t}+jets", 0);
 
 
-  // btagM == 4
-
-  plot_match("SL", "type==0 && numBTagM==4", "cat1_s_4BTag", "Cat 1, t#bar{t}H",     1);
-  plot_match("SL", "type==0 && numBTagM==4", "cat1_b_4BTag", "Cat 1, t#bar{t}+jets", 0);
-
-  plot_match("SL", "type==1 && numBTagM==4", "cat2_s_4BTag", "Cat 2, t#bar{t}H",     1);
-  plot_match("SL", "type==1 && numBTagM==4", "cat2_b_4BTag", "Cat 2, t#bar{t}+jets", 0);
-
-  plot_match("SL", "type==2 && flag_type2>0 && numBTagM==4", "cat3_s_4BTag", "Cat 3, t#bar{t}H",     1);
-  plot_match("SL", "type==2 && flag_type2>0 && numBTagM==4", "cat3_b_4BTag", "Cat 3, t#bar{t}+jets", 0);
-
-  plot_match("SL", "type==2 && flag_type2<=0 && numBTagM==4", "cat4_s_4BTag", "Cat 4, t#bar{t}H",     1);
-  plot_match("SL", "type==2 && flag_type2<=0 && numBTagM==4", "cat4_b_4BTag", "Cat 4, t#bar{t}+jets", 0);
-
-  plot_match("SL", "type==3 && flag_type3>0 && p_125_all_s>0 && numBTagM==4", "cat5_s_4BTag", "Cat 5, t#bar{t}H",     1);
-  plot_match("SL", "type==3 && flag_type3>0 && p_125_all_s>0 && numBTagM==4", "cat5_b_4BTag", "Cat 5, t#bar{t}+jets", 0);
-
-  plot_match("DL", "type==6 && numBTagM==4", "cat6_s_4BTag", "Cat 6, t#bar{t}H",     1);
-  plot_match("DL", "type==6 && numBTagM==4", "cat6_b_4BTag", "Cat 6, t#bar{t}+jets", 0);
 }
 
 
@@ -1600,7 +2362,7 @@ void plot_mass(// secondary name of the input trees
   TF1* xsec = new TF1("xsec",Form("x^(-%f)", fact1 ), 20, 500);
 
   // histo labels
-  TString histolabel = "Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}; M_{H} estimator [GeV] ; events";
+  TString histolabel = "Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}; M_{H} estimator [GeV] ; events";
 
   // the stack and its MC stat. error plot
   THStack* aStack = new THStack("aStack",histolabel);
@@ -1639,14 +2401,20 @@ void plot_mass(// secondary name of the input trees
   //samples.push_back("EWK");
 
   // main name of the trees
-  string name = "New";
+  string name = "New_MHscan";
+
+  // which scan ?
+  int doMHscan = 0;
+
+  if( !doMHscan ) name = "New_MTscan";
   
   // version
-  string version =  "_v1" ;
+  string version =  "_v4_gen_std" ;
   cout << "Doing version " << version << " and category " << category << endl;
  
   // input files path
-  string inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov04_2013/mem/";
+  string inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Nov04_2013/mhscan/";
+  inputpath = "./";
 
 
   // loop over the samples...
@@ -1717,9 +2485,12 @@ void plot_mass(// secondary name of the input trees
   
     // total number of integrations ( nPermut_s*nMassPoints)
     int nTotInteg_s;
+    int nTotInteg_b;
+    
 
     // matching of each permutation
     int perm_to_gen_s[999];
+    int perm_to_gen_b[999];
 
     // the normalization weight
     float weight;
@@ -1731,11 +2502,13 @@ void plot_mass(// secondary name of the input trees
     t->SetBranchAddress("nPermut_s",    &nPermut_s);
     t->SetBranchAddress("nPermut_b",    &nPermut_b);
     t->SetBranchAddress("nTotInteg_s",  &nTotInteg_s);
+    t->SetBranchAddress("nTotInteg_b",  &nTotInteg_b);
     t->SetBranchAddress("nMassPoints",  &nMassPoints);
     t->SetBranchAddress("mH_scan",      mH_scan);
     t->SetBranchAddress("mT_scan",      mT_scan);
     t->SetBranchAddress("weight",       &weight);
     t->SetBranchAddress("perm_to_gen_s",perm_to_gen_s);
+    t->SetBranchAddress("perm_to_gen_b",perm_to_gen_b);
     
     // total tree entries
     Long64_t nentries = t->GetEntries(); 
@@ -1762,6 +2535,14 @@ void plot_mass(// secondary name of the input trees
       // increment the inclusive counter
       counter++;
 
+      // choose what scan to perform
+      int nPermut      = doMHscan ? nPermut_s     : nPermut_b;
+      float* m_scan    = doMHscan ? mH_scan       : mT_scan;
+      float* p_vsM     = doMHscan ? p_vsMH_s      : p_vsMT_b;
+      int* perm_to_gen = doMHscan ? perm_to_gen_s : perm_to_gen_b;
+
+
+
       // which permutations to consider for the ME analysis
       vector<int> whichpermut;
       int stop    = 0;
@@ -1769,7 +2550,7 @@ void plot_mass(// secondary name of the input trees
       while(stop!=1 && choosePerm<0){
 	
 	// take a random permutation
-	int newpermut =  int(ran->Uniform(-0.5, nPermut_s+0.5));
+	int newpermut =  int(ran->Uniform(-0.5, nPermut+0.5));
 
 	// if empty, fill the vector with the first permutation and stop if only 1 is needed
 	if( whichpermut.size()==0 ){
@@ -1808,9 +2589,9 @@ void plot_mass(// secondary name of the input trees
 	hTmp->Reset();
 	
 	// reset the per-permutation total probability (summed over MH)
-	float perm_prob [nPermut_s];
-	float perm_match[nPermut_s];      
-	for( int perm_it = 0 ; perm_it < nPermut_s ; perm_it++){
+	float perm_prob [nPermut];
+	float perm_match[nPermut];      
+	for( int perm_it = 0 ; perm_it < nPermut ; perm_it++){
 	  perm_prob [perm_it] = 0.;
 	  perm_match[perm_it] = 0;
 	}
@@ -1821,16 +2602,16 @@ void plot_mass(// secondary name of the input trees
 	// loop over the Higgs mass grid
 	for(int mH_it = 0; mH_it<nMassPoints; mH_it++){
 	  
-	  float mH =  mH_scan[mH_it];
+	  float mH =  m_scan[mH_it];
 	  
 	  // change values here to retsrict the search range
 	  if( mH<0 || mH>300) continue;
 	  
 	  // for each mass point, loop over pewrmutations
-	  for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){
+	  for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){
 	    
 	    // the ME probability 
-	    float ME_prob = p_vsMH_s[mH_it*nPermut_s + perm_it];
+	    float ME_prob = p_vsM[mH_it*nPermut + perm_it];
 	    
 	    // the btag probability
 	    float bb_prob =  p_tt_bb[perm_it] ;
@@ -1839,10 +2620,10 @@ void plot_mass(// secondary name of the input trees
 	    float norm    = normXSec ? 1./xsec->Eval( mH ) : 1.0;
 	    
 	    // matching status of this particular permutation
-	    int match     = perm_to_gen_s[perm_it];
+	    int match     = perm_to_gen[perm_it];
 
 	    // the total probability
-	    double p =  ME_prob * bb_prob * norm;
+	    double p =  ME_prob /** bb_prob*/ * norm;
 	    
 	    // add this into the per-permutation probability
 	    perm_prob [perm_it] += p;
@@ -1873,7 +2654,7 @@ void plot_mass(// secondary name of the input trees
 
       
 	// loop over the mass integrated probability and rank the permutations
-	for( int perm_it = 0 ; perm_it < nPermut_s ; perm_it++){
+	for( int perm_it = 0 ; perm_it < nPermut ; perm_it++){
 	  
 	  // LO
 	  if(perm_prob [perm_it] > maxP ){
@@ -1957,17 +2738,17 @@ void plot_mass(// secondary name of the input trees
 	for(int mH_it = 0; mH_it<nMassPoints; mH_it++){
 	  
 	  // the mass point value
-	  float mH =  mH_scan[mH_it];
+	  float mH =  m_scan[mH_it];
 	  
 	  if( mH<0 || mH>300) continue;
 	  
 	  // again, get the probability, this time for maxPerm
-	  float ME_prob =  p_vsMH_s[mH_it*nPermut_s + maxPerm];
+	  float ME_prob =  p_vsM[mH_it*nPermut + maxPerm];
 	  float bb_prob =  p_tt_bb[maxPerm] ;
 	  float norm    = normXSec ? 1./xsec->Eval( mH ) : 1.0;	
 	  
 	  // probability for maxPerm under mH hypothesis
-	  double p =  ME_prob * bb_prob * norm;       
+	  double p =  ME_prob /** bb_prob */ * norm;       
 
 	  // fill hTmp at mH
 	  hTmp->Fill( mH, p );
@@ -1987,7 +2768,7 @@ void plot_mass(// secondary name of the input trees
 	  counterQuarks++;
 	  
 	  // the best permutation matched the pattern ( OR between two )
-	  if( maxM == matchPattern || maxM == matchPattern2)  counterMatch++;	
+	  if( maxM == matchPattern || maxM == matchPattern2 || (maxM%100 == 11 ))  counterMatch++;	
 	}
 	
 	// if the matched permutation assigns correctly at least the Higgs b-quarks...
@@ -2009,12 +2790,12 @@ void plot_mass(// secondary name of the input trees
 	for(int mH_it = 0; mH_it<nMassPoints; mH_it++){	
 	  
 	  // skip other mass values...
-	  float mH =  mH_scan[mH_it];
+	  float mH =  m_scan[mH_it];
 	  if(mH>126 || mH<124) continue;	  
 	  
 	  // once we got the good Higgs mass, loop over permutations...
-	  for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){	
-	    float ME_prob     = p_vsMH_s[mH_it*nPermut_s + perm_it];
+	  for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){	
+	    float ME_prob     = p_vsM[mH_it*nPermut + perm_it];
 	    float bb_prob     = p_tt_bb[perm_it] ;
 
 	    // if choosePerm<0, choose randomly abs(choosePerm) permutations
@@ -2039,7 +2820,7 @@ void plot_mass(// secondary name of the input trees
 	    else{}
 
 	    // add to the total probability...
-	    p_125_all_s_ttbb += ME_prob*bb_prob;
+	    p_125_all_s_ttbb += ME_prob/**bb_prob*/;
 
 	  }
 	}
@@ -2079,8 +2860,8 @@ void plot_mass(// secondary name of the input trees
 	    else{}
 
 	    // add to the total probability...	    
-	    p_125_all_b_ttbb += ME_prob*bb_prob;
-	    p_125_all_b_ttjj += ME_prob*jj_prob;
+	    p_125_all_b_ttbb += ME_prob/**bb_prob*/;
+	    p_125_all_b_ttjj += ME_prob/**jj_prob*/;
 
 	  }
 	}
@@ -2201,8 +2982,12 @@ void plot_mass(// secondary name of the input trees
   // drawing options 
 
   hErr->GetYaxis()->SetTitle("Events");
-  hErr->GetXaxis()->SetTitle("M_{H} estimator [GeV]");
-  hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+  if(doMHscan) 
+    hErr->GetXaxis()->SetTitle("M_{H} estimator [GeV]");
+  else
+    hErr->GetXaxis()->SetTitle("M_{T} estimator [GeV]");
+
+  hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
   hErr->SetTitleSize  (0.04,"X");
   hErr->SetTitleOffset(0.95,"X");
   float max =  hErr->GetMaximum()*1.45;
@@ -2234,8 +3019,8 @@ void plot_mass(// secondary name of the input trees
   pt->SetFillColor(10);
   pt->SetTextSize(0.03);
   pt->SetTextAlign(11);
-  pt->AddText(Form("All quarks in acc.: %.0f%%",           (counterH>0 ? float(counterHQuarks)/float(counterH)*100 : 0.) ))->SetTextColor(kBlack);
-  pt->AddText(Form("(of which %.0f%% perfect match)",      (counterHQuarks>0 ? float(counterHMatch)/float(counterHQuarks)*100 : 0. )))->SetTextColor(kRed);
+  pt->AddText(Form("All quarks reconstructed.: %.0f%%",    (counterH>0 ? float(counterHQuarks)/float(counterH)*100 : 0.) ))->SetTextColor(kBlack);
+  pt->AddText(Form("(%.0f%% w/ Higgs-b's matched)",       (counterHQuarks>0 ? float(counterHMatch)/float(counterHQuarks)*100 : 0. )))->SetTextColor(kRed);
   pt->AddText(Form("Higgs-b's matched : %.0f%%",           (counterH>0 ? float(counterHMatchAny)/float(counterH)*100 : 0. )))->SetTextColor(kBlue);
 
   if(analysis==0)  pt->Draw();
@@ -2254,15 +3039,16 @@ void plot_mass(// secondary name of the input trees
     hTTV->Scale(1./hTTV->Integral());
     hTT ->Scale(1./hTT ->Integral());
 
-    hTTH->GetYaxis()->SetRangeUser(0., TMath::Max(hTT->GetMaximum(), hTTH->GetMaximum())*1.45);
+    hTTH->GetYaxis()->SetRangeUser(0., TMath::Max(hTTV->GetMaximum(), hTTH->GetMaximum())*1.45);
+    //hTTH->GetYaxis()->SetRangeUser(0., doMHscan ? 0.35 : 0.50);
     hTTH->Draw("HISTE");
     hTTV->Draw("HISTESAME");
-    hTT->Draw("HISTESAME");
+    //hTT->Draw("HISTESAME");
     leg->Clear();
     leg->SetHeader(category);
     leg->AddEntry(hTTH, "t#bar{t}H",     "F");
     leg->AddEntry(hTTV, "t#bar{t}V",     "F");
-    leg->AddEntry(hTT,  "t#bar{t}+jets", "L");
+    //leg->AddEntry(hTT,  "t#bar{t}+jets", "L");
     leg->Draw();
   }
   // if 2, then plot the normalized shapes of tt+bb, tt+b, and tt+jj
@@ -2300,12 +3086,14 @@ void plot_mass(// secondary name of the input trees
   }
 
   // save the plots
-  if(1){
+  if(0){
+
+    TString what = doMHscan ? "MHscan" : "MTscan";
 
     TString whichVar;
-    if     (analysis==0) whichVar = "Mass_"; 
-    else if(analysis==1) whichVar = "MEM_"; 
-    else                 whichVar = "UNKNOW_"; 
+    if     (analysis==0) whichVar = what+"_Mass_"; 
+    else if(analysis==1) whichVar = what+"_MEM_"; 
+    else                 whichVar = what+"_UNKNOW_"; 
     
     TString whichPlot;
     if     (plotShapes==0) whichPlot = "Spectrum_"; 
@@ -2331,40 +3119,47 @@ void plot_mass(// secondary name of the input trees
 }
 
 
+
 void plot_massAll( int analysis = 0 ){
 
+  float xMin = 100;   //25
+  float xMax = 250;  //300
+  int nBins  = 9;    //9
+  
   if( analysis == 0 ){
 
     // the mass analysis => shapes and specta for the 1st rank
-    for(int i = 0; i < 3; i++){
-      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  999, 0);
-      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  999, 0);
-      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  999, 0);
-      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , 9 , 55, 250, 0, 1, 100111 , 11,      999, 0);
+    for(int i = 0; i < 1; i++){
+      //plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  999, 0);
+      //plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  999, 0);
+      //plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  999, 0);
+      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 ,   nBins, xMin, xMax, 0, 1,   100111 , 11,      999, 0);
     }
+
+    return;
     
     // the mass analysis => shapes and specta for the 2nd rank
     for(int i = 0; i < 3; i++){
-      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  1, 0);
-      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  1, 0);
-      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  1, 0);
-      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , 9 , 55, 250, 0, 1, 100111 , 11,      1, 0);
+      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  1, 0);
+      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  1, 0);
+      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  1, 0);
+      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , nBins, xMin, xMax, 0, 1, 100111 , 11,      1, 0);
     }
     
     // the mass analysis => shapes and specta for the 3rd rank
     for(int i = 0; i < 3; i++){
-      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  2, 0);
-      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  2, 0);
-      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  2, 0);
-      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , 9 , 55, 250, 0, 1, 100111 , 11,      2, 0);
+      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  2, 0);
+      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  2, 0);
+      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  2, 0);
+      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , nBins, xMin, xMax, 0, 1, 100111 , 11,      2, 0);
     }
     
     // the mass analysis => shapes and specta for the 4th rank
     for(int i = 0; i < 3; i++){
-      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  3, 0);
-      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  3, 0);
-      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   9 , 55, 250, 0, 1, 111111 , 111111,  3, 0);
-      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , 9 , 55, 250, 0, 1, 100111 , 11,      3, 0);
+      plot_mass("SL", "type==0", "SL + 6 jets", "SL6jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  3, 0);
+      plot_mass("SL", "type==2", "SL + 5 jets", "SL5jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  3, 0);
+      plot_mass("SL", "type==3", "SL + >6 jets","SL7jets", i, 19.5/12.1 ,   nBins, xMin, xMax, 0, 1, 111111 , 111111,  3, 0);
+      plot_mass("DL", "type==6", "DL + 4 jets", "DL4jets", i, 2*19.5/12.1 , nBins, xMin, xMax, 0, 1, 100111 , 11,      3, 0);
     }
 
   }
@@ -2453,7 +3248,13 @@ void plot_comp(TString file_1 = "",
     return;
   }
   TString syst_1_nickname = string(syst_1.Data()).find("nominal")!=string::npos ? "" : "_"+syst_1;
+  cout << string((cat_1+"/"+proc_1+syst_1_nickname).Data()) << endl;
   h_1 = (TH1F*)f_1->Get(cat_1+"/"+proc_1+syst_1_nickname);
+
+  if(h_1==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
   h_1->SetLineWidth(3);
   h_1->SetLineStyle(kDashed);
   h_1->SetLineColor(kBlack);
@@ -2467,16 +3268,23 @@ void plot_comp(TString file_1 = "",
     return;
   }
   TString syst_2_nickname = string(syst_2.Data()).find("nominal")!=string::npos ? "" : "_"+syst_2;
+  cout << string((cat_2+"/"+proc_2+syst_2_nickname).Data()) << endl;
   h_2 = (TH1F*)f_2->Get(cat_2+"/"+proc_2+syst_2_nickname);
+  if(h_2==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
   h_2->SetLineWidth(3);
   h_2->SetLineColor(kRed);
   leg->AddEntry( h_2, header_2 , "L");
 
+  h_1->SetXTitle("discriminant");
+  h_1->SetYTitle("units");
 
   h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.3 );
   h_1->SetMinimum(0);
-  h_1->Draw("HISTE");
-  h_2->Draw("HISTESAME");
+  h_1->DrawNormalized("HISTE");
+  h_2->DrawNormalized("HISTESAME");
 
   cout << "*********" << endl;
   cout << "h_1 := " << h_1->Integral() << ", mu = " << h_1->GetMean() << endl;
@@ -2486,8 +3294,9 @@ void plot_comp(TString file_1 = "",
   leg->SetHeader( header );
   leg->Draw();
 
-  if(0){
-    c1->SaveAs("Plots/Plot_Comp_"+fname+".png");
+  if(1){
+    c1->SaveAs("Plots/Feb24_2014/Plot_Comp_"+fname+".png");
+    delete c1;
   }
 
 }
@@ -2498,6 +3307,89 @@ void plot_compAll(){
 
   for(int cat = 1; cat<7 ; cat++){
 
+    cout << "Doing............." << cat << endl;
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_std_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTH125", "TTH125", 
+	      "nominal", "nominal", 
+	      "standard", "regression",
+	      Form("ttH, Cat. %d", cat),
+	      Form("TTH125_cat%d_std_vs_reg", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_std_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "standard", "regression",
+	      Form("tt+bb, Cat. %d", cat),
+	      Form("TTJetsHFbb_cat%d_std_vs_reg", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_std_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsLF", "TTJetsLF", 
+	      "nominal", "nominal", 
+	      "standard", "regression",
+	      Form("tt+jj, Cat. %d", cat),
+	      Form("TTJetsLF_cat%d_std_vs_reg", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "ttH",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTH125_vs_TTJetsHFbb", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb_nb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb_nb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "ttH",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTH125_vs_TTJetsHFbb_nb", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "ttH",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTH125_vs_TTJetsHFbb_bj", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTJetsLF", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "t#bar{t}+jj",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTJetsHFbb_vs_TTJetsLF", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTJetsLF", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "t#bar{t}+jj",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTJetsHFbb_vs_TTJetsLF_bj", cat));
+    
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTV", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}V", "ttH",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTH125_vs_TTV", cat));
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "SingleT", "TTH125", 
+	      "nominal", "nominal", 
+	      "Single-top", "ttH",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTH125_vs_SingleT", cat));
+    
+    /*
     plot_comp(Form("SL_VType%d_New_std.root", cat<6 ? 2 : 0), Form("SL_VType%d_New_reg.root",  cat<6 ? 2 : 0), 
 	      Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat),  Form("SL_VType%d_cat%d",  cat<6 ? 2 : 0, cat), 
 	      "TTH125", "TTH125", 
@@ -2546,6 +3438,7 @@ void plot_compAll(){
 	      "Nov04", "Nov21",
 	      Form("ttjj, Cat. %d", cat),
 	      Form("TTjj_cat%d_old_vs_new", cat));    
+    */
 
   }
 
