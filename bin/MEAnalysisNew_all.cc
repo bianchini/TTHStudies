@@ -134,8 +134,8 @@ int main(int argc, const char* argv[])
 
   double lepPtLoose         ( in.getUntrackedParameter<double>  ("lepPtLoose", 20.));
   double lepPtTight         ( in.getUntrackedParameter<double>  ("lepPtTight", 30.));
-  double lepIsoLoose        ( in.getUntrackedParameter<double>  ("elIsoLoose", 0.2));
-  double lepIsoTight        ( in.getUntrackedParameter<double>  ("elIsoTight", 0.12));
+  double lepIsoLoose        ( in.getUntrackedParameter<double>  ("lepIsoLoose", 0.2));
+  double lepIsoTight        ( in.getUntrackedParameter<double>  ("lepIsoTight", 0.12));
   double elEta              ( in.getUntrackedParameter<double>  ("elEta",      2.5));
   double muEtaLoose         ( in.getUntrackedParameter<double>  ("muEtaLoose", 2.4));
   double muEtaTight         ( in.getUntrackedParameter<double>  ("muEtaTight", 2.1));
@@ -595,6 +595,10 @@ int main(int argc, const char* argv[])
   float Nus_pt_;
   float Nus_phi_;
 
+  // control variables
+  float mH_matched_;
+  float mTop_matched_;
+
   // jet kinematics (as passed via **jets** collection)
   int nJet_;
   float jet_pt_    [NMAXJETS];
@@ -727,6 +731,10 @@ int main(int argc, const char* argv[])
   tree->Branch("numBTagT",                &numBTagT_,    "numBTagT/I");
   tree->Branch("numJets",                 &numJets_,     "numJets/I");
   tree->Branch("btag_LR",                 &btag_LR_,     "btag_LR/F");
+
+  // Control variables
+  tree->Branch("mH_matched",              &mH_matched_,  "mH_matched/F");
+  tree->Branch("mTop_matched",            &mTop_matched_, "mTop_matched/F");
 
   // a map that associates to each permutation [p=0...nTotPermut] to the corresponding jet,
   // indexed according to the order in the jet_* collection
@@ -3193,7 +3201,26 @@ int main(int argc, const char* argv[])
 		if( hyp==0 ) perm_to_gen_    [pos] = 100000*bLep_match + 10000*w1_match + 1000*w2_match + 100*bHad_match + 10*b1_match + 1*b2_match;
 		if( hyp==1 ) perm_to_gen_alt_[pos] = 100000*bLep_match + 10000*w1_match + 1000*w2_match + 100*bHad_match + 10*b1_match + 1*b2_match;
 		
-		
+		// Higgs and top candidate masses, matched to gen (for illustrating b-regression performance)
+		if( b1_match && b2_match ){ 
+		  if(!useRegression)
+		    mH_matched_ = (jets_p4[pos_to_index[b1_pos]] + jets_p4[pos_to_index[b2_pos]]).M(); 
+		  else
+		    mH_matched_ = (jets_p4_reg[pos_to_index[b1_pos]] + jets_p4_reg[pos_to_index[b2_pos]]).M();
+		  if(debug>=2)
+		    std::cout<<"Higgs mass (matched to gen) = "<<mH_matched_<<std::endl;
+		}
+
+		if(w1_match && w2_match && bHad_match){
+		  if(!useRegression)
+		    mTop_matched_ = (jets_p4[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M(); 
+		  else
+                    mTop_matched_ = (jets_p4_reg[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M();
+                  
+		  if(debug>=2)
+		    std::cout<<"Hadronic top mass (matched to gen)= "<<mTop_matched_<<std::endl;
+		}
+
 		// check invariant mass of jet system:
 		double mass, massLow, massHigh;
 		bool skip        = !( meIntegrator->compatibilityCheck    (0.95, /*print*/ 0, mass, massLow, massHigh ) );
