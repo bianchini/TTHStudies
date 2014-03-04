@@ -34,7 +34,7 @@ useTF       = 1
 usePDF      = 1
 
 # to print intermediate steps
-printout    = 1
+printout    = 0
 
 # speed up the job not doing VEGAS integration
 speedup     = 0
@@ -45,18 +45,24 @@ btag_prob_cut_5jets = 0.98225 # <--- 0.992
 btag_prob_cut_4jets = 0.95295 # <--- 0.85 <--- 0.95295 <--- 0.992
 
 # regression
-useRegression = 0
+useRegression = 1
 
 # use gen-jets or reco-jets ???
 doGenLevelAnalysis = 0
+
+# smear jets by TF_smear
+smearJets = 0
 
 # btag-thresholds
 csv_WP_L = 0.244
 csv_WP_M = 0.679 
 csv_WP_T = 0.898
 
-# select bt btag_LR
-selectByBTagShape = 0
+# select by btag_LR
+selectByBTagShape = 1
+
+# recover the <4 btag bin
+recoverTopBTagBin = 1
 
 # an extra name for the output files
 extraoutname = ""
@@ -74,7 +80,7 @@ integralOption2 = 1 # integration speed-up
 ntuplizeAll = 0
 
 # systematics
-systematics = cms.vint32(0)
+systematics = cms.vint32(0,1,2,3,4,5,6)
 
 
 
@@ -121,6 +127,7 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.integralOption2  = cms.untracked.int32( integralOption2 )
 
     process.fwliteInput.selectByBTagShape = cms.untracked.int32(selectByBTagShape)
+    process.fwliteInput.recoverTopBTagBin = cms.untracked.int32(recoverTopBTagBin)
     
     process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
     process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
@@ -143,8 +150,7 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.doType0            = cms.untracked.int32(not selectByBTagShape)
 
     if len(massesH) == 1 and len(massesT) == 1:
-        #process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
-        process.fwliteInput.doType1         = cms.untracked.int32(0)
+        process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
     else:
         process.fwliteInput.doType1         = cms.untracked.int32(0)
 
@@ -175,6 +181,8 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.printout            = cms.untracked.int32(printout)
 
     process.fwliteInput.doGenLevelAnalysis  = cms.untracked.int32(doGenLevelAnalysis)
+    process.fwliteInput.smearJets           = cms.untracked.int32(smearJets)
+
     process.fwliteInput.speedup             = cms.untracked.int32(speedup)
     process.fwliteInput.ntuplizeAll         = cms.untracked.int32(ntuplizeAll)
 
@@ -186,11 +194,9 @@ def submitMEAnalysisNew_all(script,
     f = open(scriptName,'w')
     f.write('#!/bin/bash\n\n')
     f.write('cd ${CMSSW_BASE}/src/Bianchi/TTHStudies/bin/\n')
-    f.write('source /swshare/psit3/etc/profile.d/cms_ui_env.sh\n')
     f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
     f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
     f.write('eval `scramv1 runtime -sh`\n')
-    #f.write('export LD_PRELOAD="libglobus_gssapi_gsi_gcc64pthr.so.0":${LD_PRELOAD}\n')
     f.write('\n\n')
     f.write('\n\n')
     f.write('MEAnalysisNew_all ./'+jobName+'.py\n')
@@ -223,14 +229,14 @@ def submitFullMEAnalysisNew_all( analysis ):
     num_of_jobs =   1
     evs_per_job =   1
     
-    num_of_jobs =  180
-    evs_per_job = 1085 
+    num_of_jobs = 270#180
+    evs_per_job = 725#1085 
 
     for i in range(num_of_jobs):
         counter = counter + 1
         submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job )
 
-    return
+    #return
 
     
     ###################################################### TTJets SL
@@ -247,7 +253,9 @@ def submitFullMEAnalysisNew_all( analysis ):
 
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, i*evs_per_job+1, (i+1)*evs_per_job )
+
+    #return
 
     ###################################################### TTJets FL
     ######################################################
@@ -263,10 +271,10 @@ def submitFullMEAnalysisNew_all( analysis ):
 
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job )
 
  
-    if re.search("nominal",   analysis )==None:
+    if re.search("all",   analysis )==None and re.search("nominal",   analysis )==None:
         return
 
 
@@ -278,21 +286,21 @@ def submitFullMEAnalysisNew_all( analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     # DYJets50
     sample  = 'DYJets50'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     # WJets 
     sample  = 'WJets'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     ###################################################### Single-top
     ######################################################
@@ -302,42 +310,42 @@ def submitFullMEAnalysisNew_all( analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
         
    # Tt
     sample  = 'Tt'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
    # Ts
     sample  = 'Ts'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     # TbartW
     sample  = 'TbartW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     # Tbart
     sample  = 'Tbart'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
     # Tbars
     sample  = 'Tbars'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
 
     ###################################################### Di-boson
@@ -349,21 +357,21 @@ def submitFullMEAnalysisNew_all( analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
    # WZ
     sample  = 'WZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
    # ZZ
     sample  = 'ZZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
 
     ###################################################### TTZ
@@ -374,120 +382,118 @@ def submitFullMEAnalysisNew_all( analysis ):
     counter = 0
     num_of_jobs =    1
     evs_per_job =    1
-    if doSL:
-         num_of_jobs =   15
-         evs_per_job = 8000     # ---> ~ 40/job
-    else:
-         num_of_jobs =     2*2
-         evs_per_job = 60000/2    # ---> ~ 40/job
+
+    num_of_jobs =   15
+    evs_per_job = 8000     # ---> ~ 40/job
+
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, i*evs_per_job+1, (i+1)*evs_per_job )
 
     # TTW
     sample  = 'TTW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
+        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
 
     ###################################################### Data
     ######################################################
 
-    datasamples = [#'DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',
-                   #'DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',
-                   #'DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',
-                   #'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1',
-                   #'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2',
-                   #'DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   #'DoubleElectronRun2012CAug24RerecoEdmV42',
-                   #'DoubleElectronRun2012D',
+    datasamples = ['DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',
+                   'DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',
+                   'DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',
+                   'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1',
+                   'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2',
+                   'DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
+                   'DoubleElectronRun2012CAug24RerecoEdmV42',
+                   'DoubleElectronRun2012D',
 
-                   #'SingleElectronRun2012AAug06EdmV42',
-                   #'SingleElectronRun2012AJul13EdmV42b',
-                   #'SingleElectronRun2012BJul13EdmV42',
-                   #'SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   #'SingleElectronRun2012CAug24RerecoEdmV42',
-                   #'SingleElectronRun2012CPromptv2EdmV42',
-                   #'SingleElectronRun2012CPromptV2TopUpEdmV42',
-                   #'SingleElectronRun2012D-PromptReco-v1_v3',
+                   'SingleElectronRun2012AAug06EdmV42',
+                   'SingleElectronRun2012AJul13EdmV42b',
+                   'SingleElectronRun2012BJul13EdmV42',
+                   'SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
+                   'SingleElectronRun2012CAug24RerecoEdmV42',
+                   'SingleElectronRun2012CPromptv2EdmV42',
+                   'SingleElectronRun2012CPromptV2TopUpEdmV42',
+                   'SingleElectronRun2012D-PromptReco-v1_v3',
 
-                   #'SingleMuRun2012AAug06EdmV42',
-                   #'SingleMuRun2012AJul13EdmV42',
-                   #'SingleMuRun2012BJul13EdmV42',
-                   #'SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   #'SingleMuRun2012CAug24RerecoEdmV42',
-                   #'SingleMuRun2012CPromptv2EdmV42',
-                   #'SingleMuRun2012CPromptV2TopUpEdmV42',
-                   #'SingleMuRun2012D-PromptReco-v1'
+                   'SingleMuRun2012AAug06EdmV42',
+                   'SingleMuRun2012AJul13EdmV42',
+                   'SingleMuRun2012BJul13EdmV42',
+                   'SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',
+                   'SingleMuRun2012CAug24RerecoEdmV42',
+                   'SingleMuRun2012CPromptv2EdmV42',
+                   'SingleMuRun2012CPromptV2TopUpEdmV42',
+                   'SingleMuRun2012D-PromptReco-v1'
                    ]
 
     for datasample in datasamples:
+
+        continue
 
         sample  = 'Run2012_'+datasample
 
         counter     =    0
         num_of_jobs =    1
         evs_per_job =    1
-
-        for i in range(1):
-            counter = counter + 1
-            submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
-
                       
         if (re.search("Run2012AAug06EdmV42",datasample)!=None):  # 148139
             for i in range(1):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-        if (re.search("Run2012AJul13EdmV42b", datasample)!=None):  # 1551019
+        elif (re.search("Run2012AJul13EdmV42b", datasample)!=None):  # 1551019
             for i in range(1):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-        if (re.search("Run2012BJul13EdmV42", datasample)!=None):  # 9351330
+        elif (re.search("Run2012BJul13EdmV42", datasample)!=None):  # 9351330
             num_of_jobs =        4
             evs_per_job =  2340000
             for i in range(num_of_jobs):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job  )
 
-        if (re.search("Run2012C-EcalRecover_11Dec2012-v1_v2", datasample)!=None):  # 263593
+        elif (re.search("Run2012C-EcalRecover_11Dec2012-v1_v2", datasample)!=None):  # 263593
             for i in range(1):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-        if (re.search("Run2012CAug24RerecoEdmV42", datasample)!=None):  # 1064158
+        elif (re.search("Run2012CAug24RerecoEdmV42", datasample)!=None):  # 1064158
             for i in range(1):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-        if (re.search("Run2012CPromptv2EdmV42", datasample)!=None):  # 9768094
+        elif (re.search("Run2012CPromptv2EdmV42", datasample)!=None):  # 9768094
             num_of_jobs =        4
             evs_per_job =  2443000
             for i in range(num_of_jobs):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job  )
 
-        if (re.search("Run2012CPromptV2TopUpEdmV42", datasample)!=None):  # 3491407
+        elif (re.search("Run2012CPromptV2TopUpEdmV42", datasample)!=None):  # 3491407
             for i in range(1):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
-        if (re.search("Run2012D-PromptReco-v1", datasample)!=None):  # 16178887
+        elif (re.search("Run2012D-PromptReco-v1", datasample)!=None):  # 16178887
             num_of_jobs =        6*6
             evs_per_job =  2800000/6
             for i in range(num_of_jobs):
                 counter = counter + 1
                 submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  i*evs_per_job+1, (i+1)*evs_per_job  )
-
+        else:
+            for i in range(1):
+                counter = counter + 1
+                submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, 0, -1 )
 
 ###########################################
 ###########################################
 
 
-analyses = ['nominal_0-0-1']
+analyses = ['all']
 
 for analysis in analyses:
     if doGenLevelAnalysis:

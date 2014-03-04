@@ -15,23 +15,23 @@ process.fwliteInput = cms.PSet(
     pathToFile    = cms.vstring(
     #'./root/S_1.hepmc2g',
     inputDir+'/sample_'+gen+'_'+proc+'_unweighted.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.1.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.2.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.3.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.4.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.5.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.6.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.7.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.8.hepmc2g',
-    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.9.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.1.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.2.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.3.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.4.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.5.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.6.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.7.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.8.hepmc2g',
+    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.9.hepmc2g',
     ),
 
     # output file name
-    #outFileName   = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/DiJetPt_TTH125_sherpa_"+gen+"_unweighted_matchByAlgo.root"),
-    outFileName   = cms.string("./root/TEST.root"),
+    outFileName   = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/DiJetPt_TTH125_sherpa_"+gen+"_unweighted_matchByAlgo_TauDecay.root"),
+    #outFileName   = cms.string("./root/TEST.root"),
 
     # print out intermediate steps
-    verbose       = cms.bool(True),
+    verbose       = cms.bool(False),
 
     # select only events passing lepton cut
     filter        = cms.bool(False),
@@ -46,8 +46,8 @@ process.fwliteInput = cms.PSet(
     # was the sample generated with fragmentation ?
     fragmentation = cms.bool(False),
 
-    # use the best matched partons (jetFlavourByMindR) for genJet
-    genJetsByMindR  = cms.bool(True),
+    # use the best gen-p4 by matched partons (jetFlavourByMindR) for genJet
+    genJetsByMindR  = cms.bool(False),
 
     # add back the neutrino energy to the jet (only nu's from hadron decay)
     genJetsWithNus  = cms.bool(False),

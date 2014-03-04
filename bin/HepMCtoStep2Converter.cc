@@ -151,6 +151,20 @@ public:
   }
 };
 
+class IsPartonForMatch {
+public:
+  bool operator()( const HepMC::GenParticle* p ) {
+
+    int status =  p->status();
+    int pdg    =  p->pdg_id();
+    int vtx    =  p->production_vertex() ? p->production_vertex()->id() : -99; 
+
+    if( abs(vtx)<4  &&  status==11               &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
+    if( abs(vtx)==4 && (status==11 || status==1) &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
+
+    return 0;
+  }
+};
 
 class IsLquarkME {
 public:
@@ -418,7 +432,7 @@ int main(int argc, const char* argv[])
 
   double jetRadius           ( in.getParameter<double>       ("jetRadius") );
   double ptMin               ( in.getParameter<double>       ("ptMin")     );
-  double etaMax              ( in.getParameter<double>       ("eraMax")     );
+  double etaMax              ( in.getParameter<double>       ("etaMax")     );
 
   double ptCut               ( in.getParameter<double>       ("ptCut")     );
   double etaCut              ( in.getParameter<double>       ("etaCut")    );
@@ -591,6 +605,8 @@ int main(int argc, const char* argv[])
   IsBquarkME is_b_quark_ME;
   IsCquarkME is_c_quark_ME;
 
+  IsPartonForMatch is_parton_for_match;
+
   // status 11 quarks, from the shower ( vertex_id = 4 )
   IsLquarkHad is_l_quark_Had;
   IsBquarkHad is_b_quark_Had;
@@ -714,6 +730,8 @@ int main(int argc, const char* argv[])
 	std::list<HepMC::GenParticle*> cquarksME;
 	std::list<HepMC::GenParticle*> lquarksME;
 
+	std::list<HepMC::GenParticle*> partonsForMatch;
+
 	std::list<HepMC::GenParticle*> bhadrons;
 	std::list<HepMC::GenParticle*> chadrons;
 	std::list<HepMC::GenParticle*> lhadrons;
@@ -737,6 +755,7 @@ int main(int argc, const char* argv[])
 	    if ( is_b_quark_ME(*p) )     bquarksME.push_back(*p);
 	    if ( is_c_quark_ME(*p) )     cquarksME.push_back(*p);
 	    if ( is_l_quark_ME(*p) )     lquarksME.push_back(*p);
+	    if ( is_parton_for_match(*p) ) partonsForMatch.push_back(*p);
 
 	  if(!fragmentation){
 	    if ( is_b_quark(*p) )     bquarks.push_back(*p);
@@ -781,15 +800,9 @@ int main(int argc, const char* argv[])
 	  cout << " -- " << lquarks.size() << " l quarks" << endl;
 	  cout << "   (" << lquarksME.size() << " l quarks from ME)" << endl;
 	  cout << "   (" << lhadrons.size() << " l hadrons)" << endl;
+	  cout << " -- " << partonsForMatch.size() << " partons for jet matching" << endl;
 	  cout << " -- " << higgs.size() << " higgs" << endl;
 	  cout <<  endl;
-	  for ( std::list<HepMC::GenParticle*>::iterator p = tquarks.begin() ; p!=tquarks.end() ; p++ ){
-	    TLorentzVector part( ((*p)->momentum()).px(),  
-				 ((*p)->momentum()).py(),  
-				 ((*p)->momentum()).pz(),  
-				 ((*p)->momentum()).e() );
-	    cout << "t-quark" << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
-	  }
 	  for ( std::list<HepMC::GenParticle*>::iterator p = bquarks.begin() ; p!=bquarks.end() ; p++ ){
 	    TLorentzVector part( ((*p)->momentum()).px(),  
 				 ((*p)->momentum()).py(),  
@@ -803,7 +816,23 @@ int main(int argc, const char* argv[])
 				 ((*p)->momentum()).pz(),  
 				 ((*p)->momentum()).e() );
 	    cout << "c-quark" << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
-	  }	 	  
+	  }
+
+	  for ( std::list<HepMC::GenParticle*>::iterator p = bquarksME.begin() ; p!=bquarksME.end() ; p++ ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    cout << "b-quark (ME)" << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
+	  }
+	  for ( std::list<HepMC::GenParticle*>::iterator p = cquarksME.begin() ; p!=cquarksME.end() ; p++ ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    cout << "c-quark (ME)" << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
+	  }
+	 	  
 	}
 	
 	// container of leptons 4-vectors
@@ -859,21 +888,26 @@ int main(int argc, const char* argv[])
 	    sumEt += TMath::Sqrt( px*px + py*py );
 	  }
 	  else{
-	    if( verbose ) cout << "    > jet inputs: this is invisible (pdgid = " << (*p_fs)->pdg_id() << ") : don't consider it!" << endl;
+	    if( verbose ) cout << "      > jet inputs: this is invisible (pdgid = " << (*p_fs)->pdg_id() << ") : don't consider it!" << endl;
 
 	    int fromHadronDecay = 1;
 	    if( (*p_fs)->production_vertex() ){
 	      for ( HepMC::GenVertex::particle_iterator par = (*p_fs)->production_vertex()->particles_begin(HepMC::parents);
 		    par != (*p_fs)->production_vertex()->particles_end(HepMC::parents); ++par ){
-		if( verbose ) cout << "      - parents of neutrinos: " << (*par)->pdg_id() << ", " << (*par)->status() << endl;		 
+		if( verbose ) cout << "        - parents of neutrinos: " << (*par)->pdg_id() << ", " << (*par)->status() << endl;		 
 		if(  abs((*par)->pdg_id())>=11 && abs((*par)->pdg_id())<=16 ) fromHadronDecay=0;
 	      }
 	    }
-	    if( fromHadronDecay ) neutrinos_from_hadron_decay.push_back( TLorentzVector(px,py,pz,e) );
+	    if( fromHadronDecay ){
+	      neutrinos_from_hadron_decay.push_back( TLorentzVector(px,py,pz,e) );	      
+	    }
+	    else{
+	      if( verbose ) cout << "      --> this neutrino does not come from a hadron decay: don't rescue it!" << endl;
+	    }
 	    	    
 	  }
 	}
-	if( verbose ) cout << "END fs particle loop" << endl;
+	if( verbose ) cout << "END   fs particle loop" << endl;
 
 
 	// get the leptons & MET
@@ -1004,7 +1038,7 @@ int main(int argc, const char* argv[])
 		fastjet::PseudoJet const_k = constituents_j[k] ;	
 		TLorentzVector p_k( const_k.px(),  const_k.py(),  const_k.pz(),  const_k.e() );
 		
-		if( verbose ) cout << "    > const #" << k << ": (" << p_k.Pt() << "," << p_k.Eta() << "," << p_k.Phi() << "," << p_k.M() << ")" << endl; 
+		if( verbose ) cout << "      > const #" << k << ": (" << p_k.Pt() << "," << p_k.Eta() << "," << p_k.Phi() << "," << p_k.M() << ")" << endl; 
 		
 		// make sure each constituent is unambiguously identified
 		int matches = 0;
@@ -1074,7 +1108,7 @@ int main(int argc, const char* argv[])
 		if(dist < closestdRME){
 		  closestdRME    = dist;
 		  partonMatch    = part ;
-		  if(verbose) cout << "    > jet matching to ME parton: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jet matching to ME parton: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1091,7 +1125,7 @@ int main(int argc, const char* argv[])
 		if(dist < closestdRME){
 		  closestdRME    = dist;
 		  partonMatch    = part ;
-		  if(verbose) cout << "    > jet matching to ME parton: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jet matching to ME parton: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1108,12 +1142,34 @@ int main(int argc, const char* argv[])
 		if(dist < closestdRME){
 		  closestdRME    = dist;
 		  partonMatch    = part ;
-		  if(verbose) cout << "    > jet matching to ME parton: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jet matching to ME parton: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
-	    if(verbose && partonMatch.E()>1e-2) cout << "    --> matched ME parton" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
+	    if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from ME" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
 
+
+	    if(verbose) cout << "    @ Check for nearby partons from ME or from the shower" << endl;
+	    closestdRME   = 999.;
+	    for ( std::list<HepMC::GenParticle*>::iterator p = partonsForMatch.begin() ; p!=partonsForMatch.end() ; p++ ){
+	      TLorentzVector part( ((*p)->momentum()).px(),  
+				   ((*p)->momentum()).py(),  
+				   ((*p)->momentum()).pz(),  
+				   ((*p)->momentum()).e() );
+	      float dist  = dR(part,jet_j) ;
+	      float PtRel = TMath::Abs(part.Pt()-jet_j.Pt())/part.Pt();
+
+	      if( dist < jetFlavourdR && PtRel<jetFlavourPtRel ){
+		if(dist < closestdRME){
+		  closestdRME    = dist;
+		  partonMatch    = part ;
+		  if(verbose) cout << "      > jet matching to ME parton pdg=" << (*p)->pdg_id() << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		}
+	      }
+	    }
+	    if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from ME or shower" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
+
+	    
 
 	    if(verbose) cout << "    @ Check for nearby partons:" << endl;
 
@@ -1143,14 +1199,14 @@ int main(int argc, const char* argv[])
 		  hardestE   = part.E();
 		  hardestPdg = (*p)->pdg_id(); 
 		}
-		if(verbose && jetFlavourByAlgo) cout << "    > jetFlavourByAlgo: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByAlgo) cout << "      > jetFlavourByAlgo: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 
 	      if( dist < jetFlavourdR && PtRel<jetFlavourPtRel ){
 		if(dist < closestdR){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "    > jetFlavourByMindR: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1165,14 +1221,14 @@ int main(int argc, const char* argv[])
 
 	      if( dist < jetFlavourAlgodR ){
 		numMatchedCs++;
-		if(verbose && jetFlavourByAlgo) cout << "    > jetFlavourByAlgo: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByAlgo) cout << "      > jetFlavourByAlgo: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 
 	      if( dist < jetFlavourdR  && PtRel<jetFlavourPtRel ){
 		if(dist < closestdR ){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "    > jetFlavourByMindR: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1187,14 +1243,14 @@ int main(int argc, const char* argv[])
 
 	      if( dist < jetFlavourAlgodR ){
 		numMatchedBs++;
-		if(verbose && jetFlavourByAlgo) cout << "    > jetFlavourByAlgo: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByAlgo) cout << "      > jetFlavourByAlgo: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 
 	      if( dist < jetFlavourdR  && PtRel<jetFlavourPtRel ){
 		if(dist < closestdR){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "    > jetFlavourByMindR: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }	  
@@ -1214,7 +1270,7 @@ int main(int argc, const char* argv[])
 	      float dist  = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR){
 		matchesLhad++;
-		if(verbose && jetFlavourByHad) cout << "    > jetFlavourByHad:  light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad:  light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }
 	    
@@ -1226,7 +1282,7 @@ int main(int argc, const char* argv[])
 	      float dist = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR ){
 		matchesChad++;
-		if(verbose && jetFlavourByHad) cout << "    > jetFlavourByHad: c-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad: c-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }
 	    
@@ -1238,7 +1294,7 @@ int main(int argc, const char* argv[])
 	      float dist = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR  ){
 		matchesBhad++;
-		if(verbose && jetFlavourByHad) cout << "    > jetFlavourByHad: b-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad: b-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }	  
 
@@ -1288,7 +1344,7 @@ int main(int argc, const char* argv[])
 	    jetsMatchParton.push_back( partonMatch );
 	  }
 	  else{
-	    if( verbose ) cout << "    > matches within " << deltaR << " with a lepton: skip it!" << endl;
+	    if( verbose ) cout << "      > matches within " << deltaR << " with a lepton: skip it!" << endl;
 	  }
 
 	} // incluisve_jets
@@ -1374,6 +1430,7 @@ int main(int argc, const char* argv[])
 	  aJet_csv_downL[j]  = 1.0;
 	  aJet_JECUnc[j]     = 1.0;
 
+	  // add back nu's from hadrond ecay (if any)
 	  TLorentzVector extrap4(0.,0.,0.,0.);
 
 	  if( genJetsWithNus ){
@@ -1395,6 +1452,7 @@ int main(int argc, const char* argv[])
 	  aJet_genEta [j]    = (jets[j]+extrap4).Eta();
 	  aJet_genPhi [j]    = (jets[j]+extrap4).Phi();
 
+	  // use best matched gen-parton as your gen-jet
 	  if( genJetsByMindR ){
 	    if(jetsMatchParton[j].E()>1e-2){
 	      aJet_genPt[j]      = jetsMatchParton[j].Pt(); 
@@ -1402,9 +1460,9 @@ int main(int argc, const char* argv[])
 	      aJet_genPhi [j]    = jetsMatchParton[j].Phi();
 	    }
 	    else{
-	      aJet_genPt  [j] = 0.;
-	      aJet_genEta [j] = 0.;
-	      aJet_genPhi [j] = 0.;
+	      aJet_genPt  [j] = -99;
+	      aJet_genEta [j] = -99;
+	      aJet_genPhi [j] = -99;
 	    }
 	  }
 	  

@@ -10,16 +10,18 @@ import FWCore.ParameterSet.Config as cms
 import sys
 sys.path.append('./')
 
-sample = 'default_1'
+sample = 'ttH_LO_UE_HAD'
 
-indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/'+sample+'/'
+#indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/SherpaOpenLoops/Jan24_2014/'+sample+'/'
+indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/'+sample+'/'
+
 #outdir = '/scratch/bianchi/HBB_EDMNtuple/SherpaOpenLoops/'
 outdir = './root/'
 
 output   = commands.getoutput("ls -1 "+indir)
 outFiles = re.split(r'\n',output)
 
-files_per_job = 6
+files_per_job = 1
 
 l         = []
 counter   = 0
