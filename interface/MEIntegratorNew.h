@@ -396,6 +396,7 @@ MEIntegratorNew::MEIntegratorNew( string fileName , int param , int verbose ) {
   RooRealVar* var = 0;
   while( (var = (RooRealVar*)(*iter)() ) ){
     jetParam_[ string(var->GetName()) ] = var->getVal();
+    cout << string(var->GetName()) << ": " << var->getVal() << endl;
   }
 
   cachePdf( "pdfGammaWHad",     "GammaW",    100);
