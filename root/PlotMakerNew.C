@@ -467,9 +467,9 @@ void plot_category(string type = "SL",
 
 
   hErr->GetYaxis()->SetTitle("Events");
-  if( tag.find("_sb") == string::npos )
+  if( tag.find("_sb") != string::npos )
     hErr->GetXaxis()->SetTitle("P_{s/b}");
-  if( tag.find("_bj") == string::npos )
+  if( tag.find("_bj") != string::npos )
     hErr->GetXaxis()->SetTitle("P_{b/j}");
 
   if(RUNONDATA==0)
@@ -535,6 +535,67 @@ void plot_category(string type = "SL",
 
 void plotAll(){
 
+
+/////////////////////////////////////////////
+
+
+  plot_category( "MEM", 
+		 "cat1",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 1 (4b2j W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat2",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 2 (4b2j !W-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  plot_category( "MEM", 
+		 "cat3",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 3 (4b1j cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat4",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 4 (4b1j !cs-tag)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat5",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 5 (4b3j)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+  plot_category( "MEM", 
+		 "cat6",
+		 "New_rec_std_byCSV_sb",
+		 "Cat. 6 (4b)",
+		 "",
+		 0, 
+		 1.0, 1.0, 1.0
+		 );
+
+
+  return;
 
 /////////////////////////////////////////////
 
@@ -3372,6 +3433,15 @@ void plot_compAll(){
 	      "t#bar{t}+b#bar{b}", "t#bar{t}+jj",
 	      Form("Cat. %d", cat),
 	      Form("cat%d_TTJetsHFbb_vs_TTJetsLF_bj", cat));
+
+
+    plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_bj.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTJetsHFb", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b#bar{b}", "t#bar{t}+b",
+	      Form("Cat. %d", cat),
+	      Form("cat%d_TTJetsHFbb_vs_TTJetsHFb_bj", cat));
     
     plot_comp("datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , "datacards/Feb24_2014/MEM_New_rec_reg_byLLR_sb.root" , 
 	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
