@@ -18,6 +18,8 @@ debug    = False
 outdir = '/scratch/bianchi/'
 indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V3_tmp'
 
+REMOVEALLFILES = 1
+
 #outdir = './'
 #indir  = '/pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V3'
 
@@ -61,27 +63,37 @@ def processAllBatch(jobName, isPisa, outName, split):
     f.write('eval `scramv1 runtime -sh`\n')
     f.write('\n')
     f.write('\n')
-    if pushToT3:
-        f.write('if !(ls /scratch/bianchi/ &> /dev/null) ; then\n')
-        f.write('    mkdir /scratch/bianchi/\n')
-        f.write('fi\n')
-        f.write('ls -ltr /scratch/bianchi/\n\n')
 
-    mainexec = 'Ntupler myStep2_'+jobName+'_'+str(split[0])+'-'+str(split[1])+'.py'
-    print mainexec
-    f.write(mainexec+'\n\n')
+    if REMOVEALLFILES==0:
 
-    if pushToT3:
-        push = 'lcg-cp -b -D srmv2 '+outdir+'/'+outFileName+' srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+indir+'/'+outFileName
-        print push
-        f.write(push+'\n\n')
-        remove = 'rm '+outdir+'/'+outFileName
-        f.write(remove+'\n')
+        if pushToT3:
+            f.write('if !(ls /scratch/bianchi/ &> /dev/null) ; then\n')
+            f.write('    mkdir /scratch/bianchi/\n')
+            f.write('fi\n')
+            f.write('ls -ltr /scratch/bianchi/\n\n')
 
+        mainexec = 'Ntupler myStep2_'+jobName+'_'+str(split[0])+'-'+str(split[1])+'.py'
+        print mainexec
+        f.write(mainexec+'\n\n')
+
+        if pushToT3:
+            remove = 'lcg-del -b -D srmv2 -l srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+indir+'/'+outFileName
+            print remove
+            f.write(remove+'\n\n')
+            push = 'lcg-cp -b -D srmv2 '+outdir+'/'+outFileName+' srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+indir+'/'+outFileName
+            print push
+            f.write(push+'\n\n')
+            remove = 'rm '+outdir+'/'+outFileName
+            f.write(remove+'\n')
+    else:
+        remove = 'lcg-del -b -D srmv2 -l srm://t3se01.psi.ch:8443/srm/managerv2?SFN='+indir+'/'+outFileName
+        print remove
+        f.write(remove+'\n\n')
+            
     f.close()
 
     os.system('chmod +x '+scriptName)
-    submitToQueue = 'qsub -V -cwd -l h_vmem=2G -q all.q -N my'+jobName+'_'+str(split[0])+'-'+str(split[1])+' '+scriptName 
+    submitToQueue = 'qsub -V -cwd -l h_vmem=1G -q all.q -N my'+jobName+'_'+str(split[0])+'-'+str(split[1])+' '+scriptName 
 
     if not debug:
         os.system(submitToQueue)
@@ -94,81 +106,75 @@ def processAllBatch(jobName, isPisa, outName, split):
 ###########################################################################
 
 
-#processAllBatch("WJets", "DiJetPt_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball", [1, 500])
-#processAllBatch("TTH110", "DiJetPt_TTH_HToBB_M-110_8TeV-pythia6", [1, 500])
-#processAllBatch("TTH115", "DiJetPt_TTH_HToBB_M-115_8TeV-pythia6", [1, 500])
-#processAllBatch("TTH120", "DiJetPt_TTH_HToBB_M-120_8TeV-pythia6", [1, 500])
-#processAllBatch("TTH130", "DiJetPt_TTH_HToBB_M-130_8TeV-pythia6", [1, 500])
-#processAllBatch("TTH135", "DiJetPt_TTH_HToBB_M-135_8TeV-pythia6", [1, 500])
-
 total = 0.
 for k in range(8):
-    #print "\nProcessing job....", k
+    print "\nProcessing job....", k
     #total += processAllBatch("T_t-channel", 1, "DiJetPt_T_t-channel_TuneZ2star_8TeV-powheg-tauola", [k*5  +1,(k+1)*5 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 total = 0.
 for k in range(70):
-    #print "Processing....", k
-    #total += processAllBatch("DYJets10to50", 0, "DiJetPt_DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph", [k*40+1,(k+1)*40])
+    print "\nProcessing....", k
+    total += processAllBatch("DYJets10to50", 0, "DiJetPt_DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph", [k*40+1,(k+1)*40])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 total = 0.
-for k in range(30):
-    #print "Processing....", k
-    #total += processAllBatch("DYJets50", 1, "DiJetPt_DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph", [k*10+1,(k+1)*10])
+for k in range(297):
+    print "\nProcessing....", k
+    #total += processAllBatch("DYJets50", 1, "DiJetPt_DYJetsToLL_M-50_TuneZ2Star_8TeV-madgraph", [k*1+1,(k+1)*1])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(15):
-    #print "Processing....", k
+    print "\nProcessing....", k
     #total += processAllBatch("WJetsToLNu", 1, "DiJetPt_WJetsToLNu_TuneZ2Star_8TeV-madgraph-tarball", [k*10+1,(k+1)*10])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(2):
-    #print "Processing....", k
-    #total += processAllBatch("T_s-channel", 1, "DiJetPt_T_s-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
+    print "\nProcessing....", k
+    ###total += processAllBatch("T_s-channel", 1, "DiJetPt_T_s-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(4):
-    #print "Processing....", k
+    print "\nProcessing....", k
     #total += processAllBatch("T_t-channel", 1, "DiJetPt_T_t-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(3):
-    #print "Processing....", k
-    #total += processAllBatch("T_tW-channel-DR", 1, "DiJetPt_T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
+    print "\nProcessing....", k
+    ###total += processAllBatch("T_tW-channel-DR", 1, "DiJetPt_T_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(2):
-    #print "Processing....", k
-    #total += processAllBatch("Tbar_s-channel", 1, "DiJetPt_Tbar_s-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
+    print "\nProcessing....", k
+    ###total += processAllBatch("Tbar_s-channel", 1, "DiJetPt_Tbar_s-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(4):
-    #print "Processing....", k
+    print "\nProcessing....", k
     #total += processAllBatch("Tbar_t-channel", 1, "DiJetPt_Tbar_t-channel_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
 total = 0.
 for k in range(3):
-    #print "Processing....", k
-    #total += processAllBatch("Tbar_tW-channel-DR", 1, "DiJetPt_Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
+    print "\nProcessing....", k
+    ###total += processAllBatch("Tbar_tW-channel-DR", 1, "DiJetPt_Tbar_tW-channel-DR_TuneZ2star_8TeV-powheg-tauola", [k*10  +1,(k+1)*10 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
+'''
 
 total = 0.
 for k in range(14*5):
@@ -213,52 +219,29 @@ print '\n**************************************\nFraction of processed sample: %
 
 
 total = 0.
-for k in range(8):
+for k in range(9):
     print "Processing....", k
-    total += processAllBatch("TTJets_MassiveBinDECAY", 1, "DiJetPt_TTJets_MassiveBinDECAY_8TeV-madgraph", [k*5  +1,(k+1)*5 ])
+    #total += processAllBatch("TTJets_MassiveBinDECAY", 1, "DiJetPt_TTJets_MassiveBinDECAY_8TeV-madgraph", [k*5  +1,(k+1)*5 ])
 print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
-#for k in range(4):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012AJul13", 1, "DiJetPt_SingleMuRun2012AJul13", [k*50  +1,(k+1)*50 ])
-
-#for k in range(1):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012AAug06", 1, "DiJetPt_SingleMuRun2012AAug06", [k*50  +1,(k+1)*50 ])
-
-#for k in range(32):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012BJul13", 1, "DiJetPt_SingleMuRun2012BJul13", [k*50  +1,(k+1)*50 ])
-
-#for k in range(4):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012CAug24Rereco", 1, "DiJetPt_SingleMuRun2012CAug24Rereco", [k*50  +1,(k+1)*50 ])
-
-#for k in range(34):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012CPromptv2", 1, "DiJetPt_SingleMuRun2012CPromptv2", [k*50  +1,(k+1)*50 ])
-
-#for k in range(12):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012CPromptV2TopUp", 1, "DiJetPt_SingleMuRun2012CPromptV2TopUp", [k*50  +1,(k+1)*50 ])
-
-#for k in range(30):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012D-PromptReco-v1", 1, "DiJetPt_SingleMuRun2012D-PromptReco-v1", [k*50  +1,(k+1)*50 ])
-
-#for k in range(1):
-#    print "Processing....", k
-#    processAllBatch("SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2", 1, "DiJetPt_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2", [k*51  +1,(k+1)*51 ])
+total = 0.
+for k in range(4):
+    print "\nProcessing....", k
+    ###total += processAllBatch("TTH125", 0, "DiJetPt_TTH_HToBB_M-125_8TeV-pythia6", [k*4  +1,(k+1)*4 ])
+print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
 
+total = 0.
+for k in range(4):
+    print "\nProcessing....", k
+    ###total += processAllBatch("TTZ", 0, "DiJetPt_TTZJets_8TeV-madgraph", [k*4  +1,(k+1)*4 ])
+print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
+total = 0.
+for k in range(2):
+    print "\nProcessing....", k
+    ###total += processAllBatch("TTW", 0, "DiJetPt_TTWJets_8TeV-madgraph", [k*4  +1,(k+1)*4 ])
+print '\n**************************************\nFraction of processed sample: %s\n**************************************' % total
 
-#for k in range(14*4):
-#    print "Processing....", k
-#    processAllBatch("DYJets10to50", 0, "DiJetPt_DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph", [k*50+1,(k+1)*50])
-
-#processAllBatch("TTH125", 0,"DiJetPt_TTH_HToBB_M-125_8TeV-pythia6", [1, 500])
-#processAllBatch("TTW",    0,"DiJetPt_TTWJets_8TeV-madgraph",        [1, 500])
-#processAllBatch("TTZ",    0,"DiJetPt_TTZJets_8TeV-madgraph",        [1, 500])
-
+'''
