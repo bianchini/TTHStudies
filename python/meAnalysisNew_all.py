@@ -461,18 +461,18 @@ process.fwliteInput = cms.PSet(
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
 
     # skip VEGAS call
-    speedup       = cms.untracked.int32(1), ###### CHECK HERE
+    speedup       = cms.untracked.int32(0), ###### CHECK HERE
 
     # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets       
-    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
-    doType1       = cms.untracked.int32(1),  #SL(4,2)  w/o W-tag
-    doType2       = cms.untracked.int32(1),  #SL(4,1)
+    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
+    doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
+    doType2       = cms.untracked.int32(0),  #SL(4,1)
     doType3       = cms.untracked.int32(1),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
-    doType6       = cms.untracked.int32(1),  #DL(4,X)
+    doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
     doType0ByBTagShape = cms.untracked.int32(0),
     doType1ByBTagShape = cms.untracked.int32(0),
@@ -494,10 +494,16 @@ process.fwliteInput = cms.PSet(
     useBtag          = cms.untracked.int32(1),
 
     # select events based on btag LLR
-    selectByBTagShape= cms.untracked.int32(0),
+    selectByBTagShape= cms.untracked.int32(1),
 
     # recover >4 btag events
     recoverTopBTagBin = cms.untracked.int32(1),
+
+    # test SLw1j hypothesis on type3 events
+    testSLw1jType3 = cms.untracked.int32(1),
+
+    # test hypo SLw1j on up to nMaxJetsSLw1jType3 untagged jets
+    nMaxJetsSLw1jType3 = cms.untracked.int32(4),
 
     # b-tag thresholds (for jet counting)
     csv_WP_L         = cms.untracked.double( 0.244 ),
@@ -513,10 +519,10 @@ process.fwliteInput = cms.PSet(
     useRegression    = cms.untracked.int32(0),
 
     # print out the integral at run-time
-    printout     = cms.untracked.int32(0),
+    printout     = cms.untracked.int32(1),
 
     # various degrees of verbosity
-    debug        = cms.untracked.int32(0),   
+    debug        = cms.untracked.int32(1),   
 
     # extremely verbose 
     verbose      = cms.bool(False),
@@ -541,6 +547,9 @@ process.fwliteInput = cms.PSet(
     MhL          = cms.untracked.double(110),
     MhH          = cms.untracked.double(140),
 
+    MwLType3     = cms.untracked.double(72.),
+    MwHType3     = cms.untracked.double(92.),
+
     # Higgs and top mass values to be scanned
     massesH      = cms.vdouble(125.),
     #massesH      = cms.vdouble(105.,110.,115.,120.,125.,130.,135.,140.),
@@ -552,7 +561,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0,-1),
+    evLimits       = cms.vint32(64526, 65250),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -565,7 +574,7 @@ process.fwliteInput = cms.PSet(
 
     # choose which systematics to run
     # [0=nominal, 1=CSVup, 2=CSVdown, 3=JECup, 4=JECdown, 5=JERup, 6=JERdown]   
-    systematics= cms.vint32(0),
+    systematics= cms.vint32(0,1,2,3,4),
 
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets

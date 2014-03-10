@@ -56,7 +56,7 @@
 #define PI TMath::Pi()
 
 // maximum number of permutations per event
-#define NMAXPERMUT 30
+#define NMAXPERMUT 60
 
 // maximum number of mass points for likelihood scan
 #define NMAXMASS   20
@@ -66,6 +66,9 @@
 
 // if one, MC jets are already corrected for JER
 #define JERCORRECTED 1
+
+// max number of jets for which the SLw1j hypothesis will be tested in type3 events
+#define NMAXJETSSLW1JTYPE3 5
 
 // a global flag to select RECO or GEN+SMEAR analysis
 //#define DOGENLEVELANALYSIS 0
@@ -117,11 +120,15 @@ int main(int argc, const char* argv[])
   
   // PARAMETERS
   double lumi               ( in.getUntrackedParameter<double> ("lumi",   19.04));
-  float  MH                 ( in.getUntrackedParameter<double> ("MH",     125.));
-  float  MT                 ( in.getUntrackedParameter<double> ("MT",    174.3));
-  float  MW                 ( in.getUntrackedParameter<double> ("MW",    80.19));
-  float  MwL                ( in.getUntrackedParameter<double> ("MwL",      60));
-  float  MwH                ( in.getUntrackedParameter<double> ("MwH",     100));
+  float  MH                 ( in.getUntrackedParameter<double> ("MH",      125.));
+  float  MT                 ( in.getUntrackedParameter<double> ("MT",     174.3));
+  float  MW                 ( in.getUntrackedParameter<double> ("MW",     80.19));
+  float  MwL                ( in.getUntrackedParameter<double> ("MwL",       60));
+  float  MwH                ( in.getUntrackedParameter<double> ("MwH",      100));
+  float  MwLType3           ( in.getUntrackedParameter<double> ("MwLType3",  60));
+  float  MwHType3           ( in.getUntrackedParameter<double> ("MwHType3", 100));
+
+
   float  btag_prob_cut_6jets( in.getUntrackedParameter<double> ("btag_prob_cut_6jets",    0.));
   float  btag_prob_cut_5jets( in.getUntrackedParameter<double> ("btag_prob_cut_5jets",    0.));
   float  btag_prob_cut_4jets( in.getUntrackedParameter<double> ("btag_prob_cut_4jets",    0.));
@@ -150,6 +157,9 @@ int main(int argc, const char* argv[])
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
   int   recoverTopBTagBin( in.getUntrackedParameter<int>    ("recoverTopBTagBin",0));
   int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
+
+  int   testSLw1jType3    ( in.getUntrackedParameter<int>("testSLw1jType3",    0));
+  int   nMaxJetsSLw1jType3( in.getUntrackedParameter<int>("nMaxJetsSLw1jType3",4));
 
   int   doTypeBTag4      ( in.getUntrackedParameter<int>    ("doTypeBTag4", 0));
   int   doTypeBTag5      ( in.getUntrackedParameter<int>    ("doTypeBTag5", 0));
@@ -598,6 +608,7 @@ int main(int argc, const char* argv[])
   // control variables
   float mH_matched_;
   float mTop_matched_;
+  float mW_matched_;
 
   // jet kinematics (as passed via **jets** collection)
   int nJet_;
@@ -733,8 +744,9 @@ int main(int argc, const char* argv[])
   tree->Branch("btag_LR",                 &btag_LR_,     "btag_LR/F");
 
   // Control variables
-  tree->Branch("mH_matched",              &mH_matched_,  "mH_matched/F");
+  tree->Branch("mH_matched",              &mH_matched_,   "mH_matched/F");
   tree->Branch("mTop_matched",            &mTop_matched_, "mTop_matched/F");
+  tree->Branch("mW_matched",              &mW_matched_,   "mW_matched/F");
 
   // a map that associates to each permutation [p=0...nTotPermut] to the corresponding jet,
   // indexed according to the order in the jet_* collection
@@ -1038,6 +1050,10 @@ int main(int argc, const char* argv[])
       type_               = -99;
       syst_               = -99;
       iterations_         = -1;
+
+      mH_matched_         = -99.;
+      mW_matched_         = -99.;
+      mTop_matched_       = -99.;
 
       nSimBs_             = nSimBs;
       nMatchSimBs_        = -99;
@@ -2126,6 +2142,9 @@ int main(int argc, const char* argv[])
       // this vector contains the indices of those jets that should be preferred when looking at untag jets
       vector<unsigned int> buntag_indices_favorite;
 
+      // this vector contains the indices of those unatagged jets in excess of the expectation
+      vector<unsigned int> buntag_indices_extra;
+
       // this vector contains the indices of up to 12 jets passing ANY b-tag selection... 
       vector<unsigned int> banytag_indices;  
     
@@ -2606,7 +2625,7 @@ int main(int argc, const char* argv[])
 	  
 	  if(syst==0) counter++;      
 	  if(fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	  if(print) cout << "Processing event # " << counter << " (TYPE DL-4 JETS)." << " Event ID " << EVENT.event << endl;	   
+	  if(print) cout << "\nProcessing event # " << counter << " (TYPE DL-4 JETS)." << " Event ID " << EVENT.event << endl;	   
 
 	  /////////////////////////////////////////////////////
 	  type_       = -3;
@@ -2620,7 +2639,7 @@ int main(int argc, const char* argv[])
 	  
 	  if(syst==0) counter++;      
 	  if(fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	  if(print) cout << "Processing event # " << counter << " (TYPE SL-5 JETS)." << " Event ID " << EVENT.event << endl;	   
+	  if(print) cout << "\nProcessing event # " << counter << " (TYPE SL-5 JETS)." << " Event ID " << EVENT.event << endl;	   
 
 	  /////////////////////////////////////////////////////
 	  type_       = -1;
@@ -2634,7 +2653,7 @@ int main(int argc, const char* argv[])
 	  
 	  if(syst==0) counter++;      
 	  if(fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	  if(print) cout << "Processing event # " << counter << " (TYPE SL6 JETS)." << " Event ID " << EVENT.event << endl;	   
+	  if(print) cout << "\nProcessing event # " << counter << " (TYPE SL6 JETS)." << " Event ID " << EVENT.event << endl;	   
 
 	  /////////////////////////////////////////////////////
 	  type_       =  -2;
@@ -2665,7 +2684,7 @@ int main(int argc, const char* argv[])
 	    
 	    if(syst==0) counter++;      
 	    if( fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	    if(print) cout << "Processing event # " << counter << " (TYPE 0), mW=" << WMass << " GeV." << " Event ID " << EVENT.event << endl;
+	    if(print) cout << "\nProcessing event # " << counter << " (TYPE 0), mW=" << WMass << " GeV." << " Event ID " << EVENT.event << endl;
 	    
 	    /////////////////////////////////////////////////////	      
 	    type_       =  0;
@@ -2678,7 +2697,7 @@ int main(int argc, const char* argv[])
 	    
 	    if(syst==0) counter++;      
 	    if( fixNumEvJob && !(counter>=evLow && counter<=evHigh)  ) continue;
-	    if(print) cout << "Processing event # " << counter << " (TYPE 1), mW=" << WMass << " GeV." << " Event ID " << EVENT.event << endl;	   
+	    if(print) cout << "\nProcessing event # " << counter << " (TYPE 1), mW=" << WMass << " GeV." << " Event ID " << EVENT.event << endl;	   
 	    
 	    /////////////////////////////////////////////////////	  
 	    type_       =  1;
@@ -2702,7 +2721,7 @@ int main(int argc, const char* argv[])
 
 	  if(syst==0) counter++;
 	  if(fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	  if(print) cout << "Processing event # " << counter << " (TYPE 1)." << " Event ID " << EVENT.event << endl;
+	  if(print) cout << "\nProcessing event # " << counter << " (TYPE 1)." << " Event ID " << EVENT.event << endl;
 	  
 	  // set index for untagged jet
 	  ind1 = buntag_indices[0];
@@ -2727,7 +2746,7 @@ int main(int argc, const char* argv[])
 
 	  if(syst==0) counter++;      
 	  if(fixNumEvJob && !(counter>=evLow && counter<=evHigh) ) continue;
-	  if(print) cout << "Processing event # " << counter << " (TYPE 3)." << " Event ID " << EVENT.event << endl;	   
+	  if(print) cout << "\nProcessing event # " << counter << " (TYPE 3)." << " Event ID " << EVENT.event << endl;	   
 	  
 	  // find out which are ind1 and ind2...
 	  float minDiff     = 99999.;
@@ -2779,7 +2798,17 @@ int main(int argc, const char* argv[])
 	    }	  
 	  }
 
-
+	  // keep record of those indices not selected
+	  for(unsigned int ext = 0 ; ext < buntag_indices.size() ; ext++){
+	    if( buntag_indices[ext]!=ind1 && buntag_indices[ext]!=ind2 ) 
+	      buntag_indices_extra.push_back( buntag_indices[ext] );
+	  }
+	  if( debug>=1 ){
+	    cout << "A total of " << buntag_indices_extra.size() << " extra indices cached:" << endl; 
+	    for(unsigned int ext = 0 ; ext < buntag_indices_extra.size() ; ext++){
+	      cout << " >> " << buntag_indices_extra[ext] << endl;
+	    }
+	  }
 
 
 	  /////////////////////////////////////////////////////
@@ -2788,6 +2817,42 @@ int main(int argc, const char* argv[])
 	  nPermut_alt_= 12;
 	  meIntegrator->setIntType( MEIntegratorNew::SL2wj );
 	  /////////////////////////////////////////////////////	  
+
+	  if( testSLw1jType3 ){
+
+	    if( debug>=1 ) cout << "We will use the option of re-interpreting this event..." << endl;
+
+	    // make sure we don't exceed the maximum array size
+	    nMaxJetsSLw1jType3 = TMath::Min(nMaxJetsSLw1jType3, NMAXJETSSLW1JTYPE3);
+
+	    float WMass =  (jets_p4[ ind1 ]+jets_p4[ ind2 ]).M() ;
+	    if( WMass>MwLType3 && WMass<MwHType3 ){
+	      flag_type3_ = 1;
+
+	      if( debug>=1 ){
+		cout << " > this event (originally type3) will be interpreted as type3, because W mass=" << WMass << " GeV..." << endl;
+		cout << "   => total # of permutations = " << nPermut_ << endl;
+	      }	   
+
+	    }
+	    else{
+	 
+	      flag_type3_ = -1;
+
+	      nPermut_    = 12*TMath::Min( int(buntag_indices_extra.size()+2), nMaxJetsSLw1jType3 );
+	      nPermut_alt_= 12*TMath::Min( int(buntag_indices_extra.size()+2), nMaxJetsSLw1jType3 );
+	      meIntegrator->setIntType( MEIntegratorNew::SL1wj );
+
+	      if( debug>=1 ){
+		cout << " > this event (originally type3) will be re-interpreted as type1, because W mass=" << WMass << " GeV..." << endl;
+		cout << "   => total # of permutations = " << nPermut_ << endl;
+	      }	      	      
+
+	    }
+	  }
+
+
+
 	}
 	else if( analyze_type6 || analyze_type6_BTag ){
 	  
@@ -2835,7 +2900,7 @@ int main(int argc, const char* argv[])
 
 	// DEBUG
 	if(debug>=1){
-	  cout << "*** Event ID " << EVENT.event << " *** " << endl;
+	  cout << "*** Event ID " << EVENT.event << " *** systematics: " << syst_ << endl;
 	  cout << " ==> SL=" << int(properEventSL) << ", DL=" << properEventDL << endl;
 	  cout << "     NJets " << numJets_ << " (" << numBTagM_ << " tagged)" << endl;
 	  if(useRegression) 
@@ -2969,7 +3034,8 @@ int main(int argc, const char* argv[])
 	  pos_to_index[4] = ind2;
 	  pos_to_index[5] = btag_indices[1];
 	  pos_to_index[6] = btag_indices[2];
-	  pos_to_index[7] = btag_indices[3];	 
+	  pos_to_index[7] = btag_indices[3];
+	 
 	}
 	else if( type_==6 ){
 	  jets.push_back( !useRegression ? jets_p4[ btag_indices[0] ] : jets_p4_reg[ btag_indices[0] ] );
@@ -3085,9 +3151,11 @@ int main(int argc, const char* argv[])
 	  }
 	}
 
-	// for type 3, the W-tag is different...
-	float WMass = type_==3 ? (jets_p4[ ind1 ]+jets_p4[ ind2 ]).M() : -999.;
-	if( WMass>MwL && WMass<MwH )  flag_type3_ = 1;
+	if(!testSLw1jType3){
+	  // for type 3, the W-tag is different...
+	  float WMass = type_==3 ? (jets_p4[ ind1 ]+jets_p4[ ind2 ]).M() : -999.;
+	  if( WMass>MwL && WMass<MwH )  flag_type3_ = 1;
+	}
 	
 	/////////////////////////////////////////////////////////////
 	
@@ -3138,10 +3206,57 @@ int main(int argc, const char* argv[])
 		continue; 
 	      }
 	      
+	      if( testSLw1jType3 && type_==3 && flag_type3_<0){
+		  permutList = hyp==0 ?  permutations_TYPE0_5EXTRA_S : permutations_TYPE0_5EXTRA_B;
+	      }
 
 	      // loop over permutations
 	      for(unsigned int pos = 0; pos < (unsigned int)( hyp==0 ? nPermut_ : nPermut_alt_ ) ; pos++){
 		
+		// try to recover these events
+		if( testSLw1jType3 && type_==3 && flag_type3_<0 ){
+
+		  if(buntag_indices_extra.size()<=0){
+		    cout << "Inconsistency found in testSLw1jType3" << endl;
+		    continue;
+		  }
+		  
+		  if( pos<12 ){
+		    jets[3]         = jets_p4[ ind1 ];
+		    jets_alt[3]     = jets_p4[ ind1 ];
+		    pos_to_index[3] = ind1;
+
+		    jets[4]         = jets_p4[ ind1 ];
+		    jets_alt[4]     = jets_p4[ ind1 ];
+		    pos_to_index[4] = ind1;		      
+		  }
+		  else if( pos>=11 && pos<24 ){
+		    jets[3]         = jets_p4[ ind2 ];
+		    jets_alt[3]     = jets_p4[ ind2 ];
+		    pos_to_index[3] = ind2;
+
+		    jets[4]         = jets_p4[ ind2 ];
+		    jets_alt[4]     = jets_p4[ ind2 ];
+		    pos_to_index[4] = ind2;
+		  }
+		  else{
+
+		    int extra_jet_position = (pos-24)/12 ;
+
+		    jets[3]         = jets_p4[ buntag_indices_extra[extra_jet_position] ];
+		    jets_alt[3]     = jets_p4[ buntag_indices_extra[extra_jet_position] ];
+		    pos_to_index[3] = buntag_indices_extra[extra_jet_position];
+
+		    jets[4]         = jets_p4[ buntag_indices_extra[extra_jet_position] ];
+		    jets_alt[4]     = jets_p4[ buntag_indices_extra[extra_jet_position] ];
+		    pos_to_index[4] = buntag_indices_extra[extra_jet_position];
+		  }
+		  
+		  // update...
+		  meIntegrator->setJets(&jets);	
+		  
+		}
+
 		// consider permutation #pos & save permutation-to-jet mas into the tree...
 		meIntegrator->initVersors( permutList[pos] );
 		if( hyp==0 ) perm_to_jet_    [pos] =  permutList[pos];
@@ -3156,8 +3271,8 @@ int main(int argc, const char* argv[])
 		int b2_pos   = (permutList[pos])%10/1;   
 
 		// the barcode for this permutation
-		string barcode = Form("%d_%d_%d%d%d_%d%d%d_%d%d", 
-				      type_, hyp, lep_index[0], 0, jets_index[ pos_to_index[bLep_pos] ],
+		string barcode = Form("%d%d_%d_%d%d%d_%d%d%d_%d%d", 
+				      type_, meIntegrator->getIntType(), hyp, lep_index[0], 0, jets_index[ pos_to_index[bLep_pos] ],
 				      type_<6 ? jets_index[ pos_to_index[w1_pos] ] : lep_index[1], type_<6 ? jets_index[ pos_to_index[w2_pos] ] : 0, jets_index[ pos_to_index[bHad_pos] ],
 				      jets_index[ pos_to_index[b1_pos] ], jets_index[ pos_to_index[b2_pos] ]);
 		PhaseSpacePoint PSP;
@@ -3211,14 +3326,21 @@ int main(int argc, const char* argv[])
 		    std::cout<<"Higgs mass (matched to gen) = "<<mH_matched_<<std::endl;
 		}
 
-		if(w1_match && w2_match && bHad_match){
-		  if(!useRegression)
-		    mTop_matched_ = (jets_p4[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M(); 
-		  else
-                    mTop_matched_ = (jets_p4_reg[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M();
+		if(w1_match && w2_match){
+
+		  if(bHad_match){
+		    if(!useRegression)
+		      mTop_matched_ = (jets_p4[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M(); 
+		    else
+		      mTop_matched_ = (jets_p4_reg[pos_to_index[bHad_pos]] +  jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M();
+		  }
                   
-		  if(debug>=2)
-		    std::cout<<"Hadronic top mass (matched to gen)= "<<mTop_matched_<<std::endl;
+		  mW_matched_ = (jets_p4[pos_to_index[w1_pos]] + jets_p4[pos_to_index[w2_pos]]).M(); 
+
+		  if(debug>=2){
+		    std::cout<<"Hadronic W mass   (matched to gen)= " << mW_matched_ << std::endl;
+		    std::cout<<"Hadronic top mass (matched to gen)= " << mTop_matched_ << std::endl;
+		  }
 		}
 
 		// check invariant mass of jet system:
@@ -3376,6 +3498,10 @@ int main(int argc, const char* argv[])
 		  cout << "No type match...contine." << endl;
 		  continue;
 		}
+
+		if( testSLw1jType3 && type_==3 && flag_type3_<0 ){
+		  nParam = 6; // Eq, eta_q', phi_q', eta_nu, phi_nu, Eb
+		}
 		
 		// per-permutation probability...
 		double p     = 0.;
@@ -3438,6 +3564,11 @@ int main(int argc, const char* argv[])
 		if( type_==3 )  intPoints =  2000;
 		if( type_==6 )  intPoints = 10000;
 		if( type_==7 )  intPoints = 10000;
+
+		if( testSLw1jType3 && type_==3 && flag_type3_<0 ){
+		  intPoints =  4000;
+		}
+		
 		
 		// count how many time the integration is rerun per permutation
 		int ntries = 0;
@@ -3500,7 +3631,7 @@ int main(int argc, const char* argv[])
 		      if     ( type_==0 ){
 			p = (hyp==0 ? ig2->Integral(xLmode0_s, xUmode0_s) : ig2->Integral(xLmode0_b, xUmode0_b));	
 		      }
-		      else if( type_==1 ){
+		      else if( type_==1 || (testSLw1jType3 && type_==3 && flag_type3_<0) ){
 			p = (hyp==0 ? ig2->Integral(xLmode1_s, xUmode1_s) : ig2->Integral(xLmode1_b, xUmode1_b));
 		      }
 		      else if( type_==2 ){
@@ -3607,9 +3738,9 @@ int main(int argc, const char* argv[])
 		      if     ( type_==0 ){
 			p = (hyp==0 ? perm_to_integrator[barcode]->Integral(xLmode0_s, xUmode0_s) : perm_to_integrator[barcode]->Integral(xLmode0_b, xUmode0_b));	
 		      }
-		      else if( type_==1 ){
+		      else if( type_==1 || (testSLw1jType3 && type_==3 && flag_type3_<0)){
 			p = (hyp==0 ? perm_to_integrator[barcode]->Integral(xLmode1_s, xUmode1_s) : perm_to_integrator[barcode]->Integral(xLmode1_b, xUmode1_b));
-			}
+		      }
 		      else if( type_==2 ){
 			p = (hyp==0 ? perm_to_integrator[barcode]->Integral(xLmode2_s, xUmode2_s) : perm_to_integrator[barcode]->Integral(xLmode2_b, xUmode2_b));
 		      }
