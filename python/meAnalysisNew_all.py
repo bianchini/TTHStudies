@@ -164,7 +164,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6_v2'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -207,7 +207,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -461,15 +461,15 @@ process.fwliteInput = cms.PSet(
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
 
     # skip VEGAS call
-    speedup       = cms.untracked.int32(0), ###### CHECK HERE
+    speedup       = cms.untracked.int32(1), ###### CHECK HERE
 
     # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets       
-    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
-    doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
-    doType2       = cms.untracked.int32(0),  #SL(4,1)
+    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
+    doType1       = cms.untracked.int32(1),  #SL(4,2)  w/o W-tag
+    doType2       = cms.untracked.int32(1),  #SL(4,1)
     doType3       = cms.untracked.int32(1),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
     doType6       = cms.untracked.int32(0),  #DL(4,X)
@@ -494,8 +494,11 @@ process.fwliteInput = cms.PSet(
     useBtag          = cms.untracked.int32(1),
 
     # select events based on btag LLR
-    selectByBTagShape= cms.untracked.int32(1),
+    selectByBTagShape= cms.untracked.int32(0),
 
+    # use CSV tag-and-probe
+    useCSVcalibration= cms.untracked.int32(1),
+    
     # recover >4 btag events
     recoverTopBTagBin = cms.untracked.int32(1),
 
@@ -519,10 +522,10 @@ process.fwliteInput = cms.PSet(
     useRegression    = cms.untracked.int32(0),
 
     # print out the integral at run-time
-    printout     = cms.untracked.int32(1),
+    printout     = cms.untracked.int32(0),
 
     # various degrees of verbosity
-    debug        = cms.untracked.int32(1),   
+    debug        = cms.untracked.int32(0),   
 
     # extremely verbose 
     verbose      = cms.bool(False),
@@ -558,10 +561,10 @@ process.fwliteInput = cms.PSet(
 
     # if 1, process evLimits[1]-evLimits[0] events passing the selection cuts
     # if 0, process all events in the tree from evLimits[0] to evLimits[1]
-    fixNumEvJob    = cms.untracked.int32(0),
+    fixNumEvJob    = cms.untracked.int32(1),
 
     # event limits
-    evLimits       = cms.vint32(64526, 65250),
+    evLimits       = cms.vint32(0, 500),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -574,7 +577,7 @@ process.fwliteInput = cms.PSet(
 
     # choose which systematics to run
     # [0=nominal, 1=CSVup, 2=CSVdown, 3=JECup, 4=JECdown, 5=JERup, 6=JERdown]   
-    systematics= cms.vint32(0,1,2,3,4),
+    systematics= cms.vint32(0),
 
     # if 1, gen-jets in the input tree are smeared by the TF
     # if 0, use the reco-jets

@@ -155,6 +155,7 @@ int main(int argc, const char* argv[])
   int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB",  1));
   int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          1));
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
+  int   useCSVcalibration( in.getUntrackedParameter<int>    ("useCSVcalibration",0));
   int   recoverTopBTagBin( in.getUntrackedParameter<int>    ("recoverTopBTagBin",0));
   int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
 
@@ -255,6 +256,37 @@ int main(int argc, const char* argv[])
 
   // a map between gen-jets and energy TF
   map<string, TF1*> transferfunctions;
+
+
+  // use th CSV calibration from BDT analysis
+  TString path = "./root/";
+  TFile*  f_CSVwgt_HF = 0;
+  TFile*  f_CSVwgt_LF = 0;
+  TH1D* h_csv_wgt_hf[9][5];
+  TH1D* c_csv_wgt_hf[5][5];
+  TH1D* h_csv_wgt_lf[9][3][3];
+  for( int iSys=0; iSys<9; iSys++ ){
+
+    for( int iPt=0; iPt<5; iPt++ ) 
+      h_csv_wgt_hf[iSys][iPt] = 0;
+
+    if( iSys<5 ){
+      for( int iPt=0; iPt<5; iPt++ ) 
+	c_csv_wgt_hf[iSys][iPt] = 0;
+    }
+
+    for( int iPt=0; iPt<3; iPt++ ){
+      for( int iEta=0; iEta<3; iEta++ )
+	h_csv_wgt_lf[iSys][iPt][iEta] = 0;
+    }
+    
+  }
+
+  if(useCSVcalibration)
+    SetUpCSVreweighting(path,f_CSVwgt_HF, f_CSVwgt_LF, 
+			h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf ) ;
+
+
 
   if( useBtag && fCP!=0 ){
 
@@ -569,6 +601,10 @@ int main(int argc, const char* argv[])
   int Vtype_;
   // event-dependent weight (for normalization)
   float weight_;
+
+  // event-dependent CSV weight (for normalization)
+  float weightCSV_[19];
+
   // additional gen top PT scale factor                                                                                                                                     
   float weightTopPt_;
   // cpu time
@@ -658,6 +694,8 @@ int main(int argc, const char* argv[])
   tree->Branch("nSimBs",       &nSimBs_,        "nSimBs/I");
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,   "nMatchSimBs/I");
   tree->Branch("weight",       &weight_,        "weight/F");
+  tree->Branch("weightCSV",    weightCSV_,      "weightCSV[19]/F");
+
   tree->Branch("weightTopPt",  &weightTopPt_,   "weightTopPt/F");
   tree->Branch("time",         &time_,          "time/F");
   tree->Branch("flag_type0",   &flag_type0_,    "flag_type0/I");
@@ -877,6 +915,7 @@ int main(int argc, const char* argv[])
     Float_t hJet_e            [999];
     Float_t hJet_flavour      [999];
     Float_t hJet_puJetIdL     [999];
+    Float_t hJet_csv          [999];
     Float_t hJet_csv_nominal  [999];
     Float_t hJet_csv_upBC     [999];
     Float_t hJet_csv_downBC   [999];
@@ -892,6 +931,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_e            [999];
     Float_t aJet_flavour      [999];
     Float_t aJet_puJetIdL     [999];
+    Float_t aJet_csv          [999];    
     Float_t aJet_csv_nominal  [999];
     Float_t aJet_csv_upBC     [999];
     Float_t aJet_csv_downBC   [999];
@@ -967,6 +1007,7 @@ int main(int argc, const char* argv[])
       currentTree->SetBranchAddress("hJet_e",           hJet_e); 
       currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
       currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
+      currentTree->SetBranchAddress("hJet_csv",         hJet_csv);
       currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
       currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
       currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
@@ -983,6 +1024,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_e",           aJet_e);    
     currentTree->SetBranchAddress("aJet_flavour",     aJet_flavour);    
     currentTree->SetBranchAddress("aJet_puJetIdL",    aJet_puJetIdL);
+    currentTree->SetBranchAddress("aJet_csv",         aJet_csv);
     currentTree->SetBranchAddress("aJet_csv_nominal", aJet_csv_nominal);
     currentTree->SetBranchAddress("aJet_csv_upBC",    aJet_csv_upBC);
     currentTree->SetBranchAddress("aJet_csv_downBC",  aJet_csv_downBC);
@@ -1885,6 +1927,9 @@ int main(int argc, const char* argv[])
 	      float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
 	      float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
 	      float csv         = csv_nominal;
+
+	      if( useCSVcalibration ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
+
 	      if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
 	      else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
 	      else{}
@@ -1896,11 +1941,12 @@ int main(int argc, const char* argv[])
 	      
 	      // the jet observables (p4 and csv)
 	      JetObservable myJet;
-	      myJet.p4    = p4;
-	      myJet.csv   = csv; 
-	      myJet.index = (coll==0 ? hj : -hj-1);
-	      myJet.shift = shift;
-	      
+	      myJet.p4     = p4;
+	      myJet.csv    = csv; 
+	      myJet.index  = (coll==0 ? hj : -hj-1);
+	      myJet.shift  = shift;
+	      myJet.flavour= (coll==0) ? hJet_flavour  [hj]  : aJet_flavour  [hj];
+
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
 	    
@@ -2019,10 +2065,11 @@ int main(int argc, const char* argv[])
 
 	      // the jet observables (p4 and csv)
 	      JetObservable myJet;
-	      myJet.p4    = p4;
-	      myJet.csv   = csv; 
-	      myJet.index = (coll==0 ? hj : -hj-1);
-	      myJet.shift = 1.0;
+	      myJet.p4     = p4;
+	      myJet.csv    = csv; 
+	      myJet.flavour= flavor; 
+	      myJet.index  = (coll==0 ? hj : -hj-1);
+	      myJet.shift  = 1.0;
 	      
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
@@ -2103,6 +2150,12 @@ int main(int argc, const char* argv[])
 	if( selectByBTagShape || recoverTopBTagBin)
 	  std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
 
+	
+	
+	for( int csv_sys = 0; csv_sys < 19 ; csv_sys++){
+	  double csv_syst_value = GetCSVweight( jet_map, static_cast<sysType>(csv_sys), h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf);
+	  weightCSV_[ csv_sys ] = csv_syst_value;
+	}
 
       
    

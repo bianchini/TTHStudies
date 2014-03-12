@@ -69,6 +69,7 @@ typedef struct
   TLorentzVector p4;
   float csv;
   int index;
+  int flavour;
   float shift;
 } JetObservable;
 
@@ -215,6 +216,228 @@ float resolutionBias(float eta, int shift, int alreadyCorrect = 0)
 
   return 0.;
 }
+
+
+//SetUp CSV reweighting
+
+void SetUpCSVreweighting( TString path , TFile* f_CSVwgt_HF , TFile* f_CSVwgt_LF,
+			  TH1D* h_csv_wgt_hf[9][5],
+			  TH1D* c_csv_wgt_hf[5][5],
+			  TH1D* h_csv_wgt_lf[9][3][3]){
+
+  // Do not set it up if we're running on collision data
+
+  f_CSVwgt_HF = new TFile( path+"/csv_rwt_hf.root" );
+  f_CSVwgt_LF = new TFile( path+"/csv_rwt_lf.root" );
+
+  if( !f_CSVwgt_HF || f_CSVwgt_HF->IsZombie() ) return;
+  if( !f_CSVwgt_LF || f_CSVwgt_LF->IsZombie() ) return;
+
+  // CSV reweighting
+  for( int iSys=0; iSys<9; iSys++ ){
+
+    TString syst_csv_suffix_hf = "final";
+    TString syst_csv_suffix_c  = "final";
+    TString syst_csv_suffix_lf = "final";
+    
+    switch( iSys ){
+    case 0:
+      // this is the nominal case
+      break;
+    case 1:
+      // JESUp
+      syst_csv_suffix_hf = "final_JESUp"; syst_csv_suffix_lf = "final_JESUp";
+      syst_csv_suffix_c  = "final_cErr1Up";
+      break;
+    case 2:
+      // JESDown
+      syst_csv_suffix_hf = "final_JESDown"; syst_csv_suffix_lf = "final_JESDown";
+      syst_csv_suffix_c  = "final_cErr1Down";
+      break;
+    case 3:
+      // purity up
+      syst_csv_suffix_hf = "final_LFUp"; syst_csv_suffix_lf = "final_HFUp";
+      syst_csv_suffix_c  = "final_cErr2Up";
+      break;
+    case 4:
+      // purity down
+      syst_csv_suffix_hf = "final_LFDown"; syst_csv_suffix_lf = "final_HFDown";
+      syst_csv_suffix_c  = "final_cErr2Down";
+      break;
+    case 5:
+      // stats1 up
+      syst_csv_suffix_hf = "final_Stats1Up"; syst_csv_suffix_lf = "final_Stats1Up";
+      break;
+    case 6:
+      // stats1 down
+      syst_csv_suffix_hf = "final_Stats1Down"; syst_csv_suffix_lf = "final_Stats1Down";
+      break;
+    case 7:
+      // stats2 up
+      syst_csv_suffix_hf = "final_Stats2Up"; syst_csv_suffix_lf = "final_Stats2Up";
+      break;
+    case 8:
+      // stats2 down
+      syst_csv_suffix_hf = "final_Stats2Down"; syst_csv_suffix_lf = "final_Stats2Down";
+      break;
+    }
+
+    for( int iPt=0; iPt<5; iPt++ ) 
+      h_csv_wgt_hf[iSys][iPt] = (TH1D*)f_CSVwgt_HF->Get( Form("csv_ratio_Pt%i_Eta0_%s",iPt,syst_csv_suffix_hf.Data()) );
+
+    if( iSys<5 ){
+      for( int iPt=0; iPt<5; iPt++ ) 
+	c_csv_wgt_hf[iSys][iPt] = (TH1D*)f_CSVwgt_HF->Get( Form("c_csv_ratio_Pt%i_Eta0_%s",iPt,syst_csv_suffix_c.Data()) );
+    }
+    
+    for( int iPt=0; iPt<3; iPt++ ){
+      for( int iEta=0; iEta<3; iEta++ )
+	h_csv_wgt_lf[iSys][iPt][iEta] = (TH1D*)f_CSVwgt_LF->Get( Form("csv_ratio_Pt%i_Eta%i_%s",iPt,iEta,syst_csv_suffix_lf.Data()) );
+    }
+  }
+
+}
+
+
+
+ enum sysType {
+   Nominal = 0,
+   JESup,
+   JESdown,
+   CSVLFup,
+   CSVLFdown,
+   CSVHFStats1up,
+   CSVHFStats1down,
+   CSVHFStats2up,
+   CSVHFStats2down,
+   CSVCErr1up,
+   CSVCErr1down,
+   CSVCErr2up,
+   CSVCErr2down,
+   CSVHFup,
+   CSVHFdown,
+   CSVLFStats1up,
+   CSVLFStats1down,
+   CSVLFStats2up,
+   CSVLFStats2down
+  };
+
+double GetCSVweight(const std::vector<JetObservable>& iJets, 
+		    const sysType iSysType,
+		    TH1D* h_csv_wgt_hf[9][5],
+		    TH1D* c_csv_wgt_hf[5][5],
+		    TH1D* h_csv_wgt_lf[9][3][3]){
+
+  int failure = 0;
+  for( int iSys=0; iSys<9; iSys++ ){
+    for( int iPt=0; iPt<5; iPt++ ) 
+      if( h_csv_wgt_hf[iSys][iPt]==0 ) failure++;
+    if( iSys<5 ){
+      for( int iPt=0; iPt<5; iPt++ ) 
+	if( c_csv_wgt_hf[iSys][iPt] == 0 ) failure++;
+    }
+    for( int iPt=0; iPt<3; iPt++ ){
+      for( int iEta=0; iEta<3; iEta++ )
+	if( h_csv_wgt_lf[iSys][iPt][iEta] == 0) failure++;
+    }    
+  }
+
+  if( failure>0 ) return 1.0;
+
+  int iSysHF = 0;
+  switch(iSysType){
+  case sysType::JESup:            iSysHF=1; break;
+  case sysType::JESdown:         iSysHF=2; break;
+  case sysType::CSVLFup:         iSysHF=3; break;
+  case sysType::CSVLFdown:       iSysHF=4; break;
+  case sysType::CSVHFStats1up:    iSysHF=5; break;
+  case sysType::CSVHFStats1down: iSysHF=6; break;
+  case sysType::CSVHFStats2up:    iSysHF=7; break;
+  case sysType::CSVHFStats2down: iSysHF=8; break;
+  default : iSysHF = 0; break;
+  }
+
+  int iSysC = 0;
+  switch(iSysType){
+  case sysType::CSVCErr1up:   iSysC=1; break;
+  case sysType::CSVCErr1down: iSysC=2; break;
+  case sysType::CSVCErr2up:   iSysC=3; break;
+  case sysType::CSVCErr2down: iSysC=4; break;
+  default : iSysC = 0; break;
+  }
+
+  int iSysLF = 0;
+  switch(iSysType){
+  case sysType::JESup:            iSysLF=1; break;
+  case sysType::JESdown:         iSysLF=2; break;
+  case sysType::CSVHFup:         iSysLF=3; break;
+  case sysType::CSVHFdown:       iSysLF=4; break;
+  case sysType::CSVLFStats1up:    iSysLF=5; break;
+  case sysType::CSVLFStats1down: iSysLF=6; break;
+  case sysType::CSVLFStats2up:    iSysLF=7; break;
+  case sysType::CSVLFStats2down: iSysLF=8; break;
+  default : iSysLF = 0; break;
+  }
+
+  double csvWgthf = 1.;
+  double csvWgtC  = 1.;
+  double csvWgtlf = 1.;
+
+  for( std::vector<JetObservable>::const_iterator iJet = iJets.begin(); iJet != iJets.end(); ++iJet ){ 
+
+    double csv       = iJet->csv;
+    double jetPt     = (iJet->p4).Pt();
+    double jetAbsEta = TMath::Abs( (iJet->p4).Eta() );
+    int flavor       = TMath::Abs( iJet->flavour );
+
+    int iPt = -1; int iEta = -1;
+    if (jetPt >=29.99 && jetPt<40) iPt = 0;
+    else if (jetPt >=40 && jetPt<60) iPt = 1;
+    else if (jetPt >=60 && jetPt<100) iPt = 2;
+    else if (jetPt >=100 && jetPt<160) iPt = 3;
+    else if (jetPt >=160 && jetPt<10000) iPt = 4;
+
+    if (jetAbsEta >=0 &&  jetAbsEta<0.8) iEta = 0;
+    else if ( jetAbsEta>=0.8 && jetAbsEta<1.6) iEta = 1;
+    else if ( jetAbsEta>=1.6 && jetAbsEta<2.5) iEta = 2;
+
+    if (iPt < 0 || iEta < 0) 
+      std::cout << "Error, couldn't find Pt, Eta bins for this b-flavor jet, jetPt = " << jetPt << ", jetAbsEta = " << jetAbsEta << std::endl;
+
+    if (abs(flavor) == 5 ){
+      int useCSVBin = (csv>=0.) ? h_csv_wgt_hf[iSysHF][iPt]->FindBin(csv) : 1;
+      double iCSVWgtHF = h_csv_wgt_hf[iSysHF][iPt]->GetBinContent(useCSVBin);
+      if( iCSVWgtHF!=0 ) csvWgthf *= iCSVWgtHF;
+
+    }
+    else if( abs(flavor) == 4 ){
+      int useCSVBin = (csv>=0.) ? c_csv_wgt_hf[iSysC][iPt]->FindBin(csv) : 1;
+      double iCSVWgtC = c_csv_wgt_hf[iSysC][iPt]->GetBinContent(useCSVBin);
+      if( iCSVWgtC!=0 ) csvWgtC *= iCSVWgtC;
+
+    }
+    else {
+      if (iPt >=2) iPt=2;       /// [30-40], [40-60] and [60-10000] only 3 Pt bins for lf
+      int useCSVBin    = (csv>=0.) ? h_csv_wgt_lf[iSysLF][iPt][iEta]->FindBin(csv) : 1;
+      double iCSVWgtLF = h_csv_wgt_lf[iSysLF][iPt][iEta]->GetBinContent(useCSVBin);
+      if( iCSVWgtLF!=0 ) csvWgtlf *= iCSVWgtLF;
+
+
+    }
+  }
+
+
+  double csvWgtTotal = csvWgthf * csvWgtC * csvWgtlf;
+
+  return TMath::Max(csvWgtTotal,0.);
+}
+
+
+
+
+
+
+
 
 std::vector<std::string> GetInputExpressionsReg() {
     std::vector<std::string> values;
