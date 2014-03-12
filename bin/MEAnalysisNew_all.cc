@@ -595,6 +595,10 @@ int main(int argc, const char* argv[])
   float lepton_charge_[2];
   float lepton_rIso_  [2];
   int   lepton_type_  [2];
+  float lepton_dxy_   [2];
+  float lepton_dz_    [2];
+  float lepton_wp80_  [2];
+  float lepton_wp95_  [2];
 
   // met kinematic
   float MET_pt_;
@@ -717,6 +721,10 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_charge",           lepton_charge_,"lepton_charge[nLep]/F");
   tree->Branch("lepton_rIso",             lepton_rIso_,  "lepton_rIso[nLep]/F");
   tree->Branch("lepton_type",             lepton_type_,  "lepton_type[nLep]/I");  
+  tree->Branch("lepton_dxy",              lepton_dxy_,   "lepton_dxy[nLep]/F");
+  tree->Branch("lepton_dz",               lepton_dz_,    "lepton_dz[nLep]/F");
+  tree->Branch("lepton_wp80",             lepton_wp80_,  "lepton_wp80[nLep]/F");
+  tree->Branch("lepton_wp95",             lepton_wp95_,  "lepton_wp95[nLep]/F");
 
   // MET kinematics
   tree->Branch("MET_pt",                  &MET_pt_,    "MET_pt/F");
@@ -1101,7 +1109,7 @@ int main(int argc, const char* argv[])
       btag_LR_            = -99;
 
       for( int k = 0; k < 2; k++){
-	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99;
+	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99; lepton_dxy_[k] = -99; lepton_dz_[k] = -99; lepton_wp80_[k] = -99; lepton_wp95_[k] = -99;
       }
       for( int k = 0; k < NMAXJETS; k++){
 	jet_pt_[k] = -99; jet_pt_alt_[k] = -99; jet_eta_[k] = -99; jet_phi_[k] = -99; jet_m_[k] = -99;  jet_csv_[k] = -99;
@@ -1610,7 +1618,11 @@ int main(int argc, const char* argv[])
 	  lepton_charge_ [0] = vLepton_charge   [0];
 	  lepton_rIso_   [0] = vLepton_pfCorrIso[0];
 	  lepton_type_   [0] = vLepton_type[0];
-	  
+	  lepton_dxy_    [0] = vLepton_dxy[0];
+          lepton_dz_     [0] = vLepton_dz[0];
+          lepton_wp80_   [0] = vLepton_wp80[0];
+	  lepton_wp95_   [0] = vLepton_wp95[0];
+	
 	}
 
 	///////////////////////////////////
@@ -1682,7 +1694,11 @@ int main(int argc, const char* argv[])
 	  lepton_charge_ [0] = vLepton_charge   [0];
 	  lepton_rIso_   [0] = vLepton_pfCorrIso[0];
 	  lepton_type_   [0] = vLepton_type[0];	
-	  
+	  lepton_dxy_    [0] = vLepton_dxy[0];
+          lepton_dz_     [0] = vLepton_dz[0];
+          lepton_wp80_   [1] = vLepton_wp80[0];
+	  lepton_wp95_   [1] = vLepton_wp95[0];
+  
 	  // lep 2...
 	  lepton_pt_     [1] = leptonLV2.Pt();
 	  lepton_eta_    [1] = leptonLV2.Eta();
@@ -1691,7 +1707,11 @@ int main(int argc, const char* argv[])
 	  lepton_charge_ [1] = vLepton_charge   [1];
 	  lepton_rIso_   [1] = vLepton_pfCorrIso[1];
 	  lepton_type_   [1] = vLepton_type[1];
-	  
+	  lepton_dxy_    [1] = vLepton_dxy[1];
+          lepton_dz_     [1] = vLepton_dz[1];
+          lepton_wp80_   [1] = vLepton_wp80[1];
+          lepton_wp95_   [1] = vLepton_wp95[1];
+
 	}
     
 
@@ -1745,7 +1765,35 @@ int main(int argc, const char* argv[])
 	    cout << "Passes = " << int (properEventDL) << endl;
 	  }
 
-	}
+	  // save lepton(s) kinematics into the tree...
+          nLep_ = 2;
+
+          // lep 1...
+          lepton_pt_     [0] = leptonLV.Pt();
+          lepton_eta_    [0] = leptonLV.Eta();
+          lepton_phi_    [0] = leptonLV.Phi();
+          lepton_m_      [0] = leptonLV.M();
+          lepton_charge_ [0] = vLepton_charge   [0];
+          lepton_rIso_   [0] = vLepton_pfCorrIso[0];
+          lepton_type_   [0] = vLepton_type[0];
+          lepton_dxy_    [0] = vLepton_dxy[0];
+          lepton_dz_     [0] = vLepton_dz[0];
+
+          // lep 2...
+          lepton_pt_     [1] = leptonLV2.Pt();
+          lepton_eta_    [1] = leptonLV2.Eta();
+          lepton_phi_    [1] = leptonLV2.Phi();
+          lepton_m_      [1] = leptonLV2.M();
+          lepton_charge_ [1] = aLepton_charge   [0];
+          lepton_rIso_   [1] = aLepton_pfCorrIso[0];
+          lepton_type_   [1] = aLepton_type[0];
+          lepton_dxy_    [1] = aLepton_dxy[0];
+          lepton_dz_     [1] = aLepton_dz[0];
+
+          lepton_wp80_[1] = aLepton_wp80[0];
+          lepton_wp95_[1] = aLepton_wp95[0];
+
+        } // end EM
 
 
 	// continue if leptons do not satisfy cuts
