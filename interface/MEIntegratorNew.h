@@ -124,6 +124,7 @@ class MEIntegratorNew {
   };
 
   void   setIntType( IntegrationType );
+  int    getIntType() ;
   void   setHypo( int );
   void   SetPar(int);
   void   setJets( vector<TLorentzVector>* );
@@ -227,6 +228,7 @@ class MEIntegratorNew {
   double evaluateCahchedPdf (TH1*, double, double, double)  const;
   double ggPdf              ( double, double, double) const; 
   double qqPdf              ( double, double, double) const; 
+
 
  private:
   
@@ -2577,6 +2579,10 @@ void MEIntegratorNew::SetPar(int p){
  
 void MEIntegratorNew::setIntType( IntegrationType type ){
   intType_ = type;
+}
+
+int MEIntegratorNew::getIntType(){
+  return intType_;
 }
 
 void MEIntegratorNew::setHypo( int hyp ){
