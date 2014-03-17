@@ -36,7 +36,7 @@
 #include "TArrayF.h"
 #include "TLine.h"
 
-#include "../interface/HelperFunctions.h"
+//#include "../interface/HelperFunctions.h"
 
 
 typedef TMatrixT<double> TMatrixD;
@@ -44,11 +44,43 @@ typedef TMatrixT<double> TMatrixD;
 #define CREATEDATACARDS   1
 #define USESHIFTEDSAMPLES 1
 #define USEALLSAMPLES     1
+#define USECSVCALIBRATION 1
+#define NCSVSYS          16
 #define RUNONDATA         1
 #define VERBOSE           1
 
 
 string DUMMY;
+
+const string sysTypeName[NCSVSYS+1] = {
+   "Nominal",
+   //"JESUp",
+   //"JESDown",
+   "CSVLFUp",
+   "CSVLFDown",
+   "CSVHFStats1Up",
+   "CSVHFStats1Down",
+   "CSVHFStats2Up",
+   "CSVHFStats2Down",
+   "CSVCErr1Up",
+   "CSVCErr1Down",
+   "CSVCErr2Up",
+   "CSVCErr2Down",
+   "CSVHFUp",
+   "CSVHFDown",
+   "CSVLFStats1Up",  
+   "CSVLFStats1Down",
+   "CSVLFStats2Up",  
+   "CSVLFStats2Down" //16
+};
+
+typedef struct 
+{
+  int run;
+  int lumi;
+  int event;
+  int json;
+} EventInfo;
 
 
 // function that interpolates quadratically around a global maximum
@@ -240,6 +272,37 @@ void bbb( TH1F* hin, TH1F* hout_Down, TH1F* hout_Up, int bin){
 }
 
 
+float poorman_significance( TH1F* h_sgn=0, TH1F* h_bkg=0){
+
+  float out = -99;
+  int nbins = h_sgn->GetNbinsX();
+
+  float Ns = h_sgn->Integral(1,nbins);
+  float Nb = h_bkg->Integral(1,nbins);
+
+  if( Ns<=0 || Nb<=0 ) return out;
+
+  float qA = 0.;
+  for( int b = 1; b<=nbins ; b++){
+    qA -= 2*(h_bkg->GetBinContent(b))*TMath::Log( 1 + h_sgn->GetBinContent(b)/h_bkg->GetBinContent(b) );
+  }
+  qA += 2*Ns;
+
+  if(qA<=0){
+    cout << "Negative value of qA!!!" << endl;
+    return out;
+  }
+
+  float sigmaA = 1./TMath::Sqrt( qA );
+
+  out = 0.5*(TMath::Erf( -1./sigmaA ) + 1 );
+
+  return out;
+
+}
+
+
+
 void draw(vector<float> param, TTree* t = 0, TString var = "", TH1F* h = 0, TCut cut = "", bool isMC=1){
 
   TCut weight = isMC ? "(weight*PUweight*trigger)" : "1";
@@ -279,7 +342,7 @@ void draw(vector<float> param, TTree* t = 0, TString var = "", TH1F* h = 0, TCut
 }
 
 
-void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1){
+void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight=0){
 
   // needed as usual to copy a tree
   TFile* dummy = new TFile("dummy.root","RECREATE");
@@ -313,6 +376,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   float PUweight;
   float trigger;
   float weightTopPt;
+  float weightCSV[19];
 
   // event information
   EventInfo EVENT;
@@ -331,16 +395,24 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   t->SetBranchAddress("trigger",      &trigger);
   t->SetBranchAddress("EVENT",        &EVENT);
   if( t->GetBranch("weightTopPt") )    
-    t->SetBranchAddress("weightTopPt",        &weightTopPt);
+    t->SetBranchAddress("weightTopPt",&weightTopPt);
   else 
     weightTopPt = 1.0;
+  if( USECSVCALIBRATION && t->GetBranch("weightCSV"))
+    t->SetBranchAddress("weightCSV",     weightCSV  );      
+  else{
+    for( int k = 0 ; k < 19 ; k++ ){
+      weightCSV[k] = 1.0;
+    }
+  }
 
   // WATCHOUT !!!!
-  weightTopPt = 1.0;
+  //weightTopPt = 1.0;
 
   Long64_t nentries = t->GetEntries(); 
+  if(VERBOSE) cout << " > sample weight: " << (isMC ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight)) : "1.0" ) << (isMC==2 ? "*weightTopPt" : "") << endl;
   if(VERBOSE) cout << " > total entries: " << nentries << endl;
-  
+
   // a temporary histogram that contains the prob. vs mass
   TH1F* hTmp      = new TH1F("hTmp", "", 500,0,500);
 
@@ -352,7 +424,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     // reset (needed because hTmp is filled with Fill()
     hTmp->Reset();
 
-    float fill_weight = isMC ? weight*PUweight*trigger : 1.0;
+    float fill_weight = isMC ? weight*PUweight*trigger*weightCSV[ pos_weight ] : 1.0;
 
     // if tt+jets, apply extra top pt reweighting
     if(isMC==2) fill_weight *= weightTopPt;
@@ -637,7 +709,10 @@ void produceNew(// main name of the trees
 
   // input files path
   //TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Feb24_2014/"; //"Nov21_2013/BTagLoose/";
-  TString inputpath = "./files/byLLR/";
+  TString inputpath = "./files/byLLR/CSVcalibration/"; //testNewType3
+
+  //TString directory = "Feb24_2014"; 
+  TString directory = "Mar17_2014"; 
 
   // selection cut
   string basecut = cut;
@@ -727,14 +802,31 @@ void produceNew(// main name of the trees
       // needed as usual to copy a tree
       TFile* dummy = new TFile("dummy.root","RECREATE");
 
+      // weights
+      float weight;
+      float PUweight;
+      float trigger;
+
+      float weightCSV[19];
+      for( int k = 0 ; k < 19 ; k++ ){
+	weightCSV[k] = 1.0;
+      }
+       
       // tree of events in the category
       S_bb = 0;
+      Int_S_bb = 0;
       TTree* tS_cut = (TTree*)tS->CopyTree( TCut((basecut+" && nSimBs>=2").c_str()) );
       float p_125_all_s_ttbb;
       tS_cut->SetBranchAddress("p_125_all_s_ttbb",   &p_125_all_s_ttbb );
+      tS_cut->SetBranchAddress("weight",             &weight);
+      tS_cut->SetBranchAddress("PUweight",           &PUweight);
+      tS_cut->SetBranchAddress("trigger",            &trigger);
+      if( USECSVCALIBRATION && tS_cut->GetBranch("weightCSV"))
+	tS_cut->SetBranchAddress("weightCSV",     weightCSV  ); 
       for (Long64_t i = 0; i < tS_cut->GetEntries() ; i++){
 	tS_cut->GetEntry(i);
 	S_bb += p_125_all_s_ttbb;
+	Int_S_bb += weight*PUweight*trigger*weightCSV[0];
       }
       if(tS_cut->GetEntries()>0) S_bb /= tS_cut->GetEntries();
       if(VERBOSE) cout << "S_bb = " << S_bb <<endl;
@@ -744,23 +836,33 @@ void produceNew(// main name of the trees
       TTree* tBbb_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2").c_str()) );
       float p_125_all_b_ttbb;
       tBbb_cut->SetBranchAddress("p_125_all_b_ttbb",   &p_125_all_b_ttbb );
+      tBbb_cut->SetBranchAddress("weight",             &weight);
+      tBbb_cut->SetBranchAddress("PUweight",           &PUweight);
+      tBbb_cut->SetBranchAddress("trigger",            &trigger);
+      if( USECSVCALIBRATION && tBbb_cut->GetBranch("weightCSV"))
+	tBbb_cut->SetBranchAddress("weightCSV",     weightCSV  ); 
       for (Long64_t i = 0; i < tBbb_cut->GetEntries() ; i++){
 	tBbb_cut->GetEntry(i);
 	B_bb     += p_125_all_b_ttbb;
-	Int_B_bb += 1;
+	Int_B_bb += weight*PUweight*trigger*weightCSV[0];
       }
       if(tBbb_cut->GetEntries()>0) B_bb /= tBbb_cut->GetEntries();
-      	if(VERBOSE) cout << "B_bb = " << B_bb <<endl;
+      if(VERBOSE) cout << "B_bb = " << B_bb <<endl;
 	    
       B_jj     = 0;
       Int_B_jj = 0;
-      TTree* tBjj_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs<2 && nSimBs==2").c_str()) );
+      TTree* tBjj_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nSimBs==2").c_str()) );
       float p_125_all_b_ttjj;
       tBjj_cut->SetBranchAddress("p_125_all_b_ttjj",   &p_125_all_b_ttjj );
+      tBjj_cut->SetBranchAddress("weight",             &weight);
+      tBjj_cut->SetBranchAddress("PUweight",           &PUweight);
+      tBjj_cut->SetBranchAddress("trigger",            &trigger); 
+      if( USECSVCALIBRATION && tBjj_cut->GetBranch("weightCSV"))
+	tBjj_cut->SetBranchAddress("weightCSV",     weightCSV  ); 
       for (Long64_t i = 0; i < tBjj_cut->GetEntries() ; i++){
 	tBjj_cut->GetEntry(i);
 	B_jj     += p_125_all_b_ttjj;
-	Int_B_jj += 1;
+	Int_B_jj += weight*PUweight*trigger*weightCSV[0];
       }
       if(tBjj_cut->GetEntries()>0) B_jj /= tBjj_cut->GetEntries();
       if(VERBOSE) cout << "B_jj = " << B_jj <<endl;
@@ -773,9 +875,11 @@ void produceNew(// main name of the trees
     f_B->Close();
 
     if(VERBOSE){
-      cout << "Ratio S_bb/B_bb=" << S_bb/B_bb << endl;
-      cout << "Ratio S_bb/B_jj=" << S_bb/B_jj << endl;
+      cout << "Ratio S_bb/B_bb="  << S_bb/B_bb << endl;
+      cout << "Ratio S_bb/B_jj="  << S_bb/B_jj << endl;
       cout << "Ratio bb/(bb+jj)=" << Int_B_bb << "/(" << Int_B_bb << "+" << Int_B_jj << ")=" << Int_B_bb/(Int_B_bb+Int_B_jj) << endl;       
+      cout << "Ratio ttH/ttbb="   << Int_S_bb << "/" << Int_B_bb << "=" << Int_S_bb/Int_B_bb << endl;             
+      cout << "Ratio ttbb/ttjj="  << Int_B_bb << "/" << Int_B_jj << "=" << Int_B_bb/Int_B_jj << endl;             
     }
 
     param.push_back( fact1 );
@@ -789,8 +893,8 @@ void produceNew(// main name of the trees
     }
 
     if(abs(doMEM)==2 && splitFirstBin){
-      param.push_back( B_bb/B_jj*factbb );
-      param.push_back( 0.50 );
+      param.push_back( B_bb/B_jj );
+      param.push_back( factbb );
     }
 
   }
@@ -802,7 +906,7 @@ void produceNew(// main name of the trees
   bool normalbinning = ( param.size()==3 || abs(doMEM)!=2 );
 
   // output file with shapes
-  TFile* fout = new TFile("datacards/Feb24_2014/"+fname+"_"+name+version+extraname+".root","UPDATE");
+  TFile* fout = new TFile("datacards/"+directory+"/"+fname+"_"+name+version+extraname+".root","UPDATE");
 
   // directory for this particular category
   TDirectory* dir =  fout->GetDirectory( fname+"_"+category); 
@@ -854,8 +958,9 @@ void produceNew(// main name of the trees
   // the observable when doing the ME analysis for ttbb/ttjj separation
   TString var2("");  
   
-  if(abs(doMEM)==1)
+  if(abs(doMEM)==1){
     if(VERBOSE) cout << "Variable = Higgs mass estimator" << endl;
+  }
   else if(abs(doMEM)==2){
     var  = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
 			param[0], param[1], param[2] ));
@@ -975,8 +1080,14 @@ void produceNew(// main name of the trees
     if(USEALLSAMPLES){
       systematics.push_back("all");  // nominal
       if(sample.find("Run2012")==string::npos){
-	systematics.push_back("all");// cvsUp
-	systematics.push_back("all");// csvDown
+	if( !USECSVCALIBRATION ){
+	  systematics.push_back("all");// cvsUp
+	  systematics.push_back("all");// csvDown
+	}
+	else{
+	  for(int sy = 0 ; sy<NCSVSYS ; sy++)
+	    systematics.push_back("all");// csv calibratyon sys
+	}
 	systematics.push_back("all");// JESUp
 	systematics.push_back("all");// JESDown
 	systematics.push_back("all");// JERUp
@@ -997,15 +1108,17 @@ void produceNew(// main name of the trees
     else{
       systematics.push_back("nominal");
     }
-    
-    
+
+    // the input file
+    TFile* f = 0;
+
     // loop over the systematics
     for( unsigned int sy = 0 ; sy < systematics.size(); sy++){
       
       string sys        = systematics[sy];
 
       string syst_name = sys;
-      if( USEALLSAMPLES ){
+      if( USEALLSAMPLES && !USECSVCALIBRATION){
 	switch( sy ){
 	case 0:
 	  syst_name = "nominal";
@@ -1032,19 +1145,52 @@ void produceNew(// main name of the trees
 	  break;	  
 	}
       }
+      else if( USEALLSAMPLES && USECSVCALIBRATION ){
+	if(sy==0)
+	  syst_name = "nominal";
+	else if(sy>=1 && sy <= NCSVSYS)
+	  syst_name = string(Form("csv_sys_%s",sysTypeName[sy].c_str()));
+	else if(sy==NCSVSYS+1)
+	  syst_name = "JECUp";
+	else if(sy==NCSVSYS+2)
+	  syst_name = "JECDown";
+	else if(sy==NCSVSYS+3)
+	  syst_name = "JERUp";
+	else if(sy==NCSVSYS+4)
+	  syst_name = "JERDown";
+	else{ cout << "... too many systematics ..." << endl;}
+      }
 
       string event_type = !USEALLSAMPLES ? "_"+string(fname.Data()) : "";
 
 
       TCut syst_sample_cut = sample_cut;
-      if( USEALLSAMPLES ){
+      if( USEALLSAMPLES && !USECSVCALIBRATION){
 	syst_sample_cut = sample_cut && TCut(Form("syst==%d",sy));
+      }
+      else if( USEALLSAMPLES && USECSVCALIBRATION ){
+
+	  int equivalent_sy = sy;
+
+	  // this is for the nominal and all the csv systematics
+	  if( sy <= NCSVSYS)
+	    equivalent_sy = 0;
+
+	  // else, use the shifted events
+	  else
+	    equivalent_sy = (sy - NCSVSYS + 2) ;
+	    
+	  // apply the cut
+	  syst_sample_cut = sample_cut && TCut(Form("syst==%d",equivalent_sy));
       }
       
 
       // input file
       string inputfilename = string(inputpath.Data())+"MEAnalysis"+name+event_type+"_"+sys+""+version+"_"+sample+".root";
-      TFile* f = TFile::Open(inputfilename.c_str());
+      if( USEALLSAMPLES && f==0 ) 
+	f = TFile::Open(inputfilename.c_str());
+      else 
+	f = TFile::Open(inputfilename.c_str());
       
       if(f==0 || f->IsZombie()){
 	cout << "Missing " << sample << " file" << endl;
@@ -1090,8 +1236,29 @@ void produceNew(// main name of the trees
       if( sample.find("Run2012")==string::npos ) isMC++;
       if( sample.find("TTJets")!=string::npos )  isMC++;
 
+      // decide which weight to use for filling
+      int pos_weight = 0;
+      if(USECSVCALIBRATION){
+
+	// if doing JECUp, read element 1 of weightCSV
+	if( syst_name.find("JECUp")  !=string::npos )
+	  pos_weight = 1;
+
+	// if doing JECDown, read element 2 of weightCSV
+	else if( syst_name.find("JECDown")!=string::npos )
+	  pos_weight = 2;
+
+	// if doing any of the other csv systematics, shift by two units
+	else if(sy>=1 && sy <= NCSVSYS)
+	  pos_weight = sy+2;
+
+	// else, use the nominal one (central value)
+	else
+	  pos_weight = 0;
+      }
+
       // fill the histogram
-      fill( tree, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC );
+      fill( tree, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight );
       
       // add underflow bin to the first bin...
       int firstBin              =  1;
@@ -1144,7 +1311,16 @@ void produceNew(// main name of the trees
 	      h_tmp_tmp->Write(datacard_name.c_str(), TObject::kOverwrite);
 	    }
 	  }
+
+	  // close the input file
+	  if( !USEALLSAMPLES )
+	    f->Close();
+	  
+	  // don't need bbb for data
+	  continue; 
+
 	}
+
       }
 
       // if doing systematic analysis, save histogram with correct label and continue
@@ -1152,6 +1328,12 @@ void produceNew(// main name of the trees
       else{
 	h_tmp->SetName((datacard_name+"_"+syst_name).c_str());
 	h_tmp->Write((datacard_name+"_"+syst_name).c_str(), TObject::kOverwrite);
+
+	// close the input file
+	if( !USEALLSAMPLES )
+	  f->Close();
+
+	// don't need bbb for shifted samples
 	continue;      
       }
       
@@ -1178,10 +1360,14 @@ void produceNew(// main name of the trees
       }
       
       // close the input file
-      f->Close();
+      if( !USEALLSAMPLES )
+	f->Close();
       
     }    
-    
+   
+    if( USEALLSAMPLES )
+      f->Close();
+ 
   }
 
   // for later use, use a map between process name and histograms
@@ -1197,6 +1383,12 @@ void produceNew(// main name of the trees
   // keep track of missing files
   int errFlag = 0 ;
 
+  // sum-up the MCs to store the total SoB
+  float totBkg   = 0.;
+  TH1F* h_totBkg = 0;
+  float totSgn   = 0.;
+  TH1F* h_totSgn = 0;
+
   cout << "Yields:" << endl;
   for( unsigned int s = 0 ; s < datacard_samples.size(); s++){
 
@@ -1206,6 +1398,21 @@ void produceNew(// main name of the trees
       errFlag++;
       continue;
     }
+    if( string(datacard_samples[s].Data()).find("TTH")!=string::npos ){
+      totSgn +=  h_tmp->Integral();
+      if( !h_totSgn )
+	h_totSgn = (TH1F*)h_tmp->Clone("h_totSgn");
+      else
+	h_totSgn->Add( h_tmp, 1.0);
+    }
+    else if( string(datacard_samples[s].Data()).find("Run")==string::npos ){
+      totBkg +=  h_tmp->Integral();
+      if( !h_totBkg )
+	h_totBkg = (TH1F*)h_tmp->Clone("h_totBkg");
+      else
+	h_totBkg->Add( h_tmp, 1.0);
+    }
+
     cout << " > " << string(datacard_samples[s].Data()) << ": \e[1;34m" << h_tmp->Integral() << "\e[0m" << endl;
 
     // add the histogram to the map
@@ -1223,17 +1430,20 @@ void produceNew(// main name of the trees
 	h_data->Add( h_tmp );
 	observation +=  h_tmp->Integral();
       }
-    }
-    
-
+    }    
   }
-  //cout << "************************" << endl;
-
 
   if(errFlag>0){
     cout << "Missing histogram for a process. Return." << endl;
     return;
   }
+
+  cout << "Purity:" << endl;
+  cout << " > S/B = " << ": \e[1;34m" << (totBkg>0 ? totSgn/totBkg : -99) << "\e[0m" << endl;
+  cout << " > p0  = " << poorman_significance( h_totSgn, h_totBkg) << endl;
+
+  //cout << "************************" << endl;
+
 
   // approximate to integer precision
   observation = int(observation);
@@ -1252,7 +1462,7 @@ void produceNew(// main name of the trees
 
  
   // the text file for the datacard
-  ofstream out(Form("datacards/Feb24_2014/%s_%s.txt",(fname+"_"+category).Data(), (name+version+extraname).c_str()));
+  ofstream out(Form("datacards/%s/%s_%s.txt",directory.Data(), (fname+"_"+category).Data(), (name+version+extraname).c_str()));
   out.precision(8);
 
 
@@ -1337,15 +1547,48 @@ void produceNew(// main name of the trees
   if( USESHIFTEDSAMPLES ){
 
     // BTAGGING
-    line = "csv                   shape  ";                              
-    if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";       
-    if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
-    if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
-    if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
-    if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
-    if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
-    out<<line;
-    out<<endl;
+    if(!USECSVCALIBRATION){
+      line = "csv                   shape  ";                              
+      if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";       
+      if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
+      if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
+      if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
+      if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
+      if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+      out<<line;
+      out<<endl;
+    }
+    else{
+      for( int sy = 1 ; sy < NCSVSYS ; sy++){
+
+	string sys_name = sysTypeName[sy];
+
+	// do it only once per systematic
+	if( (sy-1)%2==0 ){
+
+	  if( sys_name.find("Up")!=string::npos )
+	    sys_name.erase( sys_name.find("Up"),   2 );
+	  else if ( sys_name.find("Down")!=string::npos )
+	    sys_name.erase( sys_name.find("Down"), 4 );
+	  else{
+	    cout << "Error found for sys name " << sys_name << endl;
+	    continue;
+	  }
+	  
+	  line = "csv_"+sys_name+"             shape  ";                              
+	  if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";       
+	  if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
+	  if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
+	  if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
+	  if( aMap["TTV"]->Integral()>0 )        line += "1.0         ";
+	  if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+	  out<<line;
+	  out<<endl;
+	  
+	}
+	
+      }
+    }
     
     // JET ENERGY SCALE
     line = "JEC                   shape  ";                             
@@ -1672,7 +1915,7 @@ void produceAllNew_byCSV(string name = "New", string version = "_rec_std",  stri
 }
 
 
-void produceAllNew_byLLR(string name = "New", string version = "_rec_reg",  string extraname = "", 
+void produceAllNew_byLLR(string name = "New", string version = "_rec_std",  string extraname = "", 
 			 float LumiScale = 19.04/12.1, int doMEM = 3 ){
 
   vector<float> binvec;
@@ -1688,16 +1931,15 @@ void produceAllNew_byLLR(string name = "New", string version = "_rec_reg",  stri
   TF1* xsec = new TF1("xsec",Form("x^(-%f)", 1. ), 20, 500);
   xsec = 0;
 
-  extraname = "_byLLR_sb_scaleUp_TTbb";
+  extraname = "_byLLR_sb";
   produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1",  2,   0.6, 0.00, 1 , LumiScale   , 6,  0);
   produceNew( name, version, extraname,  "MEM", Form("type==1 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat2",  2,   1.4, 0.00, 1 , LumiScale   , 6,  0);
   produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2>0  && btag_LR>=%f && numBTagM>=0", 0.986), "cat3",  2,   0.6, 0.00, 1 , LumiScale   , 6,  0);
-  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4",  2,   0.5, 0.00, 1 , LumiScale   , 6,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=0 && btag_LR>=%f && numBTagM>=0", 0.990), "cat4",  2,   0.5, 0.00, 1 , LumiScale   , 6,  0);  
   produceNew( name, version, extraname,  "MEM", Form("type==3 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat5",  2,   1.5, 0.00, 1 , LumiScale   , 7,  0);
-  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6",  2,   0.2, 0.00, 1 , LumiScale*2   , 5,  0);
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                 0.953), "cat6",  2,   0.2, 0.00, 1 , LumiScale*2 , 5,  0); 
 
   return;
-
 
   extraname = "_byLLR_sb_nb";
   produceNew( name, version, extraname,  "MEM", Form("type==0 && btag_LR>=%f && numBTagM>=0",                  0.975), "cat1", -2,   0.6, 0.00, 1 , LumiScale   , 6,  0);
@@ -1717,6 +1959,18 @@ void produceAllNew_byLLR(string name = "New", string version = "_rec_reg",  stri
 
 }
 
+void produceAllNew_byLLR_CSVcalibration(string name      = "New", 
+					string version   = "_CSVcalibration_rec_std",  
+					string extraname = "_bj", 
+					float LumiScale  = 19.04/12.1
+					){
+
+  produceNew( name, version, extraname,  "MEM", Form("((type==0 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3>0  && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat1",  3,   1.2, 0.00, 0.15 , LumiScale   , 6,  0);
+  //produceNew( name, version, extraname,  "MEM", Form("((type==1 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3<=0 && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat2",  2,   0.6, 0.00, 0.20 , LumiScale   , 6,  1);
+  //produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=999 && btag_LR>=%f && numBTagM>=0",                                                                  0.990),       "cat4",  2,   0.6, 0.00, 0.50,  LumiScale   , 6,  1);  //0.5
+  //produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                                                                                    0.953),       "cat6",  2,   0.2, 0.00, 0.20 , LumiScale*2 , 5,  1);  //0.2
+
+}
 
 
 void optimize_mem_category_btag(string name = "New", string version = "_v2_reg",  string extraname = "", 

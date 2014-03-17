@@ -551,6 +551,7 @@ int main(int argc, const char* argv[])
   float p4T_   [4];
   float p4Tbar_[4];
 
+  // a structure with tth gen system infos
   tthInfo ttH_;
 
   // type-dependent flags
@@ -605,6 +606,9 @@ int main(int argc, const char* argv[])
   // event-dependent CSV weight (for normalization)
   float weightCSV_[19];
 
+  // for theory systematics (tt+jets only)
+  float SCALEsyst_[3];
+
   // additional gen top PT scale factor                                                                                                                                     
   float weightTopPt_;
   // cpu time
@@ -621,6 +625,9 @@ int main(int argc, const char* argv[])
   bool triggerFlags_[70];
   // number of gen jets
   float lheNj_;
+
+  // number of b's, c's, l's, and gluons in the multi-leg ME
+  int n_b_, n_c_, n_l_, n_g_;
 
   // lepton kinematic (at most two leptons)
   int   nLep_;
@@ -695,6 +702,7 @@ int main(int argc, const char* argv[])
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,   "nMatchSimBs/I");
   tree->Branch("weight",       &weight_,        "weight/F");
   tree->Branch("weightCSV",    weightCSV_,      "weightCSV[19]/F");
+  tree->Branch("SCALEsyst",    SCALEsyst_,      "SCALEsyst[3]/F");
 
   tree->Branch("weightTopPt",  &weightTopPt_,   "weightTopPt/F");
   tree->Branch("time",         &time_,          "time/F");
@@ -711,6 +719,10 @@ int main(int argc, const char* argv[])
   tree->Branch("PUweightP",    &PUweightP_,     "PUweightP/F");
   tree->Branch("PUweightM",    &PUweightM_,     "PUweightM/F");
   tree->Branch("lheNj",        &lheNj_,         "lheNj/F");
+  tree->Branch("n_b",          &n_b_,           "n_b/I");
+  tree->Branch("n_c",          &n_c_,           "n_c/I");
+  tree->Branch("n_l",          &n_l_,           "n_l/I");
+  tree->Branch("n_g",          &n_g_,           "n_g/I");
   tree->Branch("trigger",      &trigger_,       "trigger/F");
   tree->Branch("triggerFlags", triggerFlags_,   "triggerFlags[70]/b");
   tree->Branch("p4H",          p4H_,            "p4H[4]/F");
@@ -852,7 +864,6 @@ int main(int argc, const char* argv[])
   mySamples->OpenFile( currentName0 );
   TTree* currentTree_reg  = mySamples->GetTree( currentName0, "tree");
 
-
   // loop over input files
   for(unsigned int sample = 0 ; sample < mySampleFiles.size(); sample++){
     
@@ -862,20 +873,24 @@ int main(int argc, const char* argv[])
 
     mySamples->OpenFile( currentName );
     cout << "Opening file " << currentName << endl;
-    TTree* currentTree       = mySamples->GetTree( currentName, "tree");
-    cout << "Done!!" << endl;
+    TTree* currentTree       = mySamples->GetTree  (currentName, "tree");
     float scaleFactor        = mySamples->GetWeight(currentName);
+    TH1F* count_Q2           = mySamples->GetHisto (currentName, "Count_Q2");
+    float normDown           = count_Q2 ? count_Q2->GetBinContent(1)/count_Q2->GetBinContent(2) : 1.0;
+    float normUp             = count_Q2 ? count_Q2->GetBinContent(3)/count_Q2->GetBinContent(2) : 1.0;
+    cout << "Done!!" << endl;
 
     // variables to be used from the input files
     genParticleInfo genB, genBbar;
     genTopInfo      genTop, genTbar;
     metInfo         METtype1p2corr;
     EventInfo       EVENT;
-    int             nvlep, nalep, nSimBs, /*nC, nCTop,*/ nhJets, naJets, nPVs, Vtype;
+    int             nvlep, nalep, nSimBs, nhJets, naJets, nPVs, Vtype;
     float           PUweight, PUweightP, PUweightM;
     float           lheNj;
     float           weightTrig2012;
     UChar_t         triggerFlags[70];
+    float           SCALEsyst[12];
 
     Int_t   vLepton_type      [2];
     Float_t vLepton_mass      [2];
@@ -955,7 +970,8 @@ int main(int argc, const char* argv[])
     if   ( currentTree->GetBranch("lheNj") )          currentTree->SetBranchAddress("lheNj",            &lheNj); 
     if   ( currentTree->GetBranch("weightTrig2012") ) currentTree->SetBranchAddress("weightTrig2012",   &weightTrig2012); 
     if   ( currentTree->GetBranch("triggerFlags") )   currentTree->SetBranchAddress("triggerFlags",     triggerFlags); 
-    currentTree->SetBranchAddress("Vtype",            &Vtype);        
+    if   ( currentTree->GetBranch("SCALEsyst") )      currentTree->SetBranchAddress("SCALEsyst",        SCALEsyst); 
+    currentTree->SetBranchAddress("Vtype",            &Vtype); 
     if   ( currentTree->GetBranch("nhJets") )         currentTree->SetBranchAddress("nhJets",           &nhJets);
     currentTree->SetBranchAddress("naJets",           &naJets);
     currentTree->SetBranchAddress("nSimBs",           &nSimBs);
@@ -1072,6 +1088,9 @@ int main(int argc, const char* argv[])
       for(int k = 0; k < 70 ; k++){
 	triggerFlags_[k] = 1;
       }
+      for(int k = 0; k < 3 ; k++){
+	SCALEsyst_[k] = 1.0;
+      }
       nhJets = 0;
       nPVs   = 1;
 
@@ -1125,10 +1144,20 @@ int main(int argc, const char* argv[])
       PUweightM_          = PUweightM;
 
       lheNj_              = lheNj;
-      
+      n_b_                = SCALEsyst[9];
+      n_c_                = SCALEsyst[8];
+      n_l_                = SCALEsyst[7];
+      n_g_                = SCALEsyst[6];
+
       trigger_     = weightTrig2012;
       for(int k = 0; k < 70 ; k++){
 	triggerFlags_[k] = triggerFlags[k];
+      }
+
+      SCALEsyst_[0] = 1.0;
+      if( count_Q2 ){
+	SCALEsyst_[1] = TMath::Power(SCALEsyst[2],SCALEsyst[1])*SCALEsyst[4]/normDown;
+	SCALEsyst_[2] = TMath::Power(SCALEsyst[3],SCALEsyst[1])*SCALEsyst[5]/normUp;
       }
       
       probAtSgn_          =  0.;
@@ -2151,11 +2180,14 @@ int main(int argc, const char* argv[])
 	  std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
 
 	
-	
+
 	for( int csv_sys = 0; csv_sys < 19 ; csv_sys++){
-	  double csv_syst_value = GetCSVweight( jet_map, static_cast<sysType>(csv_sys), h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf);
+	  double csv_syst_value = 1.0;
+	  if( useCSVcalibration )
+	    csv_syst_value = GetCSVweight( jet_map, static_cast<sysType>(csv_sys), h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf);
 	  weightCSV_[ csv_sys ] = csv_syst_value;
 	}
+	
 
       
    
@@ -4051,6 +4083,13 @@ int main(int argc, const char* argv[])
   } // samples
 
 
+  // close the CSV calibration files (if any)
+  if( f_CSVwgt_HF!=0 ){
+    f_CSVwgt_HF->Close();
+  }
+  if( f_CSVwgt_LF!=0 ){
+    f_CSVwgt_LF->Close();
+  }
 
   // save the tree and the counting histo in the ROOT file
   fout_tmp->cd();

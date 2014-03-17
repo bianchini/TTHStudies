@@ -43,7 +43,7 @@
 
 typedef TMatrixT<double> TMatrixD;
 
-#define RUNONDATA 0
+#define RUNONDATA 1
 
 
 
@@ -182,7 +182,7 @@ pair<double,double> getMaxValue( TH1F* hMassProb){
 
 
 
-void plot_category(string type = "SL", 
+void plot_category(string type = "MEM", 
 		   string cat  = "cat1",
 		   string tag = "New_rec_std_byLLR_bj",
 		   string header = "Cat 1",
@@ -235,7 +235,7 @@ void plot_category(string type = "SL",
   TH1F* hData = 0;
   TH1F* hErr  = 0;
 
-  TFile* f = TFile::Open(("datacards/Feb24_2014/"+type+"_"+tag+".root").c_str());
+  TFile* f = TFile::Open(("datacards/Mar17_2014/"+type+"_"+tag+".root").c_str());
   if(f==0 || f->IsZombie() ) return;
 
 
@@ -253,6 +253,8 @@ void plot_category(string type = "SL",
   TH1F* h_QCDscale_TTbUp        = 0;
   TH1F* h_QCDscale_TTJetsHFUp   = 0;
   TH1F* h_QCDscale_TTJetsLFUp   = 0;
+
+  map<string,TH1F*> h_Ups;
 
 
   f->cd( (type+"_"+cat).c_str());
@@ -278,6 +280,28 @@ void plot_category(string type = "SL",
       //cout << hname << " scaled by " << rescaleTTjj << endl;
     }
     
+    if( hname.find("TTH125")==string::npos && 
+	hname.find("data")==string::npos && 
+	hname.find("bin")==string::npos && 
+	hname.find("Down")==string::npos &&
+	hname.find("Up")!=string::npos ){
+
+      string sysname = hname;
+      sysname.erase(0, (sysname.find_first_of("_"))+1 );
+      cout << sysname << endl;
+
+      TH1F* h = new TH1F( *hist );
+
+      if( h_Ups.find(sysname) == h_Ups.end() ){
+	h_Ups[ sysname ] = h;
+      }
+      else{
+	h_Ups[ sysname ]->Add( h );
+      }
+
+    }
+
+    /*
     if( hname.find("csvUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
       if( h_csvUp==0 ) h_csvUp = (TH1F*)hist->Clone("csvUp");
       else             h_csvUp->Add( hist );
@@ -342,7 +366,13 @@ void plot_category(string type = "SL",
       else             h_Norm_SingleTUp->Add( hist );
       cout << "Merge Norm_SingleTUp" << endl; 	    		    		    	
     }
+    */
 
+  }
+
+  cout << endl << "SUMMARY: " << endl;
+  for( map<string,TH1F*>::iterator it = h_Ups.begin() ; it != h_Ups.end() ; it++){
+    if( (it->second) )   cout << it->first << " ==> " << (it->second)->Integral() << endl ;
   }
   
 
@@ -449,7 +479,12 @@ void plot_category(string type = "SL",
   if(hErr==0 || hS==0) return;
 
   for(int b = 1; b <= hErr->GetNbinsX() ; b++){
+
     float syst_b2 = 0.;
+    for( map<string,TH1F*>::iterator it = h_Ups.begin() ; it != h_Ups.end() ; it++){
+      if( (it->second) ) syst_b2 += TMath::Power(hErr->GetBinContent(b)- (it->second)->GetBinContent(b), 2);
+    }
+    /*
     if( h_csvUp ) syst_b2 += (hErr->GetBinContent(b)-h_csvUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_csvUp->GetBinContent(b));
     if( h_JECUp ) syst_b2 += (hErr->GetBinContent(b)-h_JECUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JECUp->GetBinContent(b));
     if( h_JERUp ) syst_b2 += (hErr->GetBinContent(b)-h_JERUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JERUp->GetBinContent(b));
@@ -461,7 +496,7 @@ void plot_category(string type = "SL",
     if( h_QCDscale_TTJetsLFUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b));
     if( h_Norm_TTVUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b));
     if( h_Norm_SingleTUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b));
-
+    */
     hErr->SetBinError(b, sqrt(hErr->GetBinError(b)*hErr->GetBinError(b) + syst_b2) );
   }
 
@@ -526,8 +561,13 @@ void plot_category(string type = "SL",
 
   cout << "Signal = " << hS->Integral()/5. << endl;
 
-  if(1){
+  if(0){
     c1->SaveAs(  ("Plots/Feb24_2014/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
+  }
+
+  cout << "REMOVE: " << endl;
+  for( map<string,TH1F*>::iterator it = h_Ups.begin() ; it != h_Ups.end() ; it++){
+    if( (it->second) )  delete (it->second);
   }
 
 }
@@ -1169,9 +1209,9 @@ void plot_limit(string version = "_New",
   vector<string> categories;        vector<string> names;
   categories.push_back("MEM_cat1"+version);  names.push_back("Cat 1");
   categories.push_back("MEM_cat2"+version);  names.push_back("Cat 2");
-  categories.push_back("MEM_cat3"+version);  names.push_back("Cat 3");
+  //categories.push_back("MEM_cat3"+version);  names.push_back("Cat 3");
   categories.push_back("MEM_cat4"+version);  names.push_back("Cat 4");
-  categories.push_back("MEM_cat5"+version);  names.push_back("Cat 5");
+  //categories.push_back("MEM_cat5"+version);  names.push_back("Cat 5");
   categories.push_back("MEM_cat6"+version);  names.push_back("Cat 6"); 
   categories.push_back("MEM_SL"+version);       names.push_back("SL comb.");
   //categories.push_back("DL_cat7");names.push_back();
@@ -1183,8 +1223,8 @@ void plot_limit(string version = "_New",
   for( int b = 0; b < nBins; b++){
 
     TFile* f = doMLFit ? 
-      TFile::Open(("datacards/higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
-      TFile::Open(("datacards/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
+      TFile::Open(("datacards/Mar10_2014/higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
+      TFile::Open(("datacards/Mar10_2014/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
     if( f==0 ) continue;
     
     Double_t r;
