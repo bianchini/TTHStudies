@@ -41,21 +41,27 @@
 
 typedef TMatrixT<double> TMatrixD;
 
+// to produce txt files, enable it
 #define CREATEDATACARDS   1
+
 #define USESHIFTEDSAMPLES 1
 #define USEALLSAMPLES     1
-#define USECSVCALIBRATION 1
-#define NCSVSYS          16
+
 #define RUNONDATA         1
 #define VERBOSE           1
+
+// use csv calibration from BDT
+#define USECSVCALIBRATION 0
+
+// number of extra systematics
+#define NCSVSYS          16
+#define NTHSYS            4
 
 
 string DUMMY;
 
-const string sysTypeName[NCSVSYS+1] = {
-   "Nominal",
-   //"JESUp",
-   //"JESDown",
+// JECup & JECdown are treated as 100% correlated with JECUp/JECDown (sys==1 & sys==2) 
+const string csv_sys_names[NCSVSYS] = {
    "CSVLFUp",
    "CSVLFDown",
    "CSVHFStats1Up",
@@ -71,7 +77,14 @@ const string sysTypeName[NCSVSYS+1] = {
    "CSVLFStats1Up",  
    "CSVLFStats1Down",
    "CSVLFStats2Up",  
-   "CSVLFStats2Down" //16
+   "CSVLFStats2Down"
+};
+
+const string th_sys_names[NTHSYS] = {
+   "Q2ScaleUp",
+   "Q2ScaleDown",
+   "TopPtUp",
+   "TopPtDown"
 };
 
 typedef struct 
@@ -342,7 +355,7 @@ void draw(vector<float> param, TTree* t = 0, TString var = "", TH1F* h = 0, TCut
 }
 
 
-void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight=0){
+void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight1=0, int pos_weight2=0){
 
   // needed as usual to copy a tree
   TFile* dummy = new TFile("dummy.root","RECREATE");
@@ -377,6 +390,7 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   float trigger;
   float weightTopPt;
   float weightCSV[19];
+  float SCALEsyst[3];
 
   // event information
   EventInfo EVENT;
@@ -405,12 +419,25 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
       weightCSV[k] = 1.0;
     }
   }
+  if( t->GetBranch("SCALEsyst"))
+    t->SetBranchAddress("SCALEsyst",    SCALEsyst   );      
+  else{
+    for( int k = 0 ; k < 3 ; k++ ){
+      SCALEsyst[k] = 1.0;
+    }
+  }
 
-  // WATCHOUT !!!!
-  //weightTopPt = 1.0;
 
   Long64_t nentries = t->GetEntries(); 
-  if(VERBOSE) cout << " > sample weight: " << (isMC ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight)) : "1.0" ) << (isMC==2 ? "*weightTopPt" : "") << endl;
+  if(VERBOSE) cout << " > sample weight: " << (isMC ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight1)) : "1.0" ) ;
+  if(isMC==2){
+    cout << string(Form("*SCALEsyst[ %d ]", TMath::Max( pos_weight2, 0) ));
+    if( pos_weight2==-1 ) cout << "*(1+2*(weightTopPt-1))" << endl;
+    if( pos_weight2==-2 ) cout << "*(1+0*(weightTopPt-1))" << endl;
+    else cout << "*(1+1*(weightTopPt-1))" << endl;
+  }
+  else cout << endl;
+
   if(VERBOSE) cout << " > total entries: " << nentries << endl;
 
   // a temporary histogram that contains the prob. vs mass
@@ -424,10 +451,18 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     // reset (needed because hTmp is filled with Fill()
     hTmp->Reset();
 
-    float fill_weight = isMC ? weight*PUweight*trigger*weightCSV[ pos_weight ] : 1.0;
+    float fill_weight = isMC ? weight*PUweight*trigger*weightCSV[ pos_weight1 ] : 1.0;
+
+    // this is used to flag the top pt systematics
+    if(isMC==2 && pos_weight2<0){
+      if     ( pos_weight2 == -1 ) weightTopPt = 1 + 2.*(weightTopPt-1); // the +1s band
+      else if( pos_weight2 == -2 ) weightTopPt = 1 + 0.*(weightTopPt-1); // the -1s band
+      else cout << "This position for top pt reweighting is not valid..." << endl;
+      pos_weight2 = 0;    
+    }
 
     // if tt+jets, apply extra top pt reweighting
-    if(isMC==2) fill_weight *= weightTopPt;
+    if(isMC==2) fill_weight *= (weightTopPt*SCALEsyst[ pos_weight2 ]);
 
     // if doing a mass analysis... ( 0 = scan over mH ; -1 = scan over mT )
     if( abs(analysis)==1 ){
@@ -623,7 +658,9 @@ void appendLogNSyst(TH1F* h=0, TDirectory* dir=0, string name="",  float err = 0
   if( h->Integral()>0 && TMath::Abs(err)>0){
     line += Form("%.3f      ", 1+err);
   }  
-  else  
+  else if( h->Integral()<0 )
+    line += "";
+  else
     line += "-          ";
   
   dir->cd();
@@ -1078,7 +1115,9 @@ void produceNew(// main name of the trees
 
     // provided only for tt+jets and ttH at the moment
     if(USEALLSAMPLES){
+
       systematics.push_back("all");  // nominal
+
       if(sample.find("Run2012")==string::npos){
 	if( !USECSVCALIBRATION ){
 	  systematics.push_back("all");// cvsUp
@@ -1086,8 +1125,11 @@ void produceNew(// main name of the trees
 	}
 	else{
 	  for(int sy = 0 ; sy<NCSVSYS ; sy++)
-	    systematics.push_back("all");// csv calibratyon sys
+	    systematics.push_back("all");// csv calibration sys
 	}
+	for(int sy = 0 ; sy<NTHSYS ; sy++)
+	  systematics.push_back("all");// theory sys
+
 	systematics.push_back("all");// JESUp
 	systematics.push_back("all");// JESDown
 	systematics.push_back("all");// JERUp
@@ -1119,44 +1161,37 @@ void produceNew(// main name of the trees
 
       string syst_name = sys;
       if( USEALLSAMPLES && !USECSVCALIBRATION){
-	switch( sy ){
-	case 0:
+	if(sy==0)
 	  syst_name = "nominal";
-	  break;
-	case 1:
+	else if(sy==1)
 	  syst_name = "csvUp";
-	  break;
-	case 2:
+	else if(sy==2)
 	  syst_name = "csvDown";
-	  break;
-	case 3:
+	else if(sy>=3 && sy <= 2+NTHSYS )
+	  syst_name = string(Form("%s", th_sys_names[sy-3].c_str()));
+	else if(sy==2+NTHSYS+1)
 	  syst_name = "JECUp";
-	  break;
-	case 4:
+	else if(sy==2+NTHSYS+2)
 	  syst_name = "JECDown";
-	  break;
-	case 5:
+	else if(sy==2+NTHSYS+3)
 	  syst_name = "JERUp";
-	  break;
-	case 6:
+	else if(sy==2+NTHSYS+4)
 	  syst_name = "JERDown";
-	  break;
-	default:
-	  break;	  
-	}
       }
       else if( USEALLSAMPLES && USECSVCALIBRATION ){
 	if(sy==0)
 	  syst_name = "nominal";
 	else if(sy>=1 && sy <= NCSVSYS)
-	  syst_name = string(Form("csv_sys_%s",sysTypeName[sy].c_str()));
-	else if(sy==NCSVSYS+1)
+	  syst_name = string(Form("csv_sys_%s",   csv_sys_names[sy-1].c_str()));
+	else if(sy>=(NCSVSYS+1) && sy <= (NCSVSYS+NTHSYS))
+	  syst_name = string(Form("%s",           th_sys_names[sy-(NCSVSYS+1)].c_str()));
+	else if(sy==(NCSVSYS+NTHSYS)+1)
 	  syst_name = "JECUp";
-	else if(sy==NCSVSYS+2)
+	else if(sy==(NCSVSYS+NTHSYS)+2)
 	  syst_name = "JECDown";
-	else if(sy==NCSVSYS+3)
+	else if(sy==(NCSVSYS+NTHSYS)+3)
 	  syst_name = "JERUp";
-	else if(sy==NCSVSYS+4)
+	else if(sy==(NCSVSYS+NTHSYS)+4)
 	  syst_name = "JERDown";
 	else{ cout << "... too many systematics ..." << endl;}
       }
@@ -1165,20 +1200,38 @@ void produceNew(// main name of the trees
 
 
       TCut syst_sample_cut = sample_cut;
+
       if( USEALLSAMPLES && !USECSVCALIBRATION){
-	syst_sample_cut = sample_cut && TCut(Form("syst==%d",sy));
+
+	int equivalent_sy = sy;
+
+	  // this is for the nominal and all the theory systematics
+	if( sy==0 || (sy>=3 && sy <= 2+NTHSYS) )
+	    equivalent_sy = 0;
+
+	// this is for the csv systematics
+	else if( sy>=1 && sy<=2 )
+	  equivalent_sy = sy;
+
+	// this is for the others
+	else
+	  equivalent_sy = (sy - NTHSYS ) ;
+	
+	// apply the cut
+	syst_sample_cut = sample_cut && TCut(Form("syst==%d",equivalent_sy));
+
       }
       else if( USEALLSAMPLES && USECSVCALIBRATION ){
 
 	  int equivalent_sy = sy;
 
 	  // this is for the nominal and all the csv systematics
-	  if( sy <= NCSVSYS)
+	  if( sy <= (NCSVSYS+NTHSYS))
 	    equivalent_sy = 0;
 
 	  // else, use the shifted events
 	  else
-	    equivalent_sy = (sy - NCSVSYS + 2) ;
+	    equivalent_sy = (sy - (NCSVSYS+NTHSYS) + 2) ;
 	    
 	  // apply the cut
 	  syst_sample_cut = sample_cut && TCut(Form("syst==%d",equivalent_sy));
@@ -1237,28 +1290,39 @@ void produceNew(// main name of the trees
       if( sample.find("TTJets")!=string::npos )  isMC++;
 
       // decide which weight to use for filling
-      int pos_weight = 0;
+      int pos_weight1 = 0;
       if(USECSVCALIBRATION){
 
 	// if doing JECUp, read element 1 of weightCSV
 	if( syst_name.find("JECUp")  !=string::npos )
-	  pos_weight = 1;
+	  pos_weight1 = 1;
 
 	// if doing JECDown, read element 2 of weightCSV
 	else if( syst_name.find("JECDown")!=string::npos )
-	  pos_weight = 2;
+	  pos_weight1 = 2;
 
 	// if doing any of the other csv systematics, shift by two units
 	else if(sy>=1 && sy <= NCSVSYS)
-	  pos_weight = sy+2;
+	  pos_weight1 = sy+2;
 
 	// else, use the nominal one (central value)
 	else
-	  pos_weight = 0;
+	  pos_weight1 = 0;
       }
 
+      int pos_weight2 = 0;
+      if( syst_name.find( th_sys_names[0] )  !=string::npos )
+	pos_weight2 = 2;
+      if( syst_name.find( th_sys_names[1] )  !=string::npos )
+	pos_weight2 = 1;
+      if( syst_name.find( th_sys_names[2] )  !=string::npos )
+	pos_weight2 = -1;
+      if( syst_name.find( th_sys_names[3] )  !=string::npos )
+	pos_weight2 = -2;
+
+
       // fill the histogram
-      fill( tree, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight );
+      fill( tree, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight1 , pos_weight2 );
       
       // add underflow bin to the first bin...
       int firstBin              =  1;
@@ -1559,12 +1623,12 @@ void produceNew(// main name of the trees
       out<<endl;
     }
     else{
-      for( int sy = 1 ; sy < NCSVSYS ; sy++){
+      for( int sy = 0 ; sy < NCSVSYS ; sy++){
 
-	string sys_name = sysTypeName[sy];
+	string sys_name = csv_sys_names[sy];
 
 	// do it only once per systematic
-	if( (sy-1)%2==0 ){
+	if( sy%2==0 ){
 
 	  if( sys_name.find("Up")!=string::npos )
 	    sys_name.erase( sys_name.find("Up"),   2 );
@@ -1589,7 +1653,39 @@ void produceNew(// main name of the trees
 	
       }
     }
-    
+
+    // SCALE SYSTEMATICS ON TT+JETS
+    for( int sy = 0 ; sy < NTHSYS ; sy++){
+
+      string sys_name = th_sys_names[sy];
+
+      // do it only once per systematic
+      if( sy%2==0 ){
+	
+	if( sys_name.find("Up")!=string::npos )
+	  sys_name.erase( sys_name.find("Up"),   2 );
+	else if ( sys_name.find("Down")!=string::npos )
+	  sys_name.erase( sys_name.find("Down"), 4 );
+	else{
+	  cout << "Error found for sys name " << sys_name << endl;
+	  continue;
+	}
+	
+	line = sys_name+"                 shape  ";                              
+	if( aMap["TTH125"]->Integral()>0 )     line += " -         ";       
+	if( aMap["TTJetsHFbb"]->Integral()>0 ) line += "1.0        ";       
+	if( aMap["TTJetsHFb"]->Integral()>0 )  line += "1.0        ";       
+	if( aMap["TTJetsLF"]->Integral()>0 )   line += "1.0        ";       
+	if( aMap["TTV"]->Integral()>0 )        line += " -         ";
+	if( aMap["SingleT"]->Integral()>0 )    line += " -         ";
+	out<<line;
+	out<<endl;
+	
+      }
+      
+    }
+
+
     // JET ENERGY SCALE
     line = "JEC                   shape  ";                             
     if( aMap["TTH125"]->Integral()>0 )     line += "1.0        ";
