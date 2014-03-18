@@ -52,16 +52,21 @@ typedef TMatrixT<double> TMatrixD;
 
 // use csv calibration from BDT
 #define USECSVCALIBRATION 0
+#define NCSVSYS          16
 
 // number of extra systematics
-#define NCSVSYS          16
-#define NTHSYS            4
+#define NTHSYS            0
+
+// test effect of matching MEt phi distribution to data
+#define RESHAPEMETPHI     0
 
 
 string DUMMY;
 
+TF1* corrector = 0;
+
 // JECup & JECdown are treated as 100% correlated with JECUp/JECDown (sys==1 & sys==2) 
-const string csv_sys_names[NCSVSYS] = {
+const string csv_sys_names[16] = {
    "CSVLFUp",
    "CSVLFDown",
    "CSVHFStats1Up",
@@ -80,7 +85,7 @@ const string csv_sys_names[NCSVSYS] = {
    "CSVLFStats2Down"
 };
 
-const string th_sys_names[NTHSYS] = {
+const string th_sys_names[4] = {
    "Q2ScaleUp",
    "Q2ScaleDown",
    "TopPtUp",
@@ -355,6 +360,41 @@ void draw(vector<float> param, TTree* t = 0, TString var = "", TH1F* h = 0, TCut
 }
 
 
+
+TF1* getMETphiCorrection(TTree* tDATA=0, TTree* tMC=0, TCut cut = ""){
+
+  TString var("MET_phi");
+
+  TF1* sin_MC   = new TF1("sin_MC",   "[0] + [1]*TMath::Sin(x + [2])", -TMath::Pi(), TMath::Pi() );  
+  TF1* sin_DATA = new TF1("sin_DATA", "[0] + [1]*TMath::Sin(x + [2])", -TMath::Pi(), TMath::Pi() );
+
+  TH1F* h = new TH1F("h", "", 20, -TMath::Pi(), TMath::Pi());
+
+  tDATA->Draw(var+">>h", cut);
+  h->Fit( sin_DATA , "Q");
+  sin_DATA->SetParameter(1, sin_DATA->GetParameter(1)/sin_DATA->GetParameter(0));
+  sin_DATA->SetParameter(0, 1.);
+
+  h->Reset();
+
+  tMC->Draw(var+">>h", cut);
+  h->Fit( sin_MC , "Q");
+  sin_MC->SetParameter(1, sin_MC->GetParameter(1)/sin_MC->GetParameter(0));
+  sin_MC->SetParameter(0, 1.);
+
+  TF1* scale = new TF1("scale", "sin_DATA/sin_MC" , -TMath::Pi(), TMath::Pi());
+  
+  if(VERBOSE) cout << "Normalization of scale: " <<  scale->Integral(-TMath::Pi(), TMath::Pi())/(TMath::Pi()-(-TMath::Pi())) << endl;
+
+  return scale;
+
+  delete sin_MC;
+  delete sin_DATA;
+  delete h;
+}
+
+
+
 void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight1=0, int pos_weight2=0){
 
   // needed as usual to copy a tree
@@ -392,6 +432,9 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   float weightCSV[19];
   float SCALEsyst[3];
 
+  // the MET_phi (for reweghting)
+  float MET_phi;
+
   // event information
   EventInfo EVENT;
   
@@ -408,6 +451,11 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
   t->SetBranchAddress("PUweight",     &PUweight);
   t->SetBranchAddress("trigger",      &trigger);
   t->SetBranchAddress("EVENT",        &EVENT);
+  if( corrector ){
+    t->SetBranchAddress("MET_phi",      &MET_phi);
+  }
+  else
+    MET_phi = 0.;
   if( t->GetBranch("weightTopPt") )    
     t->SetBranchAddress("weightTopPt",&weightTopPt);
   else 
@@ -427,16 +475,23 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     }
   }
 
+  int equivalent_pos_weight2 = pos_weight2;
 
   Long64_t nentries = t->GetEntries(); 
-  if(VERBOSE) cout << " > sample weight: " << (isMC ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight1)) : "1.0" ) ;
+  if(VERBOSE) cout << " > sample weight: " << (isMC>0 ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight1)) : "1.0" ) ;
   if(isMC==2){
-    cout << string(Form("*SCALEsyst[ %d ]", TMath::Max( pos_weight2, 0) ));
-    if( pos_weight2==-1 ) cout << "*(1+2*(weightTopPt-1))" << endl;
-    if( pos_weight2==-2 ) cout << "*(1+0*(weightTopPt-1))" << endl;
-    else cout << "*(1+1*(weightTopPt-1))" << endl;
+
+    if( pos_weight2<0 ){
+      if( pos_weight2==-1 ) cout << "*(1+2*(weightTopPt-1))" ;
+      if( pos_weight2==-2 ) cout << "*(1+0*(weightTopPt-1))" ;
+      equivalent_pos_weight2 = 0;
+    }
+    else cout << "*(1+1*(weightTopPt-1))";
+    cout << string(Form("*SCALEsyst[ %d ]", equivalent_pos_weight2  ));
+
   }
-  else cout << endl;
+  if(isMC>0 && corrector) cout << "*corrector->Eval( MET_phi )";
+  cout << endl;
 
   if(VERBOSE) cout << " > total entries: " << nentries << endl;
 
@@ -451,18 +506,20 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
     // reset (needed because hTmp is filled with Fill()
     hTmp->Reset();
 
-    float fill_weight = isMC ? weight*PUweight*trigger*weightCSV[ pos_weight1 ] : 1.0;
+    float fill_weight = isMC>0 ? weight*PUweight*trigger*weightCSV[ pos_weight1 ] : 1.0;
 
     // this is used to flag the top pt systematics
     if(isMC==2 && pos_weight2<0){
-      if     ( pos_weight2 == -1 ) weightTopPt = 1 + 2.*(weightTopPt-1); // the +1s band
+      if     ( pos_weight2 == -1 ) weightTopPt = 1 + 2.*(weightTopPt-1); // the +1s band      
       else if( pos_weight2 == -2 ) weightTopPt = 1 + 0.*(weightTopPt-1); // the -1s band
-      else cout << "This position for top pt reweighting is not valid..." << endl;
-      pos_weight2 = 0;    
+      else cout << "This position for top pt reweighting is not valid..." << endl;    
     }
 
     // if tt+jets, apply extra top pt reweighting
-    if(isMC==2) fill_weight *= (weightTopPt*SCALEsyst[ pos_weight2 ]);
+    if(isMC==2) fill_weight *= (weightTopPt*SCALEsyst[ equivalent_pos_weight2 ]);
+
+    // if MC and we want to correct for phi modeling, correct for phi
+    if(isMC>0 && corrector) fill_weight *= corrector->Eval( MET_phi );
 
     // if doing a mass analysis... ( 0 = scan over mH ; -1 = scan over mT )
     if( abs(analysis)==1 ){
@@ -649,7 +706,6 @@ void fill(  TTree* tFull = 0, TH1F* h = 0, TCut cut = "" , int analysis = 0, vec
 }
 
 
-
 void appendLogNSyst(TH1F* h=0, TDirectory* dir=0, string name="",  float err = 0., string& line = DUMMY ){
 
   if(line.find("lnN")==string::npos) 
@@ -746,7 +802,7 @@ void produceNew(// main name of the trees
 
   // input files path
   //TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Feb24_2014/"; //"Nov21_2013/BTagLoose/";
-  TString inputpath = "./files/byLLR/CSVcalibration/"; //testNewType3
+  TString inputpath = "./files/byLLR/"; //testNewType3
 
   //TString directory = "Feb24_2014"; 
   TString directory = "Mar17_2014"; 
@@ -938,6 +994,33 @@ void produceNew(// main name of the trees
   else{
     param.clear();
   }
+
+
+  if(RESHAPEMETPHI){
+
+    if(VERBOSE) cout << "\e[1;31m!!! MC will be reweighted to match MET_phi distribution observed in data !!!\e[0m" << endl;
+
+    TFile* f_MC = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+ttjets+".root", "OPEN");
+    if( f_MC==0 || f_MC->IsZombie() ){
+      cout << "Could not find f_MC" << endl;
+      return;
+    }
+    TTree* tMC = (TTree*)f_MC->Get("tree");
+
+    TFile* f_DATA = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+"_Run2012_SingleMu"+".root", "OPEN");
+    if( f_DATA==0 || f_DATA->IsZombie() ){
+      cout << "Could not find f_DATA" << endl;
+      return;
+    }
+    TTree* tDATA = (TTree*)f_DATA->Get("tree");
+    
+    corrector = getMETphiCorrection( tDATA, tMC, TCut(basecut.c_str()) );
+
+    f_MC->Close();
+    f_DATA->Close();
+
+  }
+
 
   // if true, read binning from input, or just take unformly distributed bins [0,1]
   bool normalbinning = ( param.size()==3 || abs(doMEM)!=2 );
@@ -1274,15 +1357,7 @@ void produceNew(// main name of the trees
       TH1F* h_tmp = (TH1F*)h->Clone(("h_"+datacard_name).c_str());
       h_tmp->Reset();
       h_tmp->Sumw2();
-      
-      //if(doMEM){
-      // workaround due to bug in the trees on cat. 2
-	//if( (string(category.Data())).find("cat2") != string::npos )
-	//draw( param, tree, var, h_tmp, sample_cut , sample.find("Run2012")==string::npos);
-	//else
-	//fill( tree, h_tmp, sample_cut, RUNUNBIASEDMEM ? 2 : 1, &param, xsec, sample.find("Run2012")==string::npos);
-      //}
-      //else{
+     
       
       // decide if this is data or MC (or tt+jets, in which case apply top pt reweighting)
       int isMC = 0;
@@ -1926,6 +2001,7 @@ void produceNew(// main name of the trees
   cout << " > S_bb/B_bb = " << S_bb/B_bb << ", S_bb/B_jj = " << S_bb/B_jj << ", B_bb/B_jj = " << B_bb/B_jj << endl << endl;
 
   // close the output file
+  if(corrector) delete corrector;
   fout->Close();
   delete fout;
 
@@ -2061,10 +2137,10 @@ void produceAllNew_byLLR_CSVcalibration(string name      = "New",
 					float LumiScale  = 19.04/12.1
 					){
 
-  produceNew( name, version, extraname,  "MEM", Form("((type==0 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3>0  && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat1",  3,   1.2, 0.00, 0.15 , LumiScale   , 6,  0);
-  //produceNew( name, version, extraname,  "MEM", Form("((type==1 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3<=0 && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat2",  2,   0.6, 0.00, 0.20 , LumiScale   , 6,  1);
-  //produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=999 && btag_LR>=%f && numBTagM>=0",                                                                  0.990),       "cat4",  2,   0.6, 0.00, 0.50,  LumiScale   , 6,  1);  //0.5
-  //produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                                                                                    0.953),       "cat6",  2,   0.2, 0.00, 0.20 , LumiScale*2 , 5,  1);  //0.2
+  produceNew( name, version, extraname,  "MEM", Form("((type==0 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3>0  && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat1",  2,   1.2, 0.00, 0.15 , LumiScale   , 6,  1);
+  produceNew( name, version, extraname,  "MEM", Form("((type==1 && btag_LR>=%f && numBTagM>=0) || (type==3 && flag_type3<=0 && btag_LR>=%f && numBTagM>=0))",                     0.975,0.975), "cat2",  2,   0.6, 0.00, 0.20 , LumiScale   , 6,  1);
+  produceNew( name, version, extraname,  "MEM", Form("type==2 && flag_type2<=999 && btag_LR>=%f && numBTagM>=0",                                                                  0.990),       "cat4",  2,   0.6, 0.00, 0.50,  LumiScale   , 6,  1);  //0.5
+  produceNew( name, version, extraname,  "MEM", Form("type==6 && btag_LR>=%f",                                                                                                    0.953),       "cat6",  2,   0.2, 0.00, 0.20 , LumiScale*2 , 5,  1);  //0.2
 
 }
 
