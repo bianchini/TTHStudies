@@ -111,55 +111,53 @@ def calcTF(
     etaBinning = [0.0, 1.0, 2.5]
     nBinsY     = 58 
 
+    # Loop over jet types
     for jetType in ["Light", "Heavy"]:
-
-        # RESOLUTION (GAUSSIAN)
-        resolBin0  = ROOT.TH1F("resol"+jetType+"Bin0","",nBinsY,30,300)
-        respBin0   = ROOT.TH1F("resp" +jetType+"Bin0","",nBinsY,30,300)
-        resolBin1  = ROOT.TH1F("resol"+jetType+"Bin1","",nBinsY,30,300)
-        respBin1   = ROOT.TH1F("resp" +jetType+"Bin1","",nBinsY,30,300)
-
-        # RESOLUTION (DOUBLE GAUSSIAN)
-        respG1Bin0     = ROOT.TH1F("respG1" +jetType+"0","",  nBinsY,30,300)
-        respG2Bin0     = ROOT.TH1F("respG2" +jetType+"0","",  nBinsY,30,300)  
-        resolG1Bin0    = ROOT.TH1F("resolG1"+jetType+"0","",  nBinsY,30,300)
-        resolG2Bin0    = ROOT.TH1F("resolG2"+jetType+"0","",  nBinsY,30,300)
-        respG1Bin1     = ROOT.TH1F("respG1" +jetType+"1","",  nBinsY,30,300)
-        respG2Bin1     = ROOT.TH1F("respG2" +jetType+"1","",  nBinsY,30,300)  
-        resolG1Bin1    = ROOT.TH1F("resolG1"+jetType+"1","",  nBinsY,30,300)
-        resolG2Bin1    = ROOT.TH1F("resolG2"+jetType+"1","",  nBinsY,30,300)
-         
-        # Define the fitting functions
-        # SG = Single Gaussian
-        # DG = Double Gaussian        
-        SG_formula_Bin0 = ("[0]*exp(-0.5*(x-[1])*(x-[1])/[2]/[2])");
-        SG_formula_Bin1 = ("[0]*exp(-0.5*(x-[1])*(x-[1])/[2]/[2])");
-
-        DG_formula_Bin0 = "[0]*( {0}*exp(-0.5*(x-[1])*(x-[1])/[2]/[2]) + (1-{1})*exp(-0.5*(x-[1]*{2})*(x-[1]*{3})/[3]/[3]))".format( relWeightBin0, 
-                                                                                                                                 relWeightBin0, 
-                                                                                                                                 relShiftBin0, 
-                                                                                                                                 relShiftBin0 )
-
-        DG_formula_Bin1 = "[0]*( {0}*exp(-0.5*(x-[1])*(x-[1])/[2]/[2]) + (1-{1})*exp(-0.5*(x-[4])*(x-[4])/[3]/[3]))".format(relWeightBin1, 
-                                                                                                                                relWeightBin1)
 
         # Loop over eta bins
         for k in range(2):
 
+
+            # RESOLUTION (GAUSSIAN)
+            resolBin  = ROOT.TH1F("resol"+jetType+"Bin"+str(k),"",nBinsY,30,300)
+            respBin   = ROOT.TH1F("resp" +jetType+"Bin"+str(k),"",nBinsY,30,300)
+
+            # RESOLUTION (DOUBLE GAUSSIAN)
+            respG1Bin     = ROOT.TH1F("respG1" +jetType+str(k),"",  nBinsY,30,300)
+            respG2Bin     = ROOT.TH1F("respG2" +jetType+str(k),"",  nBinsY,30,300)  
+            resolG1Bin    = ROOT.TH1F("resolG1"+jetType+str(k),"",  nBinsY,30,300)
+            resolG2Bin    = ROOT.TH1F("resolG2"+jetType+str(k),"",  nBinsY,30,300)
+
+            # Define the fitting functions
+            # SG = Single Gaussian
+            # DG = Double Gaussian        
+            SG_formula_Bin = ("[0]*exp(-0.5*(x-[1])*(x-[1])/[2]/[2])")
+
+            if k==0:
+                DG_formula_Bin = "[0]*( {0}*exp(-0.5*(x-[1])*(x-[1])/[2]/[2]) + (1-{1})*exp(-0.5*(x-[1]*{2})*(x-[1]*{3})/[3]/[3]))".format( relWeightBin0, 
+                                                                                                                                            relWeightBin0, 
+                                                                                                                                            relShiftBin0, 
+                                                                                                                                            relShiftBin0 )
+            elif k==1:
+                DG_formula_Bin = "[0]*( {0}*exp(-0.5*(x-[1])*(x-[1])/[2]/[2]) + (1-{1})*exp(-0.5*(x-[4])*(x-[4])/[3]/[3]))".format(relWeightBin1, 
+                                                                                                                                   relWeightBin1)
             
+
             if jetType == "Light":
+                minEntriesPerSlice = 10
                 cut_Bin = "(pt_rec>20)  *(TMath::Abs(eta{0})>{1} && TMath::Abs(eta{2})<{3})".format( gen, 
                                                                                                      etaBinning[k],  
                                                                                                      gen, 
                                                                                                      etaBinning[k+1] )
             elif jetType == "Heavy":
+                minEntriesPerSlice = 8
                 cut_Bin = "(pt_rec{0}>20)*(TMath::Abs(eta{1})>{2} && TMath::Abs(eta{3})<{4})".format( reg, 
                                                                                                       gen, 
                                                                                                       etaBinning[k],  
                                                                                                       gen, 
                                                                                                       etaBinning[k+1])
                 
-            
+
             hCorr = ROOT.TH2F("hCorr"+jetType,"", nBinsY, 30, 300, 100, 0, 500)
             if jetType == "Light":
                 treeJetsLight.Draw("e_rec:e"+gen+">>hCorr"+jetType, cut_Bin )
@@ -172,56 +170,33 @@ def calcTF(
 
 
                 hSlice = hCorr.ProjectionY("_py{0}_{1}".format(j,k), j, j)
-
-                print hSlice.GetName()
-
                 
-                if jetType == "Light":
-                    if (hSlice.GetEntries()<10):
-                        continue
-                elif jetType == "Heavy":
-                    if (hSlice.GetEntries()<8):
-                        continue
+                if (hSlice.GetEntries()<minEntriesPerSlice):
+                    continue
 
                 print hSlice.GetMean(), hSlice.GetRMS()
 
                 resol = ROOT.TF1("resol","gaus", 0,500)
-
                 
                 hSlice.Fit(resol)
 
                 fout.mkdir( "Bin{0}{1}_{2}".format( jetType, j, k))
                 fout.cd(    "Bin{0}{1}_{2}".format( jetType, j, k))
                 hSlice.Write("",ROOT.TObject.kOverwrite)
-
-
                 
                 if jetType == "Light":
-                    if (k==0):
-                        resolBin0.SetBinContent(j, resol.GetParameter(2))
-                        resolBin0.SetBinError  (j, resol.GetParError (2))
-                        respBin0.SetBinContent (j, resol.GetParameter(1))
-                        respBin0.SetBinError   (j, resol.GetParError (1))
-
-                    if(k==1):
-                        resolBin1.SetBinContent(j, resol.GetParameter(2))
-                        resolBin1.SetBinError  (j, resol.GetParError (2))
-                        respBin1.SetBinContent (j, resol.GetParameter(1))
-                        respBin1.SetBinError   (j, resol.GetParError (1))  
-
+                    resolBin.SetBinContent(j, resol.GetParameter(2))
+                    resolBin.SetBinError  (j, resol.GetParError (2))
+                    respBin.SetBinContent (j, resol.GetParameter(1))
+                    respBin.SetBinError   (j, resol.GetParError (1))
                 
                 elif jetType == "Heavy":
-                    if k==0:	
-                        resolDG = ROOT.TF1("resolDG", DG_formula_Bin0, 0,500)
-                        resolDG.SetParameter(1, hSlice.GetMean())
-                        resolDG.SetParameter(2, hSlice.GetRMS())
-                        resolDG.SetParameter(3, hSlice.GetRMS())
 
+                    resolDG = ROOT.TF1("resolDG", DG_formula_Bin, 0,500)
+                    resolDG.SetParameter(1, hSlice.GetMean())
+                    resolDG.SetParameter(2, hSlice.GetRMS())
+                    resolDG.SetParameter(3, hSlice.GetRMS())
                     if k==1:
-                        resolDG = ROOT.TF1("resolDG", DG_formula_Bin1, 0,500)
-                        resolDG.SetParameter(1, hSlice.GetMean())
-                        resolDG.SetParameter(2, hSlice.GetRMS())
-                        resolDG.SetParameter(3, hSlice.GetRMS())
                         resolDG.SetParLimits(4, hSlice.GetMean()-2*hSlice.GetRMS() ,hSlice.GetMean())
 
                     hSlice.Fit(resolDG)
@@ -229,121 +204,87 @@ def calcTF(
 
                     hSlice.Write("",ROOT.TObject.kOverwrite)
 
-                    if k==0:
-                        resolBin0.SetBinContent(j, resol.GetParameter(2))
-                        resolBin0.SetBinError  (j, resol.GetParError (2))
-                        respBin0.SetBinContent (j, resol.GetParameter(1))
-                        respBin0.SetBinError   (j, resol.GetParError (1))
-                        respG1Bin0.SetBinContent   (j,  resolDG.GetParameter(1) )
-                        respG1Bin0.SetBinError     (j,  resolDG.GetParError (1) )
-                        respG2Bin0.SetBinContent   (j,  relShiftBin0 * resolDG.GetParameter(1) )
-                        respG2Bin0.SetBinError     (j,  relShiftBin0 * resolDG.GetParError (1) )
-                        #respG2Bin0.SetBinContent   (j,  resolDG.GetParameter(4) )
-                        #respG2Bin0.SetBinError     (j,  resolDG.GetParError (4) )
-                        resolG1Bin0.SetBinContent  (j,  resolDG.GetParameter(2) )
-                        resolG1Bin0.SetBinError    (j,  resolDG.GetParError (2) )
-                        resolG2Bin0.SetBinContent  (j,  resolDG.GetParameter(3) ) 
-                        resolG2Bin0.SetBinError    (j,  resolDG.GetParError (3) )
+                    resolBin.SetBinContent(j, resol.GetParameter(2))
+                    resolBin.SetBinError  (j, resol.GetParError (2))
+                    respBin.SetBinContent (j, resol.GetParameter(1))
+                    respBin.SetBinError   (j, resol.GetParError (1))
 
-                    if k==1:
-                        resolBin1.SetBinContent(j, resol.GetParameter(2))
-                        resolBin1.SetBinError  (j, resol.GetParError (2))
-                        respBin1.SetBinContent (j, resol.GetParameter(1))
-                        respBin1.SetBinError   (j, resol.GetParError (1))
-                        respG1Bin1.SetBinContent   (j,  resolDG.GetParameter(1) )
-                        respG1Bin1.SetBinError     (j,  resolDG.GetParError (1) )
-                        respG2Bin1.SetBinContent   (j,  resolDG.GetParameter(4) )
-                        respG2Bin1.SetBinError     (j,  resolDG.GetParError (4) )
-                        resolG1Bin1.SetBinContent  (j,  resolDG.GetParameter(2) )
-                        resolG1Bin1.SetBinError    (j,  resolDG.GetParError (2) )
-                        resolG2Bin1.SetBinContent  (j,  resolDG.GetParameter(3) )
-                        resolG2Bin1.SetBinError    (j,  resolDG.GetParError (3) )
+                    respG1Bin.SetBinContent   (j,  resolDG.GetParameter(1) )
+                    respG1Bin.SetBinError     (j,  resolDG.GetParError (1) )
+
+                    resolG1Bin.SetBinContent  (j,  resolDG.GetParameter(2) )
+                    resolG1Bin.SetBinError    (j,  resolDG.GetParError (2) )
+                    resolG2Bin.SetBinContent  (j,  resolDG.GetParameter(3) ) 
+                    resolG2Bin.SetBinError    (j,  resolDG.GetParError (3) )
+
+                    if k==0:
+                        respG2Bin.SetBinContent   (j,  relShiftBin0 * resolDG.GetParameter(1) )
+                        respG2Bin.SetBinError     (j,  relShiftBin0 * resolDG.GetParError (1) )
+                    elif k==1:
+                        respG2Bin.SetBinContent   (j,  resolDG.GetParameter(4) )
+                        respG2Bin.SetBinError     (j,  resolDG.GetParError (4) )
 
                 # End treatment of Heavy Jets                
             # End of loop over bins in hCorr
-        # End of loop over eta bins
 
+            sigmaBin = ROOT.TF1("sigma"+jetType+"Bin"+str(k),"sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
+            meanBin  = ROOT.TF1("mean"+jetType+"Bin"+str(k), "x*[0]",0,400)
 
+            if jetType == "Heavy":
+                meanG1Bin  = ROOT.TF1("meanG1"+jetType+"Bin"+str(k), "x*[0]+[1]",0,400)
+                meanG2Bin  = ROOT.TF1("meanG2"+jetType+"Bin"+str(k), "x*[0]+[1]",0,400)
+                sigmaG1Bin = ROOT.TF1("sigmaG1"+jetType+"Bin"+str(k),"sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
+                sigmaG2Bin = ROOT.TF1("sigmaG2"+jetType+"Bin"+str(k),"sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
+            # End of jetType == "Heavy"
 
-        sigmaBin0 = ROOT.TF1("sigma"+jetType+"Bin0","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
-        sigmaBin1 = ROOT.TF1("sigma"+jetType+"Bin1","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
+            # Single-Gauss Resolutions
+            resolBin.Fit(sigmaBin,"","",60,160)
+            resolBin.Fit(sigmaBin,"","",40,200)
 
-        meanBin0  = ROOT.TF1("mean"+jetType+"Bin0", "x*[0]",0,400)
-        meanBin1  = ROOT.TF1("mean"+jetType+"Bin1", "x*[0]",0,400)
+            # extra fit for heavy jets
+            if jetType == "Heavy":
+                if k==0:
+                    resolBin.Fit(sigmaBin,"","",60,300)
+                elif k==1:
+                    resolBin.Fit(sigmaBin,"","",40,300)
 
-        if jetType == "Heavy":
-            meanG1Bin0  = ROOT.TF1("meanG1"+jetType+"Bin0", "x*[0]+[1]",0,400)
-            meanG2Bin0  = ROOT.TF1("meanG2"+jetType+"Bin0", "x*[0]+[1]",0,400)
-            sigmaG1Bin0 = ROOT.TF1("sigmaG1"+jetType+"Bin0","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
-            sigmaG2Bin0 = ROOT.TF1("sigmaG2"+jetType+"Bin0","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
+            # Single-Gauss Responses
+            respBin.Fit (meanBin, "","",60,160)
+            respBin.Fit (meanBin, "","",40,200)
 
-            meanG1Bin1  = ROOT.TF1("meanG1"+jetType+"Bin1", "x*[0]+[1]",0,400)
-            meanG2Bin1  = ROOT.TF1("meanG2"+jetType+"Bin1", "x*[0]+[1]",0,400)
-            sigmaG1Bin1 = ROOT.TF1("sigmaG1"+jetType+"Bin1","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
-            sigmaG2Bin1 = ROOT.TF1("sigmaG2"+jetType+"Bin1","sqrt([0]*[0] + x*[1]*[1] + x*x*[2]*[2])",0,400)
-        # End of jetType == "Heavy"
+            if jetType == "Heavy":
+                # Double Gauss Responses
+                if k==0:
+                    respG1Bin.Fit  (meanG1Bin, "","",60,160)
+                    respG1Bin.Fit  (meanG1Bin, "","",40,200)
+                    respG2Bin.Fit  (meanG2Bin, "","",60,160)
+                    respG2Bin.Fit  (meanG2Bin, "","",40,200)
 
-        # Single-Gauss Resolutions
-        resolBin0.Fit(sigmaBin0,"","",60,160)
-        resolBin0.Fit(sigmaBin0,"","",40,200)
-        # extra fit for heavy jets
-        if jetType == "Heavy":
-            resolBin0.Fit(sigmaBin0,"","",60,300)
+                    if "part" in gen:
+                        resolG1Bin.Fit (sigmaG1Bin,"","",100,300)
+                    else:
+                        resolG1Bin.Fit (sigmaG1Bin,"","",150,300)
+                    resolG2Bin.Fit (sigmaG2Bin,"","",100,300)
 
-        resolBin1.Fit(sigmaBin1,"","",60,160)
-        resolBin1.Fit(sigmaBin1,"","",40,200)
-        # extra fit for heavy jets        
-        if jetType == "Heavy":
-            resolBin1.Fit(sigmaBin1,"","",40,300)
-                    
-        # Single-Gauss Responses
-        respBin0.Fit (meanBin0, "","",60,160)
-        respBin0.Fit (meanBin0, "","",40,200)
-        respBin1.Fit (meanBin1, "","",60,160)
-        respBin1.Fit (meanBin1, "","",40,200)
+                elif k==1:
+                    respG1Bin.Fit  (meanG1Bin, "","",80,200)
+                    respG1Bin.Fit  (meanG1Bin, "","",60,300)
+                    respG1Bin.Fit  (meanG1Bin, "","",40,300)
+                    respG2Bin.Fit  (meanG2Bin, "","",80,200)
+                    respG2Bin.Fit  (meanG2Bin, "","",60,300)
+                    respG2Bin.Fit  (meanG2Bin, "","",40,300)
 
-        if jetType == "Heavy":
-            # Double Gauss Responses
-            respG1Bin0.Fit  (meanG1Bin0, "","",60,160)
-            respG1Bin0.Fit  (meanG1Bin0, "","",40,200)
+                    if "part" in gen:
+                        resolG1Bin.Fit (sigmaG1Bin,"","",30,  300)
+                        resolG1Bin.Fit (sigmaG1Bin,"","",60,  300)
+                        resolG1Bin.Fit (sigmaG1Bin,"","",80,  300)
+                    else:
+                        resolG1Bin.Fit (sigmaG1Bin,"","",30,  300)
 
-            respG2Bin0.Fit  (meanG2Bin0, "","",60,160)
-            respG2Bin0.Fit  (meanG2Bin0, "","",40,200)
-
-            respG1Bin1.Fit  (meanG1Bin1, "","",80,200)
-            respG1Bin1.Fit  (meanG1Bin1, "","",60,300)
-            respG1Bin1.Fit  (meanG1Bin1, "","",40,300)
-
-            respG2Bin1.Fit  (meanG2Bin1, "","",80,200)
-            respG2Bin1.Fit  (meanG2Bin1, "","",60,300)
-            respG2Bin1.Fit  (meanG2Bin1, "","",40,300)
-
-            # Double Gauss Resolutions
-            if "part" in gen:
-                resolG1Bin0.Fit (sigmaG1Bin0,"","",100,300)
-            else:
-                resolG1Bin0.Fit (sigmaG1Bin0,"","",150,300)
-
-            resolG2Bin0.Fit (sigmaG2Bin0,"","",100,300)
-
-            if "part" in gen:
-                resolG1Bin1.Fit (sigmaG1Bin1,"","",30,  300)
-                resolG1Bin1.Fit (sigmaG1Bin1,"","",60,  300)
-                resolG1Bin1.Fit (sigmaG1Bin1,"","",80,  300)
-            else:
-                resolG1Bin1.Fit (sigmaG1Bin1,"","",30,  300)
-
-            resolG2Bin1.Fit (sigmaG2Bin1,"","",130,300)
-            resolG2Bin1.Fit (sigmaG2Bin1,"","",130,300)
-        # End of jetType == "Heavy"
-
-
-        
-
-        # Loop over eta bins 
-        for k in range(2):
-
-            hCorr = ROOT.TH2F("hCorr"+jetType,"",  nBinsY, 30,300 , 100, 0,500)
+                    resolG2Bin.Fit (sigmaG2Bin,"","",130,300)
+                    resolG2Bin.Fit (sigmaG2Bin,"","",130,300)
+                # End of k==1
+            # End of jetType == "Heavy"
 
             # loop over bins in hCorr
             for j in range(1,hCorr.GetNbinsX()+1):
@@ -369,131 +310,77 @@ def calcTF(
                 resolDG = 0
                 resolSG = 0
 
-                if k==0:
-                    
-                    if jetType == "Light":
-                        resolSG = ROOT.TF1("resolSG_fit", SG_formula_Bin0 , -800, 800)
-                        resolSG.SetNpx(1000)
-                        resolSG.SetLineColor(ROOT.kMagenta)
-                        norm = resolDG_old.Integral(-800,800)	
-                        m = meanBin0.Eval(en)
-                        s = sigmaBin0.Eval(en)
-                        resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
-                        resolSG.SetParameter(1, m)
-                        resolSG.SetParameter(2, s)
+                if jetType == "Light":
+                    resolSG = ROOT.TF1("resolSG_fit", SG_formula_Bin , -800, 800)
+                    resolSG.SetNpx(1000)
+                    resolSG.SetLineColor(ROOT.kMagenta)
+                    norm = resolDG_old.Integral(-800,800)	
+                    m = meanBin.Eval(en)
+                    s = sigmaBin.Eval(en)
+                    resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
+                    resolSG.SetParameter(1, m)
+                    resolSG.SetParameter(2, s)
 
-                        fout.cd( "BinLight{0}_{1}".format(j, k) )
-                        resolDG_old.Write("resol{0}_{1}".format( j,k),ROOT.TObject.kOverwrite)
-                        resolSG    .Write("resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
+                    fout.cd( "BinLight{0}_{1}".format(j, k) )
+                    resolDG_old.Write("resol{0}_{1}".format( j,k),ROOT.TObject.kOverwrite)
+                    resolSG    .Write("resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
 
-                    elif jetType == "Heavy":
+                elif jetType == "Heavy":
+                    resolDG = ROOT.TF1("resolDG_fit", DG_formula_Bin , -800,800)
+                    resolDG.SetNpx(1000)
+                    resolDG.SetLineColor(ROOT.kBlue)
 
-                        resolDG = ROOT.TF1("resolDG_fit", DG_formula_Bin0 , -800,800)
-                        resolDG.SetNpx(1000)
-                        resolDG.SetLineColor(ROOT.kBlue)
 
-                        norm = resolDG_old.Integral(-800,800)
-                        m1   = meanG1Bin0.Eval(en)
-                        m2   = meanG2Bin0.Eval(en)
-                        s1   = sigmaG1Bin0.Eval(en)
-                        s2   = sigmaG2Bin0.Eval(en)
+                    norm = resolDG_old.Integral(-800,800)
+                    m1   = meanG1Bin.Eval(en)
+                    m2   = meanG2Bin.Eval(en)
+                    s1   = sigmaG1Bin.Eval(en)
+                    s2   = sigmaG2Bin.Eval(en)
 
+                    if k==0:
                         resolDG.SetParameter(0, norm/(relWeightBin0*math.sqrt(2*ROOT.TMath.Pi())*s1 + (1-relWeightBin0)*math.sqrt(2*ROOT.TMath.Pi())*s2 )  )
-                        resolDG.SetParameter(1, m1)
-                        resolDG.SetParameter(2, s1)
-                        resolDG.SetParameter(3, s2)
-                        resolDG.SetParameter(4, m2)
-
-                        resolSG = ROOT.TF1("resolSG_fit", SG_formula_Bin0 , -800, 800)
-                        resolSG.SetNpx(1000)
-                        resolSG.SetLineColor(ROOT.kMagenta)	
-                        m = meanBin0.Eval(en)
-                        s = sigmaBin0.Eval(en)
-                        resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
-                        resolSG.SetParameter(1, m)
-                        resolSG.SetParameter(2, s)
-
-                        fout.cd( "BinHeavy{0}_{1}".format(j, k) )
-                        resolDG_old.Write("resolDG{0}_{1}".format(j,k),    ROOT.TObject.kOverwrite)
-                        resolDG    .Write("resolDG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-                        resolSG    .Write("resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-
-                
-                if k==1:
-                    if jetType == "Light":
-                        resolSG = ROOT.TF1("resolSG_fit",SG_formula_Bin1, -800, 800)
-                        resolSG.SetNpx(1000)
-                        resolSG.SetLineColor(ROOT.kMagenta)	
-                        norm = resolDG_old.Integral(-800,800)
-                        m = meanBin1.Eval(en)
-                        s = sigmaBin1.Eval(en)
-                        resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
-                        resolSG.SetParameter(1, m)
-                        resolSG.SetParameter(2, s)
-
-                        fout.cd( "BinLight{0}_{1}".format(j, k) )
-                        resolDG_old.Write( "resol{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-                        resolSG    .Write( "resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-
-                    elif jetType == "Heavy":
-                        
-                        resolDG = ROOT.TF1("resolDG_fit", DG_formula_Bin1 , -800,800)
-                        resolDG.SetNpx(1000)
-                        resolDG.SetLineColor(ROOT.kBlue)
-
-                        norm = resolDG_old.Integral(-800,800)
-                        m1 = meanG1Bin1.Eval(en)
-                        m2 = meanG2Bin1.Eval(en)
-                        s1 = sigmaG1Bin1.Eval(en)
-                        s2 = sigmaG2Bin1.Eval(en)
+                    elif k==1:
                         resolDG.SetParameter(0, norm/(relWeightBin1*math.sqrt(2*ROOT.TMath.Pi())*s1 + (1-relWeightBin1)*math.sqrt(2*ROOT.TMath.Pi())*s2 )  )
-                        resolDG.SetParameter(1, m1)
-                        resolDG.SetParameter(2, s1)
-                        resolDG.SetParameter(3, s2)
-                        resolDG.SetParameter(4, m2)
 
-                        resolSG = ROOT.TF1("resolSG_fit", SG_formula_Bin1 , -800, 800)
-                        resolSG.SetNpx(1000)
-                        resolSG.SetLineColor(ROOT.kMagenta)	
-                        m = meanBin1.Eval(en)
-                        s = sigmaBin1.Eval(en)
-                        resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
-                        resolSG.SetParameter(1, m)
-                        resolSG.SetParameter(2, s)
+                    resolDG.SetParameter(1, m1)
+                    resolDG.SetParameter(2, s1)
+                    resolDG.SetParameter(3, s2)
+                    resolDG.SetParameter(4, m2)
 
-                        fout.cd( "BinHeavy{0}_{1}".format(j, k) )
-                        resolDG_old.Write( "resolDG{0}_{1}".format(    j,k),ROOT.TObject.kOverwrite)
-                        resolDG    .Write( "resolDG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-                        resolSG    .Write( "resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
-                    # End of jetType == Heavy
-                # End of eta_bin == 1
-            # end of loop over bins in hCorr
-        # end of loop over eta bins
+                    resolSG = ROOT.TF1("resolSG_fit", SG_formula_Bin , -800, 800)
+                    resolSG.SetNpx(1000)
+                    resolSG.SetLineColor(ROOT.kMagenta)	
+                    m = meanBin.Eval(en)
+                    s = sigmaBin.Eval(en)
+                    resolSG.SetParameter(0, norm/math.sqrt(2*ROOT.TMath.Pi())/s )
+                    resolSG.SetParameter(1, m)
+                    resolSG.SetParameter(2, s)
 
-        if doOnlyJetTF:
-            fout.cd()  
-            resolBin0.Write("",ROOT.TObject.kOverwrite)
-            respBin0. Write("",ROOT.TObject.kOverwrite)
-            resolBin1.Write("",ROOT.TObject.kOverwrite)
-            respBin1. Write("",ROOT.TObject.kOverwrite)
+                    fout.cd( "BinHeavy{0}_{1}".format(j, k) )
+                    resolDG_old.Write("resolDG{0}_{1}".format(j,k),    ROOT.TObject.kOverwrite)
+                    resolDG    .Write("resolDG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
+                    resolSG    .Write("resolSG_fit{0}_{1}".format(j,k),ROOT.TObject.kOverwrite)
 
-            if jetType == "Heavy":
-                respG1Bin0. Write("",ROOT.TObject.kOverwrite)
-                respG2Bin0. Write("",ROOT.TObject.kOverwrite)
-                resolG1Bin0.Write("",ROOT.TObject.kOverwrite)
-                resolG2Bin0.Write("",ROOT.TObject.kOverwrite)
-                respG1Bin1. Write("",ROOT.TObject.kOverwrite)
-                respG2Bin1. Write("",ROOT.TObject.kOverwrite)
-                resolG1Bin1.Write("",ROOT.TObject.kOverwrite)
-                resolG2Bin1.Write("",ROOT.TObject.kOverwrite)
-            # End of jetType == Heavy
-        # End of doOnlyJetTF
+                # End of jetType==Heavy
+            # End of loop over bins in hCorr
+
+            if doOnlyJetTF:
+                fout.cd()  
+                resolBin.Write("",ROOT.TObject.kOverwrite)
+                respBin. Write("",ROOT.TObject.kOverwrite)
+
+                if jetType == "Heavy":
+                    respG1Bin. Write("",ROOT.TObject.kOverwrite)
+                    respG2Bin. Write("",ROOT.TObject.kOverwrite)
+                    resolG1Bin.Write("",ROOT.TObject.kOverwrite)
+                    resolG2Bin.Write("",ROOT.TObject.kOverwrite)
+                # End of jetType == Heavy
+            # End of doOnlyJetTF
+        # End of loop over eta bins
     # End of loop over jetType
 
     hCorr_py = fout.Get("Bin{0}{1}_{2}/_py{1}_{2}".format("Light", 1, 0))
     resolDG_old =  hCorr_py.GetFunction("resol")                    
-
-
   
     if doOnlyJetTF:
         fout.Close()
