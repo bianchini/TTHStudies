@@ -31,7 +31,7 @@ process.fwliteInput = cms.PSet(
     ordering      = cms.string("DiJetPt_"),
 
     # the samples
-    samples = samples_V2,
+    samples = samples_V3,
 
     # the target luminosity (used to calculate the 'weight' variable)
     lumi          = cms.untracked.double(19.04),
@@ -112,7 +112,7 @@ process.fwliteInput = cms.PSet(
     useBtag          = cms.untracked.int32(1),
 
     # select events based on btag LLR
-    selectByBTagShape= cms.untracked.int32(0),
+    selectByBTagShape= cms.untracked.int32(1),
 
     # use CSV tag-and-probe
     useCSVcalibration= cms.untracked.int32(1),
@@ -162,6 +162,10 @@ process.fwliteInput = cms.PSet(
     muEtaTight   = cms.untracked.double(2.1),
     muEtaLoose   = cms.untracked.double(2.4),
 
+    # jet preselection
+    jetMultLoose = cms.untracked.int32(4),
+    jetPtLoose   = cms.untracked.double(30.),
+
     # needed for category classification
     MwL          = cms.untracked.double(60),
     MwH          = cms.untracked.double(100),
@@ -185,7 +189,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, 10000),
+    evLimits       = cms.vint32(0, -1),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -209,7 +213,7 @@ process.fwliteInput = cms.PSet(
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(1),
+    ntuplizeAll         = cms.untracked.int32(0),
     
     )
 

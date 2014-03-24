@@ -147,6 +147,10 @@ int main(int argc, const char* argv[])
   double muEtaLoose         ( in.getUntrackedParameter<double>  ("muEtaLoose", 2.4));
   double muEtaTight         ( in.getUntrackedParameter<double>  ("muEtaTight", 2.1));
 
+  int    jetMultLoose       ( in.getUntrackedParameter<int>     ("jetMultLoose", 4 ));
+  double jetPtLoose         ( in.getUntrackedParameter<double>  ("jetPtLoose",  40.));
+
+
   vector<int> systematics   ( in.getParameter<vector<int> > ("systematics"));
 
   // FLAGS
@@ -461,7 +465,7 @@ int main(int argc, const char* argv[])
   TFile* fout_tmp = TFile::Open(outFileName.c_str(),"UPDATE");
 
   // total event counter for normalization
-  TH1F*  hcounter = new TH1F("hcounter","",1,0,1);
+  TH1F*  hcounter = new TH1F("hcounter","",2,0,2);
 
   // save a snapshot of the configuration parameters
   vector<std::string> paramsAll = in.getParameterNames();
@@ -668,6 +672,10 @@ int main(int argc, const char* argv[])
   float jet_m_     [NMAXJETS];
   float jet_csv_   [NMAXJETS];
 
+  // number of selected hJets
+  int hJetAmong_;
+  int jetsAboveCut_;
+
   // number of selected jets passing CSV L,M,T
   int numBTagL_, numBTagM_, numBTagT_;
   // nummber of selected jets
@@ -788,13 +796,15 @@ int main(int argc, const char* argv[])
   tree->Branch("Nus_phi",                 &Nus_phi_,   "Nus_phi/F");
 
   // jet kinematics
-  tree->Branch("nJet",                    &nJet_,      "nJet/I");
-  tree->Branch("jet_pt",                  jet_pt_,     "jet_pt[nJet]/F");
-  tree->Branch("jet_pt_alt",              jet_pt_alt_, "jet_pt_alt[nJet]/F");
-  tree->Branch("jet_eta",                 jet_eta_,    "jet_eta[nJet]/F");
-  tree->Branch("jet_phi",                 jet_phi_,    "jet_phi[nJet]/F");
-  tree->Branch("jet_m",                   jet_m_,      "jet_m[nJet]/F");
-  tree->Branch("jet_csv",                 jet_csv_,    "jet_csv[nJet]/F");
+  tree->Branch("nJet",                    &nJet_,        "nJet/I");
+  tree->Branch("jet_pt",                  jet_pt_,       "jet_pt[nJet]/F");
+  tree->Branch("jet_pt_alt",              jet_pt_alt_,   "jet_pt_alt[nJet]/F");
+  tree->Branch("jet_eta",                 jet_eta_,      "jet_eta[nJet]/F");
+  tree->Branch("jet_phi",                 jet_phi_,      "jet_phi[nJet]/F");
+  tree->Branch("jet_m",                   jet_m_,        "jet_m[nJet]/F");
+  tree->Branch("jet_csv",                 jet_csv_,      "jet_csv[nJet]/F");
+  tree->Branch("hJetAmong",               &hJetAmong_,   "hJetAmong/I");
+  tree->Branch("jetsAboveCut",            &jetsAboveCut_,"jetsAboveCut/I");
 
   // Jet multiplicity
   tree->Branch("numBTagL",                &numBTagL_,    "numBTagL/I");
@@ -1221,7 +1231,9 @@ int main(int argc, const char* argv[])
 	jet_m_      [q] = -99;
 	jet_csv_    [q] = -99;
       }
-	
+      hJetAmong_    = 0;
+      jetsAboveCut_ = 0;
+
       // set all prob. to 0.0;
       for(int p = 0 ; p < nTotInteg_; p++){
 	probAtSgn_permut_       [p] = 0.;
@@ -1959,6 +1971,9 @@ int main(int argc, const char* argv[])
 	      // only jets above pt cut...
 	      if( pt < 30  ) continue;	  
 	      
+	      // if this is one of hJet, increment by one
+	      if( coll==0 ) hJetAmong_++;
+
 	      // the jet four-vector
 	      TLorentzVector p4;
 	      p4.SetPtEtaPhiM( pt, eta, phi, m );
@@ -2237,7 +2252,7 @@ int main(int argc, const char* argv[])
 	int index = jet_map[jj].index;
 
 	// count jets above 40 GeV
-	if( p4.Pt()>40 ) jetsAboveCut++;
+	if( p4.Pt()>jetPtLoose ) jetsAboveCut++;
 	
 	// store jet p4...
 	jets_p4.push_back     ( p4 );
@@ -2263,11 +2278,12 @@ int main(int argc, const char* argv[])
 
       }
 
+      jetsAboveCut_ = jetsAboveCut;
 
-      // continue if not enough jets: (nr_jets(pt>40) >=4 + nr_hjets(pt>30) > 1 (to cover step2 preselection)
-      if( jetsAboveCut<4 || hjet_map.size() < 2){
+      // continue if not enough jets
+      if( jetsAboveCut_<jetMultLoose ){
 	if( debug>=2 ){
-	  cout << "Rejected by min jet cut" << endl ;
+	  cout << "Rejected by min jet cut (>= " <<jetMultLoose << " jets above " << jetPtLoose << " GeV)" << endl ;
 	  cout << " => go to next event!" << endl;
 	  cout << "******************************" << endl;	 
 	}
@@ -4098,6 +4114,7 @@ int main(int argc, const char* argv[])
 
     // this histogram keeps track of the fraction of analyzed events per sample
     hcounter->SetBinContent(1,float(events_)/nentries);    
+    hcounter->SetBinContent(2,nentries);    
 
     if(debug>=2) cout << "@L" << endl;
 
