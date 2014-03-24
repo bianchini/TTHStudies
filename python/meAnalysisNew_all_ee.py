@@ -32,7 +32,7 @@ process.fwliteInput = cms.PSet(
 
     # input file directory
     #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_v3/"),
-    pathToFile       = cms.string('/home/liis/TTH_Ntuples/CMSSW_5_3_3/src/VHbbAnalysis/VHbbDataFormats/bin/Ntuples_withPDF/Ntuples_merged'),
+    pathToFile       = cms.string('/home/liis/TTH_Ntuples/CMSSW_5_3_3/src/VHbbAnalysis/VHbbDataFormats/bin/Ntuples_withPDF2/Ntuples_merged'),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
@@ -215,7 +215,7 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -406,7 +406,7 @@ process.fwliteInput = cms.PSet(
     xSec     = cms.double(-1),
     ),
     cms.PSet(
-    skip     = cms.bool(True), # 11860310
+    skip     = cms.bool(False), # 11860310
     name     = cms.string('SingleMuRun2012D-PromptReco-v1'+VType),
     nickName = cms.string('Run2012_SingleMuRun2012D-PromptReco-v1'),
     color    = cms.int32(1),
@@ -580,7 +580,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, 10000),
+    evLimits       = cms.vint32(0, 100000),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -605,7 +605,9 @@ process.fwliteInput = cms.PSet(
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(0),
+    ntuplizeAll         = cms.untracked.int32(1),
+
+    reject_pixel_misalign_evts = cms.untracked.int32(1),
     
     )
 

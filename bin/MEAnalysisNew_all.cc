@@ -202,6 +202,8 @@ int main(int argc, const char* argv[])
   vector<string> functions(in.getParameter<vector<string> > ("functions"));
   vector<int>    evLimits (in.getParameter<vector<int> >    ("evLimits"));
   int   ntuplizeAll      ( in.getUntrackedParameter<int>    ("ntuplizeAll",0));
+  int   reject_pixel_misalign_evts ( in.getUntrackedParameter<int> ("reject_pixel_misalign_evts", 1));
+
 
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
@@ -1867,6 +1869,17 @@ int main(int argc, const char* argv[])
         } // end EM
 
 
+	if ( !isMC && EVENT_.json < 0.5 ){
+	  if ( debug>=2 ) 
+	    cout << "Event rejected: not present in json file"<<endl;
+	  continue;
+	}
+	else if ( !isMC && reject_pixel_misalign_evts && (EVENT_.run > 207883 && EVENT_.run < 208307) ){
+	  if ( debug>=2 )
+	    cout<<"Event rejected due to pixel misalignement"<<endl;
+	  continue;
+	}
+
 	// continue if leptons do not satisfy cuts
 	if( !(properEventSL || properEventDL) ){
 	  if( debug>=2 ){
@@ -1883,7 +1896,8 @@ int main(int argc, const char* argv[])
 	
 	// this container will hold the jets
 	std::vector<JetObservable> jet_map;
-	
+	std::vector<JetObservable> hjet_map; //for extra cleaning to cover preselection level cut at step2
+
 	// for the MET
 	float deltaPx = 0.;
 	float deltaPy = 0.;
@@ -1985,7 +1999,9 @@ int main(int argc, const char* argv[])
 
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	    
+	      if ( coll == 0)
+		hjet_map.push_back ( myJet );
+
 	      if( debug>=3 ){
 		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
 	      }
@@ -1993,12 +2009,12 @@ int main(int argc, const char* argv[])
 	    }
 	  }
 	}
-	
 	// if doing the gen level analysis, read gen-jets
 	else{
 
 	  // reset everything
 	  jet_map.clear();
+	  hjet_map.clear();
 
 	  // reset the sumEt
 	  MET_sumEt_ = 0.;
@@ -2109,11 +2125,12 @@ int main(int argc, const char* argv[])
 	      
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	      
-	  }
+	      if ( coll == 0 )
+		hjet_map.push_back (myJet);
+
+	    }
 	    
 	  }
-
 
 	  // assume 16 average PU
 	  //int nPU_ran        = ran->Poisson(16);	  
@@ -2194,10 +2211,7 @@ int main(int argc, const char* argv[])
 	    csv_syst_value = GetCSVweight( jet_map, static_cast<sysType>(csv_sys), h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf);
 	  weightCSV_[ csv_sys ] = csv_syst_value;
 	}
-	
 
-      
-   
       // fill arrays of jets
       std::vector<TLorentzVector>  jets_p4;
       std::vector<TLorentzVector>  jets_p4_reg;
@@ -2250,8 +2264,8 @@ int main(int argc, const char* argv[])
       }
 
 
-      // continue if not enough jets
-      if( jetsAboveCut<4 ){
+      // continue if not enough jets: (nr_jets(pt>40) >=4 + nr_hjets(pt>30) > 1 (to cover step2 preselection)
+      if( jetsAboveCut<4 || hjet_map.size() < 2){
 	if( debug>=2 ){
 	  cout << "Rejected by min jet cut" << endl ;
 	  cout << " => go to next event!" << endl;
