@@ -227,8 +227,8 @@ void SetUpCSVreweighting( TString path , TFile* f_CSVwgt_HF , TFile* f_CSVwgt_LF
 
   // Do not set it up if we're running on collision data
 
-  f_CSVwgt_HF = new TFile( path+"/csv_rwt_hf.root" );
-  f_CSVwgt_LF = new TFile( path+"/csv_rwt_lf.root" );
+  f_CSVwgt_HF =  TFile::Open( path+"/csv_rwt_hf.root" );
+  f_CSVwgt_LF =  TFile::Open( path+"/csv_rwt_lf.root" );
 
   if( !f_CSVwgt_HF || f_CSVwgt_HF->IsZombie() ) return;
   if( !f_CSVwgt_LF || f_CSVwgt_LF->IsZombie() ) return;
@@ -300,7 +300,7 @@ void SetUpCSVreweighting( TString path , TFile* f_CSVwgt_HF , TFile* f_CSVwgt_LF
 
 
 
- enum sysType {
+enum sysType {
    Nominal = 0,
    JESup,
    JESdown,
@@ -316,11 +316,12 @@ void SetUpCSVreweighting( TString path , TFile* f_CSVwgt_HF , TFile* f_CSVwgt_LF
    CSVCErr2down,
    CSVHFup,
    CSVHFdown,
-   CSVLFStats1up,
+   CSVLFStats1up, 
    CSVLFStats1down,
-   CSVLFStats2up,
+   CSVLFStats2up,  
    CSVLFStats2down
-  };
+ };
+
 
 double GetCSVweight(const std::vector<JetObservable>& iJets, 
 		    const sysType iSysType,
@@ -399,10 +400,12 @@ double GetCSVweight(const std::vector<JetObservable>& iJets,
 
     if (jetAbsEta >=0 &&  jetAbsEta<0.8) iEta = 0;
     else if ( jetAbsEta>=0.8 && jetAbsEta<1.6) iEta = 1;
-    else if ( jetAbsEta>=1.6 && jetAbsEta<2.5) iEta = 2;
+    else if ( jetAbsEta>=1.6 && jetAbsEta<2.501) iEta = 2;
 
-    if (iPt < 0 || iEta < 0) 
+    if (iPt < 0 || iEta < 0){
       std::cout << "Error, couldn't find Pt, Eta bins for this b-flavor jet, jetPt = " << jetPt << ", jetAbsEta = " << jetAbsEta << std::endl;
+      continue;
+    }
 
     if (abs(flavor) == 5 ){
       int useCSVBin = (csv>=0.) ? h_csv_wgt_hf[iSysHF][iPt]->FindBin(csv) : 1;
