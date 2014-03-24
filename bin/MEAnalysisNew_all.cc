@@ -74,7 +74,7 @@
 //#define DOGENLEVELANALYSIS 0
 
 // allow for different channels events
-#define ENABLE_EM   0
+#define ENABLE_EM   1
 #define ENABLE_EJ   1
 #define ENABLE_MJ   1
 #define ENABLE_EE   1
@@ -1955,19 +1955,26 @@ int main(int argc, const char* argv[])
 	      float csv_downBC  =  (coll==0) ? hJet_csv_downBC [hj] : aJet_csv_downBC [hj];
 	      float csv_upL     =  (coll==0) ? hJet_csv_upL    [hj] : aJet_csv_upL    [hj];
 	      float csv_downL   =  (coll==0) ? hJet_csv_downL  [hj] : aJet_csv_downL  [hj];
+
+	      // default is csv_nominal ( <=> reshaped )
 	      float csv         = csv_nominal;
 
-	      if( useCSVcalibration ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
-
+	      // if doing cvs systematiics, use appropriate collection
 	      if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
 	      else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
 	      else{}
-	    
-	      // the b-tagger output 
+
+	      // FIX the b-tagger output 
 	      //  ==> Min needed because in csvUp, csv can exceed 1..., 
 	      //      Max needed because we crunch  [-inf,0[ -> {0.}
 	      csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
-	      
+
+	      // if we apply SF for b-tag, then deafult is 'reco' csv
+	      if( useCSVcalibration ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
+
+	      // if running on data,deafult is 'reco' csv (dummy: if data, csv_nominal == csv)
+	      if( !isMC )             csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];	     
+	    	      	      
 	      // the jet observables (p4 and csv)
 	      JetObservable myJet;
 	      myJet.p4     = p4;
