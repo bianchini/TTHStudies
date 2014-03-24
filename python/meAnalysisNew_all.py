@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Types  as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-from Bianchi.TTHStudies.samples_cff import samples_V3
+from Bianchi.TTHStudies.samples_cff import *
 
 process = cms.Process("MEAnalysisNewall")
 
@@ -31,7 +31,7 @@ process.fwliteInput = cms.PSet(
     ordering      = cms.string("DiJetPt_"),
 
     # the samples
-    samples = samples_V2
+    samples = samples_V2,
 
     # the target luminosity (used to calculate the 'weight' variable)
     lumi          = cms.untracked.double(12.1),
