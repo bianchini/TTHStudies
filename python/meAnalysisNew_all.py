@@ -34,7 +34,7 @@ process.fwliteInput = cms.PSet(
     samples = samples_V3,
 
     # the target luminosity (used to calculate the 'weight' variable)
-    lumi          = cms.untracked.double(12.1),
+    lumi          = cms.untracked.double(19.04),
 
     # run both S and B hypotheses
     SoB                       = cms.untracked.int32(1),
@@ -174,6 +174,9 @@ process.fwliteInput = cms.PSet(
 
     MwLType3     = cms.untracked.double(72.),
     MwHType3     = cms.untracked.double(92.),
+
+    # Reject run range 207883-208307 because of a pixel misalignment problem ( following VHbb )
+    reject_pixel_misalign_evts = cms.untracked.int32(1),
 
     # Higgs and top mass values to be scanned
     massesH      = cms.vdouble(125.),

@@ -206,6 +206,8 @@ int main(int argc, const char* argv[])
   vector<string> functions(in.getParameter<vector<string> > ("functions"));
   vector<int>    evLimits (in.getParameter<vector<int> >    ("evLimits"));
   int   ntuplizeAll      ( in.getUntrackedParameter<int>    ("ntuplizeAll",0));
+  int   reject_pixel_misalign_evts ( in.getUntrackedParameter<int> ("reject_pixel_misalign_evts", 1));
+
 
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
@@ -647,6 +649,9 @@ int main(int argc, const char* argv[])
   float lepton_wp80_  [2];
   float lepton_wp95_  [2];
 
+  // additional SF for electrons;
+  float sf_ele_;
+  
   // met kinematic
   float MET_pt_;
   float MET_phi_;
@@ -783,6 +788,9 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_dz",               lepton_dz_,    "lepton_dz[nLep]/F");
   tree->Branch("lepton_wp80",             lepton_wp80_,  "lepton_wp80[nLep]/F");
   tree->Branch("lepton_wp95",             lepton_wp95_,  "lepton_wp95[nLep]/F");
+
+  // additional electron SF
+  tree->Branch("weightEle",                   &sf_ele_,      "weightEle/F");
 
   // MET kinematics
   tree->Branch("MET_pt",                  &MET_pt_,    "MET_pt/F");
@@ -1160,6 +1168,8 @@ int main(int argc, const char* argv[])
       n_g_                = SCALEsyst[6];
 
       trigger_     = weightTrig2012;
+      sf_ele_      = -99;
+
       for(int k = 0; k < 70 ; k++){
 	triggerFlags_[k] = triggerFlags[k];
       }
@@ -1611,9 +1621,9 @@ int main(int argc, const char* argv[])
 	     // muons
 	     (lep_type==13 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<muEtaLoose && lep_iso < lepIsoLoose  && lep_dxy < 0.2 && lep_dz<0.5) ||
              
-	     // electrons [FIX ME: dxy/dz for electron buggy]
+	     // electrons [FIX ME ]
 	     (lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
-	      lep_iso < lepIsoLoose && vLepton_wp95[k] > 0 /*&& lep_dxy < 0.02 && lep_dz<1*/)
+	      lep_iso < lepIsoLoose && vLepton_wp95[k] > 0 /*&& lep_dxy < 0.02 && lep_dz<1*/ )
 
 	     ) 
             numLooseLep++;
@@ -1706,6 +1716,10 @@ int main(int argc, const char* argv[])
           lepton_wp80_   [0] = vLepton_wp80[0];
 	  lepton_wp95_   [0] = vLepton_wp95[0];
 	
+	  if ( isMC && Vtype==3) // if single electron events
+            sf_ele_ = eleSF( lepton_pt_[0], lepton_eta_[0]);
+	    else
+	    sf_ele_ = 1;
 	}
 
 	///////////////////////////////////
@@ -1768,7 +1782,7 @@ int main(int argc, const char* argv[])
 
 	  // save lepton(s) kinematics into the tree...
 	  nLep_ = 2;
-	  
+
 	  // lep 1...
 	  lepton_pt_     [0] = leptonLV.Pt();
 	  lepton_eta_    [0] = leptonLV.Eta();
@@ -1794,6 +1808,11 @@ int main(int argc, const char* argv[])
           lepton_dz_     [1] = vLepton_dz[1];
           lepton_wp80_   [1] = vLepton_wp80[1];
           lepton_wp95_   [1] = vLepton_wp95[1];
+	  
+	  if ( isMC && Vtype==1 ) // if di-electron events
+	    sf_ele_ = eleSF( lepton_pt_[0], lepton_eta_[0]) * eleSF( lepton_pt_[1], lepton_eta_[1]);
+	  else
+	    sf_ele_ = 1;
 
 	}
     
@@ -1876,8 +1895,24 @@ int main(int argc, const char* argv[])
           lepton_wp80_[1] = aLepton_wp80[0];
           lepton_wp95_[1] = aLepton_wp95[0];
 
+	  if ( isMC && Vtype==4 ) // if EM events with triggered muon
+            sf_ele_ = eleSF( lepton_pt_[1], lepton_eta_[1]);
+          else
+            sf_ele_ = 1;
+
         } // end EM
 
+
+	if ( !isMC && EVENT_.json < 0.5 ){
+	  if ( debug>=2 ) 
+	    cout << "Event rejected: not present in json file"<<endl;
+	  continue;
+	}
+	else if ( !isMC && reject_pixel_misalign_evts && (EVENT_.run > 207883 && EVENT_.run < 208307) ){
+	  if ( debug>=2 )
+	    cout<<"Event rejected due to pixel misalignement"<<endl;
+	  continue;
+	}
 
 	// continue if leptons do not satisfy cuts
 	if( !(properEventSL || properEventDL) ){
@@ -1895,7 +1930,8 @@ int main(int argc, const char* argv[])
 	
 	// this container will hold the jets
 	std::vector<JetObservable> jet_map;
-	
+	std::vector<JetObservable> hjet_map; //for extra cleaning to cover preselection level cut at step2
+
 	// for the MET
 	float deltaPx = 0.;
 	float deltaPy = 0.;
@@ -2000,7 +2036,9 @@ int main(int argc, const char* argv[])
 
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	    
+	      if ( coll == 0)
+		hjet_map.push_back ( myJet );
+
 	      if( debug>=3 ){
 		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
 	      }
@@ -2008,12 +2046,12 @@ int main(int argc, const char* argv[])
 	    }
 	  }
 	}
-	
 	// if doing the gen level analysis, read gen-jets
 	else{
 
 	  // reset everything
 	  jet_map.clear();
+	  hjet_map.clear();
 
 	  // reset the sumEt
 	  MET_sumEt_ = 0.;
@@ -2124,11 +2162,12 @@ int main(int argc, const char* argv[])
 	      
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	      
-	  }
+	      if ( coll == 0 )
+		hjet_map.push_back (myJet);
+
+	    }
 	    
 	  }
-
 
 	  // assume 16 average PU
 	  //int nPU_ran        = ran->Poisson(16);	  
@@ -2209,10 +2248,7 @@ int main(int argc, const char* argv[])
 	    csv_syst_value = GetCSVweight( jet_map, static_cast<sysType>(csv_sys), h_csv_wgt_hf, c_csv_wgt_hf, h_csv_wgt_lf);
 	  weightCSV_[ csv_sys ] = csv_syst_value;
 	}
-	
 
-      
-   
       // fill arrays of jets
       std::vector<TLorentzVector>  jets_p4;
       std::vector<TLorentzVector>  jets_p4_reg;
@@ -2267,7 +2303,7 @@ int main(int argc, const char* argv[])
       jetsAboveCut_ = jetsAboveCut;
 
       // continue if not enough jets
-      if( jetsAboveCut_<jetMultLoose ){
+      if( jetsAboveCut_<jetMultLoose ) { //|| hJetAmong_ < 2) //fix 
 	if( debug>=2 ){
 	  cout << "Rejected by min jet cut (>= " <<jetMultLoose << " jets above " << jetPtLoose << " GeV)" << endl ;
 	  cout << " => go to next event!" << endl;
