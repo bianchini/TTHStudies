@@ -1,4 +1,3 @@
-
 #include "FWCore/FWLite/interface/AutoLibraryLoader.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "FWCore/ParameterSet/interface/ProcessDesc.h"
@@ -957,6 +956,9 @@ int main(int argc, const char* argv[])
       // needed as usual to copy a tree
       TFile* dummy = new TFile("/scratch/bianchi/dummy_forNorm.root","RECREATE");
 
+      float xsec_S    = 0.1302*0.569;
+      float xsec_B    = 107.66+25.81+112.33;
+
       // weights
       float weight;
       float PUweight;
@@ -1013,7 +1015,7 @@ int main(int argc, const char* argv[])
       tBjj_cut->SetBranchAddress("PUweight",           &PUweight);
       tBjj_cut->SetBranchAddress("trigger",            &trigger); 
       if( USECSVCALIBRATION && tBjj_cut->GetBranch("weightCSV"))
-	tBjj_cut->SetBranchAddress("weightCSV",     weightCSV  ); 
+	tBjj_cut->SetBranchAddress("weightCSV",        weightCSV); 
       for (Long64_t i = 0; i < tBjj_cut->GetEntries() ; i++){
 	tBjj_cut->GetEntry(i);
 	B_jj     += p_125_all_b_ttjj;
@@ -1034,8 +1036,8 @@ int main(int argc, const char* argv[])
       cout << "Ratio S_bb/B_bb="  << S_bb/B_bb << endl;
       cout << "Ratio S_bb/B_jj="  << S_bb/B_jj << endl;
       cout << "Ratio bb/(bb+jj)=" << Int_B_bb << "/(" << Int_B_bb << "+" << Int_B_jj << ")=" << Int_B_bb/(Int_B_bb+Int_B_jj) << endl;       
-      cout << "Ratio ttH/ttbb="   << Int_S_bb << "/" << Int_B_bb << "=" << Int_S_bb/Int_B_bb << endl;             
-      cout << "Ratio ttbb/ttjj="  << Int_B_bb << "/" << Int_B_jj << "=" << Int_B_bb/Int_B_jj << endl;             
+      cout << "Ratio ttH/ttbb="   << Int_S_bb << "/"  << Int_B_bb << "=" << Int_S_bb/Int_B_bb << endl;             
+      cout << "Ratio ttbb/ttjj="  << Int_B_bb << "/"  << Int_B_jj << "=" << Int_B_bb/Int_B_jj << endl;             
     }
 
     param.push_back( fact1 );
