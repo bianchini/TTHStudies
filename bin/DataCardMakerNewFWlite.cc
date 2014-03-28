@@ -1669,14 +1669,6 @@ int main(int argc, const char* argv[])
   }
 
 
-  // check if all the histograms are there (and filled)
-  bool isTTH125there     = aMap.find("TTH125")!=aMap.end()     ? aMap["TTH125"]->Integral()>0     : false;
-  bool isTTJetsHFbbthere = aMap.find("TTJetsHFbb")!=aMap.end() ? aMap["TTJetsHFbb"]->Integral()>0 : false;
-  bool isTTJetsHFbthere  = aMap.find("TTJetsHFb")!=aMap.end()  ? aMap["TTJetsHFb"]->Integral()>0  : false;
-  bool isTTJetsLFthere   = aMap.find("TTJetsLF")!=aMap.end()   ? aMap["TTJetsLF"]->Integral()>0   : false;
-  bool isTTVthere        = aMap.find("TTV")!=aMap.end()        ? aMap["TTV"]->Integral()>0        : false;
-  bool isSingleTthere    = aMap.find("SingleT")!=aMap.end()    ? aMap["SingleT"]->Integral()>0    : false;
-
 
   // the text file for the datacard
   ofstream out(Form("../root/datacards/%s/%s_%s.txt",directory.Data(), (fname+"_"+category).Data(), (name+version+extraname).c_str()));
@@ -1700,13 +1692,22 @@ int main(int argc, const char* argv[])
   string line5(Form("observation %.0f", observation )); out << line5 << endl;
   out<<endl;
 
+  // check if all the histograms are there (and filled)
+  bool isTTH125there     = aMap.find("TTH125")!=aMap.end()     ? aMap["TTH125"]->Integral()>0     : false;
+  bool isTTJetsHFbbthere = aMap.find("TTJetsHFbb")!=aMap.end() ? aMap["TTJetsHFbb"]->Integral()>0 : false;
+  bool isTTJetsHFbthere  = aMap.find("TTJetsHFb")!=aMap.end()  ? aMap["TTJetsHFb"]->Integral()>0  : false;
+  bool isTTJetsLFthere   = aMap.find("TTJetsLF")!=aMap.end()   ? aMap["TTJetsLF"]->Integral()>0   : false;
+  bool isTTVthere        = aMap.find("TTV")!=aMap.end()        ? aMap["TTV"]->Integral()>0        : false;
+  bool isSingleTthere    = aMap.find("SingleT")!=aMap.end()    ? aMap["SingleT"]->Integral()>0    : false;
 
   //////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////
   // add processes only if yield is non null
 
   // if do ttbb/ttjj analysis, signal is tt+bb
-  if(abs(doMEM)==3)  aMap["TTH125"]->Scale(-1);
+  if(isTTH125there && abs(doMEM)==3){
+    isTTH125there = false;
+  }
 
   string line("bin                         ");
   if( isTTH125there     ) line += string(Form("%s    ", (fname+"_"+category).Data()));

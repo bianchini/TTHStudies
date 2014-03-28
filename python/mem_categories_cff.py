@@ -32,7 +32,7 @@ cat = cms.PSet(
 
 cat1_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.975"), #0.975
+    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0."), #0.975
     category  = cms.string("cat1"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.15)
@@ -40,7 +40,7 @@ cat1_bj = cat.clone(
 
 cat2_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.975"),#0.975
+    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0."),#0.975
     category  = cms.string("cat2"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.20)
@@ -48,7 +48,7 @@ cat2_bj = cat.clone(
 
 cat3_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0.990"), #0.990
+    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0."), #0.990
     category  = cms.string("cat3"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.50)
@@ -56,9 +56,9 @@ cat3_bj = cat.clone(
 
 cat6_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("type==6 && btag_LR>=0.953"),#0.980
+    cut       = cms.string("type==6 && btag_LR>=0."),#0.980
     category  = cms.string("cat6"),
-    factbb    = cms.double(0.50),
+    factbb    = cms.double(0.10),
     doMEM     = cms.int32(3),
     samples   = cms.vstring( "TTV", "SingleT", "DiBoson", "TTJetsBB",
                              "TTJetsBJ", "TTJetsJJ", "TTH125", "EWK",
@@ -68,6 +68,7 @@ cat6_bj = cat.clone(
 #################### ttbb vs ttH separation (no bias)
 
 cat1_sb_nb =  cat1_bj.clone(
+    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.975"),
     extraname     = cms.string("_sb_nb"),
     doMEM         = cms.int32(-2),
     fact1         = cms.double(1.2),
@@ -75,6 +76,7 @@ cat1_sb_nb =  cat1_bj.clone(
     )
 
 cat2_sb_nb =  cat2_bj.clone(
+    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.975"),
     extraname = cms.string("_sb_nb"),
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
@@ -82,13 +84,15 @@ cat2_sb_nb =  cat2_bj.clone(
     )
 
 cat3_sb_nb =  cat3_bj.clone(
-    extraname = cms.string("_sb_nb"),
+    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0.990"),
+    extraname = cms.string("_sb_nb"),   
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
     splitFirstBin = cms.int32(1),   
     )
 
 cat6_sb_nb =  cat6_bj.clone(
+    cut       = cms.string("type==6 && btag_LR>=0.953"),
     extraname = cms.string("_sb_nb"),
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
@@ -117,9 +121,6 @@ cat6_sb =  cat6_sb_nb.clone(
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     )
-
-
-
 
 #################### ttbb vs ttH separation (no bias) !!! new !!!
 
