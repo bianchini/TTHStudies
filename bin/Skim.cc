@@ -170,7 +170,12 @@ int main(int argc, const char* argv[])
       TCut cut((it->second).c_str());
    
       string outputName = outPath+"_"+skim_it+"/"+newDir+"/"+fileName+"_"+skim_it+".root"; 
+
+      string cleanSE  = "srmrm srm://t3se01.psi.ch:8443/srm/managerv2?SFN=//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2_"+skim_it+"/"+newDir+"/"+fileName+"_"+skim_it+".root";
+      cout << cleanSE << endl;
+      gSystem->Exec(cleanSE.c_str());
       TFile* fs      = TFile::Open(outputName.c_str(), "RECREATE");
+      //TFile* fs      = new TFile(outputName.c_str(), "RECREATE");
       
       TIter nextkey((mySamples->GetFile( currentName ))->GetListOfKeys());
       TH1F *key;

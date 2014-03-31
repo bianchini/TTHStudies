@@ -27,6 +27,8 @@
 #include "Math/Factory.h"
 #include "Math/Functor.h"
 #include "Math/GSLMCIntegrator.h"
+#include "Math/IOptions.h"
+#include "Math/IntegratorOptions.h"
 #include "Math/AllIntegrationTypes.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "FWCore/ParameterSet/interface/ProcessDesc.h"
@@ -106,7 +108,7 @@ int main(int argc, const char* argv[])
   bool   verbose             ( in.getParameter<bool>         ("verbose" ) );
   
   // PARAMETERS
-  double lumi               ( in.getParameter<double>("lumi") );
+  double lumi               ( in.getUntrackedParameter<double> ("lumi",   12.1));
   float  MH                 ( in.getUntrackedParameter<double> ("MH",     125.));
   float  MT                 ( in.getUntrackedParameter<double> ("MT",    174.3));
   float  MW                 ( in.getUntrackedParameter<double> ("MW",    80.19));
@@ -126,40 +128,43 @@ int main(int argc, const char* argv[])
   int   switchoffOL      ( in.getUntrackedParameter<int>    ("switchoffOL",      0));
   int   speedup          ( in.getUntrackedParameter<int>    ("speedup",          0));
   int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB",  1));
-  int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          0));
+  int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          1));
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
   int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
 
   int   doTypeBTag4      ( in.getUntrackedParameter<int>    ("doTypeBTag4", 0));
   int   doTypeBTag5      ( in.getUntrackedParameter<int>    ("doTypeBTag5", 0));
   int   doTypeBTag6      ( in.getUntrackedParameter<int>    ("doTypeBTag6", 0));
-  int   doType0          ( in.getUntrackedParameter<int>    ("doType0", 0));
-  int   doType1          ( in.getUntrackedParameter<int>    ("doType1", 0));
-  int   doType2          ( in.getUntrackedParameter<int>    ("doType2", 0));
-  int   doType3          ( in.getUntrackedParameter<int>    ("doType3", 0));
-  int   doType6          ( in.getUntrackedParameter<int>    ("doType6", 0));
-  int   doType7          ( in.getUntrackedParameter<int>    ("doType7", 0));
+  int   doType0          ( in.getUntrackedParameter<int>    ("doType0",     0));
+  int   doType1          ( in.getUntrackedParameter<int>    ("doType1",     0));
+  int   doType2          ( in.getUntrackedParameter<int>    ("doType2",     0));
+  int   doType3          ( in.getUntrackedParameter<int>    ("doType3",     0));
+  int   doType6          ( in.getUntrackedParameter<int>    ("doType6",     0));
+  int   doType7          ( in.getUntrackedParameter<int>    ("doType7",     0));
   int   doType0ByBTagShape(in.getUntrackedParameter<int>    ("doType0ByBTagShape", 0));
   int   doType1ByBTagShape(in.getUntrackedParameter<int>    ("doType1ByBTagShape", 0));
   int   doType2ByBTagShape(in.getUntrackedParameter<int>    ("doType2ByBTagShape", 0));
   int   doType3ByBTagShape(in.getUntrackedParameter<int>    ("doType3ByBTagShape", 0));
   int   doType6ByBTagShape(in.getUntrackedParameter<int>    ("doType6ByBTagShape", 0));
-  int   useME            ( in.getParameter<int>             ("useME")     );
-  int   useJac           ( in.getParameter<int>             ("useJac")    );
-  int   useMET           ( in.getParameter<int>             ("useMET")    );
-  int   useTF            ( in.getParameter<int>             ("useTF")     );
-  int   usePDF           ( in.getParameter<int>             ("usePDF")    );
-  int   norm             ( in.getUntrackedParameter<int>    ("norm",      0));
-  int   hypo             ( in.getUntrackedParameter<int>    ("hypo",      0));
-  int   SoB              ( in.getUntrackedParameter<int>    ("SoB",       1));
+  int   useME            ( in.getUntrackedParameter<int>    ("useME",              1));
+  int   useJac           ( in.getUntrackedParameter<int>    ("useJac",             1));
+  int   useMET           ( in.getUntrackedParameter<int>    ("useMET",             1));
+  int   useTF            ( in.getUntrackedParameter<int>    ("useTF",              1));
+  int   usePDF           ( in.getUntrackedParameter<int>    ("usePDF",             1));
+  int   norm             ( in.getUntrackedParameter<int>    ("norm",               0));
+  int   hypo             ( in.getUntrackedParameter<int>    ("hypo",               0));
+  int   SoB              ( in.getUntrackedParameter<int>    ("SoB",                1));
+  int   integralOption0  ( in.getUntrackedParameter<int>    ("integralOption0",    1));
+  int   integralOption1  ( in.getUntrackedParameter<int>    ("integralOption1",    1));
+  int   integralOption2  ( in.getUntrackedParameter<int>    ("integralOption2",    0));
 
-  int   doJERbias        ( in.getUntrackedParameter<int>    ("doJERbias", 0));
-  int   doCSVup          ( in.getUntrackedParameter<int>    ("doCSVup",   0));
-  int   doCSVdown        ( in.getUntrackedParameter<int>    ("doCSVdown", 0));
-  int   doJECup          ( in.getUntrackedParameter<int>    ("doJECup",   0));
-  int   doJECdown        ( in.getUntrackedParameter<int>    ("doJECdown", 0));
-  int   doJERup          ( in.getUntrackedParameter<int>    ("doJERup",   0));
-  int   doJERdown        ( in.getUntrackedParameter<int>    ("doJERdown", 0));
+  int   doJERbias        ( in.getUntrackedParameter<int>    ("doJERbias",  0));
+  int   doCSVup          ( in.getUntrackedParameter<int>    ("doCSVup",    0));
+  int   doCSVdown        ( in.getUntrackedParameter<int>    ("doCSVdown",  0));
+  int   doJECup          ( in.getUntrackedParameter<int>    ("doJECup",    0));
+  int   doJECdown        ( in.getUntrackedParameter<int>    ("doJECdown",  0));
+  int   doJERup          ( in.getUntrackedParameter<int>    ("doJERup",    0));
+  int   doJERdown        ( in.getUntrackedParameter<int>    ("doJERdown",  0));
   int   fixNumEvJob      ( in.getUntrackedParameter<int>    ("fixNumEvJob",1));
   vector<string> functions(in.getParameter<vector<string> > ("functions"));
   vector<int>    evLimits (in.getParameter<vector<int> >    ("evLimits"));
@@ -168,8 +173,8 @@ int main(int argc, const char* argv[])
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
 
-  int   print            ( in.getParameter<int>             ("printout")   );
-  int   debug            ( in.getParameter<int>             ("debug")      );
+  int   print            ( in.getUntrackedParameter<int>    ("printout", 0));
+  int   debug            ( in.getUntrackedParameter<int>    ("debug",    0));
 
 
   /////////////////////////////////////////////////////////////////////////////
@@ -390,6 +395,48 @@ int main(int argc, const char* argv[])
 
   // total event counter for normalization
   TH1F*  hcounter = new TH1F("hcounter","",1,0,1);
+
+  // save a snapshot of the configuration parameters
+  vector<std::string> paramsAll = in.getParameterNames();
+  cout <<  "Tot. number of configuration parameters: " << paramsAll.size() << endl;
+  vector<std::string> params;
+  for( unsigned int pin = 0; pin < paramsAll.size() ; pin++ ){
+    if( in.existsAs<int>        ( paramsAll[pin], false ) )
+      params.push_back( paramsAll[pin] );
+    else if( in.existsAs<double>( paramsAll[pin], false ) )
+      params.push_back( paramsAll[pin] );
+  }
+  int n_untr_param = (int)params.size();
+  cout << "( of which " << n_untr_param << " are untracked int/double)" << endl;
+
+  TH1F*  hparam   = new TH1F("hparam",  "", n_untr_param+9 ,0,n_untr_param+9);
+  for( int pin = 0; pin < n_untr_param ; pin++ ){
+    hparam->GetXaxis()->SetBinLabel  ( pin+1, params[pin].c_str() );
+    if(in.existsAs<double>( params[pin], false ) ) 
+      hparam->SetBinContent( pin+1, in.getUntrackedParameter<double>( params[pin], -99. ) );
+    else if(in.existsAs<int>( params[pin], false ) )
+      hparam->SetBinContent( pin+1, in.getUntrackedParameter<int>   ( params[pin], -99  ) );
+    else{}
+  }
+  hparam->SetBinContent            ( n_untr_param+1,  (in.getParameter<vector<int> >("evLimits"))[0]   ); 
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+1,  "evLow" );
+  hparam->SetBinContent            ( n_untr_param+2,  (in.getParameter<vector<int> >("evLimits"))[1]   ); 
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+2,  "evHigh" );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+3,  (in.getParameter<string>("outFileName")).c_str() );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+4,  (in.getParameter<string>("pathToTF")).c_str() );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+5,  (in.getParameter<string>("pathToCP")).c_str() );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+6,  (in.getParameter<string>("pathToCP_smear")).c_str() );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+7,  (in.getParameter<string>("pathToFile")).c_str() );
+  hparam->GetXaxis()->SetBinLabel  ( n_untr_param+8,  (in.getParameter<string>("ordering")).c_str() );
+  
+  for( int sam = 0 ; sam < (int)samples.size(); sam++){
+    if( !(samples[sam].getParameter<bool>("skip")) ){
+      hparam->SetBinContent( n_untr_param+9, samples[sam].getParameter<double>("xSec") ); 
+      hparam->GetXaxis()->SetBinLabel  ( n_untr_param+9, (samples[sam].getParameter<string>("nickName") ).c_str());
+    }
+  }
+
+  // number of events that will be processed
   int events_     = 0;
   
   // output tree
@@ -441,9 +488,9 @@ int main(int argc, const char* argv[])
 
   // event-wise **ME** probability (summed over permutations)
   // ...for ttH...
-  float probAtSgn_;
+  float probAtSgn_    /*, probAtSgn2_*/;
   // ...for ttbb...
-  float probAtSgn_alt_;
+  float probAtSgn_alt_/*, probAtSgn_alt2_*/;
 
   // event-wise **ME X btag** probability (summed over permutations)
   // ...for ttH...
@@ -459,6 +506,10 @@ int main(int argc, const char* argv[])
   float probAtSgn_alt_permut_   [NMAXPERMUT*NMAXMASS];
   float probAtSgnErr_permut_    [NMAXPERMUT*NMAXMASS];
   float probAtSgnErr_alt_permut_[NMAXPERMUT*NMAXMASS];
+  int   callsAtSgn_permut_      [NMAXPERMUT*NMAXMASS];
+  int   callsAtSgn_alt_permut_  [NMAXPERMUT*NMAXMASS];
+  float chi2AtSgn_permut_       [NMAXPERMUT*NMAXMASS];
+  float chi2AtSgn_alt_permut_   [NMAXPERMUT*NMAXMASS];
 
   // per-permutation **btag** probability
   float probAtSgn_bb_permut_[NMAXPERMUT];
@@ -572,6 +623,9 @@ int main(int argc, const char* argv[])
   // marginalized over permutations (all <=> Sum_{p=0}^{nTotPermut}( mH=MH, mT=MT ) )
   tree->Branch(Form("p_%d_all_s",     int(MH)),   &probAtSgn_,           Form("p_%d_all_s/F",              int(MH)) );
   tree->Branch(Form("p_%d_all_b",     int(MH)),   &probAtSgn_alt_,       Form("p_%d_all_b/F",              int(MH)) );
+  //tree->Branch(Form("p_%d_all2_s",    int(MH)),   &probAtSgn2_,          Form("p_%d_all2_s/F",             int(MH)) );
+  //tree->Branch(Form("p_%d_all2_b",    int(MH)),   &probAtSgn_alt2_,      Form("p_%d_all2_b/F",             int(MH)) );
+
   tree->Branch(Form("p_%d_all_s_ttbb",int(MH)),   &probAtSgn_ttbb_,      Form("p_%d_all_s_ttbb/F",         int(MH)) );
   tree->Branch(Form("p_%d_all_b_ttbb",int(MH)),   &probAtSgn_alt_ttbb_,  Form("p_%d_all_b_ttbb/F",         int(MH)) );
   tree->Branch(Form("p_%d_all_b_ttjj",int(MH)),   &probAtSgn_alt_ttjj_,  Form("p_%d_all_b_ttjj/F",         int(MH)) );
@@ -586,6 +640,10 @@ int main(int argc, const char* argv[])
   tree->Branch("p_vsMT_b",     probAtSgn_alt_permut_,   "p_vsMT_b[nTotInteg_b]/F");
   tree->Branch("p_vsMH_Err_s", probAtSgnErr_permut_,    "p_vsMH_Err_s[nTotInteg_s]/F" );
   tree->Branch("p_msMT_Err_b", probAtSgnErr_alt_permut_,"p_vsMT_Err_b[nTotInteg_b]/F" );
+  tree->Branch("n_vsMH_s",     callsAtSgn_permut_,      "n_vsMH_s[nTotInteg_s]/I" );
+  tree->Branch("n_vsMT_b",     callsAtSgn_alt_permut_,  "n_vsMT_b[nTotInteg_b]/I");
+  tree->Branch("x_vsMH_s",     chi2AtSgn_permut_,       "x_vsMH_s[nTotInteg_s]/F" );
+  tree->Branch("x_vsMT_b",     chi2AtSgn_alt_permut_,   "x_vsMT_b[nTotInteg_b]/F");
 
   // differential in permutation
   tree->Branch("p_tt_bb",      probAtSgn_bb_permut_,    "p_tt_bb[nPermut_s]/F");
@@ -882,6 +940,9 @@ int main(int argc, const char* argv[])
       
       probAtSgn_          =  0.;
       probAtSgn_alt_      =  0.;
+      //probAtSgn2_         =  0.;
+      //probAtSgn_alt2_     =  0.;
+
       probAtSgn_ttbb_     =  0.;
       probAtSgn_alt_ttbb_ =  0.;
       probAtSgn_alt_ttbj_ =  0.;
@@ -942,6 +1003,8 @@ int main(int argc, const char* argv[])
       for(int p = 0 ; p < nTotInteg_; p++){
 	probAtSgn_permut_       [p] = 0.;
 	probAtSgnErr_permut_    [p] = 0.;
+	callsAtSgn_permut_      [p] = 0 ;
+	chi2AtSgn_permut_       [p] = 0.;
       }
       for(int p = 0 ; p < nPermut_; p++){
 	probAtSgn_bb_permut_ [p] = 0.;
@@ -949,6 +1012,8 @@ int main(int argc, const char* argv[])
       for(int p = 0 ; p < nTotInteg_alt_; p++){
 	probAtSgn_alt_permut_   [p] = 0.;
 	probAtSgnErr_alt_permut_[p] = 0.;
+	callsAtSgn_alt_permut_  [p] = 0 ;
+	chi2AtSgn_alt_permut_   [p] = 0.;
       }
       for(int p = 0 ; p < nPermut_alt_; p++){
 	probAtSgn_bj_permut_ [p] = 0.;
@@ -2256,7 +2321,7 @@ int main(int argc, const char* argv[])
 	    for(unsigned int uj2 = uj1+1; uj2<buntag_indices.size(); uj2++){
 	      
 	      float WMass12 = (jets_p4[ buntag_indices[uj1] ]+jets_p4[ buntag_indices[uj2] ]).M();
-	      if( TMath::Abs(WMass12-80.1)<minDiff ){
+	      if( TMath::Abs(WMass12-MW)<minDiff ){
 		minDiff = TMath::Abs(WMass12-MW);
 		ind1 = buntag_indices[uj1];
 		ind2 = buntag_indices[uj2];
@@ -2514,6 +2579,8 @@ int main(int argc, const char* argv[])
 	for(int p = 0 ; p < nTotInteg_; p++){
 	  probAtSgn_permut_       [p] = 0.;
 	  probAtSgnErr_permut_    [p] = 0.;
+	  callsAtSgn_permut_      [p] = 0 ;
+	  chi2AtSgn_permut_       [p] = 0.;
 	}
 	for(int p = 0 ; p < nPermut_; p++){
 	  probAtSgn_bb_permut_ [p] = 0.;
@@ -2521,6 +2588,8 @@ int main(int argc, const char* argv[])
 	for(int p = 0 ; p < nTotInteg_alt_; p++){
 	  probAtSgn_alt_permut_   [p] = 0.;
 	  probAtSgnErr_alt_permut_[p] = 0.;
+	  callsAtSgn_alt_permut_  [p] = 0 ;
+	  chi2AtSgn_alt_permut_   [p] = 0.;
 	}
 	for(int p = 0 ; p < nPermut_alt_; p++){
 	  probAtSgn_bj_permut_ [p] = 0.;
@@ -2533,6 +2602,8 @@ int main(int argc, const char* argv[])
 	// check if there is a tag-untag pair that satisfies the "cs-tag" 
 	for( unsigned int w = 0; w<btag_indices.size(); w++){
 	  
+	  if(ind1==999 || ind2==999) continue;
+
 	  float m1 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind1] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind1] ).M();
 	  float m2 = !useRegression ? ( jets_p4[btag_indices[w]] + jets_p4[ind2] ).M() : ( jets_p4_reg[btag_indices[w]] + jets_p4[ind2] ).M();
 	  
@@ -2677,6 +2748,12 @@ int main(int argc, const char* argv[])
 		  skip_TopHad = !( meIntegrator->compatibilityCheck_TopHad(0.98, /*print*/ 0, mass, massLow, massHigh ) );
 		}
 		
+		// remove skip optimization
+		if( integralOption1==0 ){
+		  skip        = false;
+		  skip_WHad   = false;
+		  skip_TopHad = false;
+		}
 		
 		// if use btag, determine the b-tag probability density
 		if( useBtag ){	       			
@@ -2817,11 +2894,16 @@ int main(int argc, const char* argv[])
 		  continue;
 		}
 		
-		// the per-permutation probability...
-		double p    = 0.;	
-		// the per-permutation probability error...
-		double pErr = 0.;	       	
+		// per-permutation probability...
+		double p     = 0.;
+		double p2    = 0.;	
+
+		// per-permutation probability error...
+		double pErr  = 0.;	       	
+		double pErr2 = 0.;	       	
 		
+		// per-permutation chi2
+		double chi2  = 0.;
 	     	  	
 		// if doing higgs mass scan, don't consider bkg hypo
 		if( nHiggsMassPoints>1 && hyp==1 ) continue;
@@ -2851,7 +2933,7 @@ int main(int argc, const char* argv[])
 
 		// if NOT doing top mass scan, and hyp==1
 		// and no permutations for hyp==0 accepted, continue (the weight will be 0 anyway)
-		if( nTopMassPoints==1 && hyp==1 && num_s==0){
+		if( nTopMassPoints==1 && hyp==1 && SoB==1 && num_s==0){
 		  if(print){
 		    cout << "Skip    hypo " << (hyp==0 ? "ttH " : "ttbb") 
 			 << " because no valid ttH permutations found" << endl;
@@ -2876,8 +2958,11 @@ int main(int argc, const char* argv[])
 		if( type_==6 )  intPoints = 10000;
 		if( type_==7 )  intPoints = 10000;
 		
-		  // count how many time the integration is rerun per permutation
+		// count how many time the integration is rerun per permutation
 		int ntries = 0;
+		// count number of Integral() calls
+		int nCalls = 0;
+
 		
 		// skip ME calculation... for debugging
 		if(speedup==0){
@@ -2890,12 +2975,39 @@ int main(int argc, const char* argv[])
 		    // VEGAS integrator
 		    ROOT::Math::GSLMCIntegrator ig2( ROOT::Math::IntegrationMultiDim::kVEGAS , 1.e-12, 1.e-5, intPoints);
 		    ig2.SetFunction(toIntegrate);
+
+
+		    if ( debug>=2 ){
+
+		      // modify the GLS options
+		      //ROOT::Math::IntegratorMultiDimOptions opts;
+		      //opts.SetNCalls( intPoints );
+		      //ig2.SetOptions( opts ) ;
+		      //ig2.SetAbsTolerance(1.e-12);
+		      //ig2.SetRelTolerance(1.e-5);
+		      //ig2.SetType(  ROOT::Math::IntegrationMultiDim::kVEGAS );
+
+		      // modufy the VEGAS parameters; 
+		      ROOT::Math::VegasParameters param( *(ig2.ExtraOptions()) );
+
+		      // param.iterations = 5;
+		      ig2.SetParameters(param);
+
+		      // print both...
+		      ig2.Options().Print(std::cout);
+		      ig2.ExtraOptions()->Print(std::cout);
+		    }
+
+
 		    // setup # of parameters
 		    meIntegrator->SetPar( nParam+hyp );	 
-		    
+
+		    // one more call...
+		    nCalls++;
+		 
 		    // the integration ranges depend on hyp and type
 		    if     ( type_==0 ){
-		      p = (hyp==0 ? ig2.Integral(xLmode0_s, xUmode0_s) : ig2.Integral(xLmode0_b, xUmode0_b));
+		      p = (hyp==0 ? ig2.Integral(xLmode0_s, xUmode0_s) : ig2.Integral(xLmode0_b, xUmode0_b));	
 		    }
 		    else if( type_==1 ){
 		      p = (hyp==0 ? ig2.Integral(xLmode1_s, xUmode1_s) : ig2.Integral(xLmode1_b, xUmode1_b));
@@ -2912,13 +3024,63 @@ int main(int argc, const char* argv[])
 		    else if( type_==7 ){
 		      p = (hyp==0 ? ig2.Integral(xLmode7_s, xUmode7_s) : ig2.Integral(xLmode7_b, xUmode7_b));
 		    }
-		      else{ /* ... */ }		    
+		    else{ nCalls--; }		    
 		    
-		    // chi2 of the integration
-		    double chi2 =  ig2.ChiSqr();
+		    // chi2/ndof of the integration
+		    chi2 =  ig2.ChiSqr();
 		    
-		    // error from the last VEGAS iteration
+		    // error from VEGAS
 		    pErr =  ig2.Error();
+
+		    // re-run the integration using the last grid only
+		    // (optionally, change the VEGAS parameters)
+		    if( integralOption2 ){
+
+		      // change the options
+		      ROOT::Math::IntegratorMultiDimOptions opts = ig2.Options();
+		      opts.SetNCalls( intPoints );
+		      ig2.SetOptions( opts ) ;
+		      ig2.SetAbsTolerance(1.e-12);
+		      ig2.SetRelTolerance(1.e-5);
+
+		      // change the VEGAS parameters
+		      ROOT::Math::VegasParameters param( *(ig2.ExtraOptions()) );
+		      param.iterations = 1;
+		      param.stage      = 1;
+		      ig2.SetParameters(param);
+			      
+		      // one more call...
+		      nCalls++;
+
+		      // re-run the integtarion
+		      if     ( type_==0 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode0_s, xUmode0_s) : ig2.Integral(xLmode0_b, xUmode0_b));	
+		      }
+		      else if( type_==1 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode1_s, xUmode1_s) : ig2.Integral(xLmode1_b, xUmode1_b));
+		      }
+		      else if( type_==2 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode2_s, xUmode2_s) : ig2.Integral(xLmode2_b, xUmode2_b));
+		      }
+		      else if( type_==3 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode3_s, xUmode3_s) : ig2.Integral(xLmode3_b, xUmode3_b));
+		      }
+		      else if( type_==6 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode6_s, xUmode6_s) : ig2.Integral(xLmode6_b, xUmode6_b));
+		      }
+		      else if( type_==7 ){
+			p2 = (hyp==0 ? ig2.Integral(xLmode7_s, xUmode7_s) : ig2.Integral(xLmode7_b, xUmode7_b));
+		      }
+		      else{ nCalls--;  }	
+		      
+		      pErr2 =  ig2.Error();
+
+		      // to avoid problems
+		      if( TMath::IsNaN(p2) )    p2    = 0.;
+		      if( TMath::IsNaN(pErr2) ) pErr2 = 0.;
+		      
+		    }
+		    
 		    
 		    // check if the actual permutation returned a small or large number...
 		    // if the value is less than 10% of the largest found that far, skip 
@@ -2933,13 +3095,15 @@ int main(int argc, const char* argv[])
 		    }
 		    
 		    // if the chi2 is bad, increse # of points and repeat the integration
-		    if( chi2 > maxChi2_ ){
+		    if( integralOption0 && chi2 > maxChi2_ ){
 		      ntries++;
-		      intPoints *= 1.5;
+		      intPoints *= 1.5;		   
 		    }
 		    // otherwise, just go to the next permutation...
-		    else 
+		    else {
 		      ntries = MAX_REEVAL_TRIES+1;			
+		    }
+
 		  }	
 		}
 		else{
@@ -2950,7 +3114,12 @@ int main(int argc, const char* argv[])
 		// to avoid problems
 		if( TMath::IsNaN(p) )    p    = 0.;
 		if( TMath::IsNaN(pErr) ) pErr = 0.;
-		if(print) cout << " => p=(" << p << " +/- " << pErr << ")" << endl;
+		if(print){
+		  cout << " => p  = (" << p << " +/- " << pErr << ")" << endl;		
+		  if( integralOption2 ){
+		    cout << "                                              => p2 = (" << p2    << " +/- " << pErr2 << ")" << endl;
+		  }
+		}
 		
 		/////////////////////////////////////////////////////////////
 		  
@@ -2976,20 +3145,26 @@ int main(int argc, const char* argv[])
 		if( hyp==0 && mT[t]<MT+1.5 && mT[t]>MT-1.5){
 		  probAtSgn_permut_   [(unsigned int)(pos+m*nPermut_)] = p;
 		  probAtSgnErr_permut_[(unsigned int)(pos+m*nPermut_)] = pErr;
+		  callsAtSgn_permut_  [(unsigned int)(pos+m*nPermut_)] = nCalls;
+		  chi2AtSgn_permut_   [(unsigned int)(pos+m*nPermut_)] = chi2;
 		}
 		// save TTbb prob. per permutation AND mT
 		if( hyp==1 && mH[m]<MH+1.5 && mH[m]>MH-1.5 ){
 		  probAtSgn_alt_permut_   [(unsigned int)(pos+t*nPermut_alt_)] = p;
 		  probAtSgnErr_alt_permut_[(unsigned int)(pos+t*nPermut_alt_)] = pErr;
+		  callsAtSgn_alt_permut_  [(unsigned int)(pos+t*nPermut_alt_)] = nCalls;
+		  chi2AtSgn_alt_permut_   [(unsigned int)(pos+t*nPermut_alt_)] = chi2;
 		}
 		
 		// total and per-permutation ME probability for nominal MH and MT
 		if( mH[m]<MH+1.5 && mH[m]>MH-1.5 && mT[t]<MT+1.5 && mT[t]>MT-1.5){
 		  if(hyp==0){
-		    probAtSgn_     += p;
+		    probAtSgn_      += p;
+		    /*probAtSgn2_   += p2;*/
 		  }
 		  else{
-		    probAtSgn_alt_ += p;
+		    probAtSgn_alt_     += p;
+		    /*probAtSgn_alt2_  += p2;*/
 		  }
 		}
 		
@@ -3002,7 +3177,7 @@ int main(int argc, const char* argv[])
 	
 	// stop clock and reset
 	clock->Stop();
-	time_ = clock->RealTime();
+	time_ = clock->CpuTime();
 	clock->Reset();	    
 	
 	// this time is integrated over all hypotheses, permutations, and mass scan values
@@ -3097,12 +3272,13 @@ int main(int argc, const char* argv[])
   // save the tree and the counting histo in the ROOT file
   fout_tmp->cd();
   hcounter->Write("",TObject::kOverwrite );
+  hparam  ->Write("",TObject::kOverwrite );
   tree->Write("",TObject::kOverwrite );
   fout_tmp->Close();
 
   // find out the total time needed for the job
   clock2->Stop();
-  float totalTime = clock2->RealTime();
+  float totalTime = clock2->CpuTime();
   cout << "*******************" << endl;
   cout << "Job done in " << totalTime/60. << " min." << endl;
 
