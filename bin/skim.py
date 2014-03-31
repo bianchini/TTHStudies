@@ -34,10 +34,10 @@ process.fwliteInput = cms.PSet(
     ordering      = cms.string("DiJetPt_"),
 
     # an extra sub-directory inside 'outPath' (optional)
-    newDir        = cms.string("v2"),
+    newDir        = cms.string(""),
 
     # the target luminosity (needed to normalize MCs)
-    lumi          = cms.double(12.1),
+    lumi          = cms.double(18.9),
 
     # verbosity (to debug the opening of files)
     verbose       = cms.bool(False),

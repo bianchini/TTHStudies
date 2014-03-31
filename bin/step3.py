@@ -55,6 +55,7 @@ process.fwliteInput = cms.PSet(
 
 
 #JSONfile = 'Cert_190456-203002_8TeV_PromptReco_Collisions12_JSON.txt'
-JSONfile = 'Cert_190456-196531_8TeV_13Jul2012ReReco_ert_190782-190949_8TeV_06Aug2012ReReco_Cert_198022-198523_8TeV_24Aug2012ReReco_Cert_198941-203002_8TeV_PromptReco_Collisions12_JSON.txt'
+#JSONfile = 'Cert_190456-196531_8TeV_13Jul2012ReReco_ert_190782-190949_8TeV_06Aug2012ReReco_Cert_198022-198523_8TeV_24Aug2012ReReco_Cert_198941-203002_8TeV_PromptReco_Collisions12_JSON.txt'
+JSONfile = 'Cert_190456-203002_8TeV_PromptReco_Collisions12_JSON.txt'
 lumiList = LumiList.LumiList (filename = JSONfile).getCMSSWString().split(',')
 process.fwliteInput.lumisToProcess.extend(lumiList)

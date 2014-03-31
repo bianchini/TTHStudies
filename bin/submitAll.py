@@ -241,9 +241,9 @@ samples = [
 
 skims = [
     ['VType0','Vtype==0'],
-    ['VType1','Vtype==1'],
-    ['VType2','Vtype==2'],
-    ['VType3','Vtype==3']
+    #['VType1','Vtype==1'],
+    #['VType2','Vtype==2'],
+    #['VType3','Vtype==3']
     ]
 #skims = []
 
