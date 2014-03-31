@@ -29,6 +29,7 @@
 #include "TMatrixTBase.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TTreeFormula.h"
 #include "TString.h"
 #include "TSystem.h"
 #include "TROOT.h"
@@ -75,7 +76,7 @@ typedef TMatrixT<double> TMatrixD;
 #define NCSVSYS          16
 
 // number of extra systematics
-#define NTHSYS            4
+#define NTHSYS            12 // used to be 4
 
 // test effect of matching MEt phi distribution to data
 #define RESHAPEMETPHI     0
@@ -105,11 +106,21 @@ const string csv_sys_names[16] = {
    "CSVLFStats2Down"
 };
 
-const string th_sys_names[4] = {
-   "Q2ScaleUp",
-   "Q2ScaleDown",
-   "TopPtUp",
-   "TopPtDown"
+const string th_sys_names[12] = {
+  //"Q2ScaleUp",     
+  //"Q2ScaleDown",   
+  "TopPtUp",
+  "TopPtDown",  
+  "Q2Scale1pUp",
+  "Q2Scale1pDown",
+  "Q2Scale2pUp",
+  "Q2Scale2pDown",
+  "Q2ScaleHFbbUp",
+  "Q2ScaleHFbbDown",
+  "Q2ScaleHFbUp",
+  "Q2ScaleHFbDown",
+  "Q2ScaleLFUp",
+  "Q2ScaleLFDown",
 };
 
 typedef struct 
@@ -421,16 +432,18 @@ TF1* getMETphiCorrection(TTree* tDATA=0, TTree* tMC=0, TCut cut = ""){
 void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight1=0, int pos_weight2=0, TString category="", string sample="" ){
 
   // needed as usual to copy a tree
-  TFile* dummy = new TFile("/scratch/bianchi/dummy_"+TString(sample.c_str())+".root","RECREATE");
+  //TFile* dummy = new TFile("/scratch/bianchi/dummy_"+TString(sample.c_str())+".root","RECREATE");
 
   Long64_t totalentries = tFull->GetEntries();
   Long64_t nentries     = (totalentries/nparts+1);
   Long64_t firstentry   = part*nentries;
 
-  if(VERBOSE) cout << " > run over : [" <<  firstentry << "," << firstentry+nentries << "]" << endl;;  
+  if(VERBOSE) cout << " > run over : [" <<  firstentry << "," << firstentry+nentries-1 << "]" << endl;;  
 
   // tree of events in the category
-  TTree* t = (TTree*)tFull->CopyTree( cut , "", nentries, firstentry );
+  TTree* t = tFull ;//(TTree*)tFull->CopyTree( cut , "", nentries, firstentry );
+
+  TTreeFormula* treeformula = new TTreeFormula("cat_selection", cut , t );
 
   if(VERBOSE) cout << " > cut: " << string(cut.GetTitle()) << endl;
 
@@ -470,6 +483,10 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   // the observable (if doMEM==4)
   float observable;
   
+  // number of extra partons in ME  
+  int n_b,n_c,n_l,n_g;
+  int nSimBs, nMatchSimBs;
+
   t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
   t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
   t->SetBranchAddress("p_tt_bb",      p_tt_bb);
@@ -512,10 +529,28 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     else
       observable = -99.;
   }
+  if( t->GetBranch("n_b") ){
+    t->SetBranchAddress("n_b",    &n_b);   
+    t->SetBranchAddress("n_c",    &n_c);   
+    t->SetBranchAddress("n_l",    &n_l);   
+    t->SetBranchAddress("n_g",    &n_g);   
+    t->SetBranchAddress("nSimBs", &nSimBs);  
+    t->SetBranchAddress("nMatchSimBs", &nMatchSimBs);  
+  }
+  else{
+    n_b = -99;
+    n_c = -99;
+    n_l = -99;
+    n_g = -99;
+    nSimBs      = -99;
+    nMatchSimBs = -99;
+  }
+
+
 
   int equivalent_pos_weight2 = pos_weight2;
 
-  Long64_t entries = t->GetEntries(); 
+
   if(VERBOSE) cout << " > sample weight: " << (isMC>0 ? string(Form("weight*PUweight*trigger*weightCSV[ %d ]", pos_weight1)) : "1.0" ) ;
   if(isMC==2){
 
@@ -528,16 +563,56 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     cout << string(Form("*SCALEsyst[ %d ]", equivalent_pos_weight2  ));
 
   }
+  else{
+    // make sure that for not ttjets samples we don't evaluate scale unc.
+    equivalent_pos_weight2 = 0;
+  }
   if(isMC>0 && corrector) cout << "*corrector->Eval( MET_phi )";
   cout << endl;
 
-  if(VERBOSE) cout << " > total entries: " << entries ;
+  Long64_t pass    = 0;
+  Long64_t entries = t->GetEntries(); 
+  if(VERBOSE) cout << " > total entries: " << entries << endl;
+
 
   // a temporary histogram that contains the prob. vs mass
   TH1F* hTmp      = new TH1F("hTmp", "", 500,0,500);
 
+  Long64_t quantile20 = firstentry + nentries*1/5;
+  Long64_t quantile40 = firstentry + nentries*2/5;
+  Long64_t quantile60 = firstentry + nentries*3/5;
+  Long64_t quantile80 = firstentry + nentries*4/5;
+
   // loop over tree entries
-  for (Long64_t i = 0; i < entries ; i++){
+  for (Long64_t i = firstentry; i < firstentry+nentries ; i++){
+    
+    if( i>= entries ) continue;
+
+    if( i==firstentry ){
+      cout << "\e[1;32m   [                         ] (0%)\r\e[0m";
+      cout.flush();
+    }
+    if( i==quantile20 ){
+      cout << "\e[1;32m   [#####                    ] (20%)\r\e[0m";
+      cout.flush();
+    }
+    if( i==quantile40 ){
+      cout << "\e[1;32m   [##########               ] (40%)\r\e[0m";
+      cout.flush();
+    }
+    if( i==quantile60 ){
+      cout << "\e[1;32m   [###############          ] (60%)\r\e[0m";
+      cout.flush();
+    }
+    if( i==quantile80 ){
+      cout << "\e[1;32m   [####################     ] (80%)\r\e[0m";
+      cout.flush();
+    }
+    if( i==(firstentry+nentries-1) ){
+      cout << "\e[1;32m   [#########################] (100%)\r\e[0m";
+      cout.flush();
+      cout << endl;
+    }
 
     if( analysis==4 ){
       t->SetBranchStatus("*",          0);
@@ -550,9 +625,21 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	t->SetBranchStatus("SCALEsyst",  1);      
 	if( corrector )
 	  t->SetBranchStatus("MET_phi",  1);
+	t->SetBranchStatus("n_b",        1);   
+	t->SetBranchStatus("n_c",        1);   
+	t->SetBranchStatus("n_l",        1);   
+	t->SetBranchStatus("n_g",        1);   
+	t->SetBranchStatus("nSimBs",     1);  
+	t->SetBranchStatus("nMatchSimBs",1);
       }
       t->SetBranchStatus(category,       1);
     }
+
+    t->LoadTree(i);
+    if( treeformula-> EvalInstance() == 0){
+      continue;
+    }
+    pass++;
 
     // first of all, get the entry
     t->GetEntry(i);
@@ -565,6 +652,44 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       if     ( pos_weight2 == -1 ) weightTopPt = 1 + 2.*(weightTopPt-1); // the +1s band      
       else if( pos_weight2 == -2 ) weightTopPt = 1 + 0.*(weightTopPt-1); // the -1s band
       else cout << "This position for top pt reweighting is not valid..." << endl;    
+    }
+
+    if(isMC==2 && pos_weight2>2 ){
+      switch( pos_weight2 ){
+      case 3:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==1 ?  2 : 0; //Q2 Up
+	break;
+      case 4:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==1 ?  1 : 0; //Q2 Down
+	break;
+      case 5:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==2 ?  2 : 0; //Q2 Up
+	break;
+      case 6:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==2 ?  1 : 0; //Q2 Down
+	break;
+      case 7:
+	equivalent_pos_weight2 = nSimBs>2 && nMatchSimBs>=2 ?  2 : 0; //Q2 Up
+	break;
+      case 8:
+	equivalent_pos_weight2 = nSimBs>2 && nMatchSimBs>=2 ?  1 : 0; //Q2 Down
+	break;
+      case 9:
+	equivalent_pos_weight2 = nSimBs>2 && nMatchSimBs<2 ?  2 : 0; //Q2 Up
+	break;
+      case 10:
+	equivalent_pos_weight2 = nSimBs>2 && nMatchSimBs<2 ?  1 : 0; //Q2 Down
+	break;
+      case 11:
+	equivalent_pos_weight2 = nSimBs<=2 ?  2 : 0; //Q2 Up
+	break;
+      case 12:
+	equivalent_pos_weight2 = nSimBs<=2 ?  1 : 0; //Q2 Down
+	break;
+      default:
+	equivalent_pos_weight2 = 0;
+	break;
+      }
     }
 
     // if tt+jets, apply extra top pt reweighting
@@ -760,11 +885,11 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   } // entries
 
 
-  if(VERBOSE) cout << " ----> : " << h->Integral() << " events" << endl;
+  if(VERBOSE) cout << " > passing: " << pass << string(Form(" ( <=> %.1f weighted events)", h->Integral())) << endl;
 
-  dummy->Close();
-  delete dummy;
-  gSystem->Exec("rm /scratch/bianchi/dummy_"+TString(sample.c_str())+".root");
+  //dummy->Close();
+  //delete dummy;
+  //gSystem->Exec("rm /scratch/bianchi/dummy_"+TString(sample.c_str())+".root");
   return;
 
 }
@@ -824,25 +949,25 @@ int main(int argc, const char* argv[])
 
   PythonProcessDesc builder(argv[1]);
   const edm::ParameterSet& in = builder.processDesc()->getProcessPSet()->getParameter<edm::ParameterSet>("fwliteInput");
-  string name =  ( in.getParameter<string>  ("name" ) );
-  string version  =  ( in.getParameter<string>  ("version" ) );
-  string extraname  =  ( in.getParameter<string>  ("extraname" ) );
-  TString fname =  TString( (in.getParameter<string>  ("fname")).c_str() );
-  TString  inputpath=  TString( (in.getParameter<string>  ("inputpath")).c_str() );
-  TString  directory=  TString( (in.getParameter<string>  ("directory")).c_str() );
-  string cut  =  ( in.getParameter<string>  ("cut" ) );
-  TString category =  TString( ( in.getParameter<string>  ("category" ) ).c_str() );
-  int doMEM   =  ( in.getParameter<int>  ("doMEM" ) );
-  float fact1   =  ( in.getParameter<double>  ("fact1" ) );
-  float fact2   =  ( in.getParameter<double>  ("fact2" ) );
-  float factbb   =  ( in.getParameter<double>  ("factbb" ) );
-  float lumiScale  =  ( in.getParameter<double>  ("lumiScale" ) );
-  int nBins  =  ( in.getParameter<int>  ("nBins" ) );
-  int splitFirstBin  =  ( in.getParameter<int>  ("splitFirstBin" ) );
-  vector<double> binvec  =  ( in.getParameter<vector<double> >  ("binvec" ) );
+  string name             =  ( in.getParameter<string>  ("name" ) );
+  string version          =  ( in.getParameter<string>  ("version" ) );
+  string extraname        =  ( in.getParameter<string>  ("extraname" ) );
+  TString fname           =  TString( (in.getParameter<string>  ("fname")).c_str() );
+  TString  inputpath      =  TString( (in.getParameter<string>  ("inputpath")).c_str() );
+  TString  directory      =  TString( (in.getParameter<string>  ("directory")).c_str() );
+  string cut              =  ( in.getParameter<string>  ("cut" ) );
+  TString category        =  TString( ( in.getParameter<string>  ("category" ) ).c_str() );
+  int doMEM               =  ( in.getParameter<int>     ("doMEM" ) );
+  float fact1             =  ( in.getParameter<double>  ("fact1" ) );
+  float fact2             =  ( in.getParameter<double>  ("fact2" ) );
+  float factbb            =  ( in.getParameter<double>  ("factbb" ) );
+  float lumiScale         =  ( in.getParameter<double>  ("lumiScale" ) );
+  int nBins               =  ( in.getParameter<int>     ("nBins" ) );
+  int splitFirstBin       =  ( in.getParameter<int>     ("splitFirstBin" ) );
+  vector<double> binvec   =  ( in.getParameter<vector<double> >  ("binvec" ) );
   vector<string> samples  =  ( in.getParameter<vector<string> >  ("samples" ) );
-  int nparts =  ( in.getParameter<int>    ("nparts" ) );
-  int part   =  ( in.getParameter<int>    ("part" ) );
+  int nparts              =  ( in.getParameter<int>    ("nparts" ) );
+  int part                =  ( in.getParameter<int>    ("part" ) );
 
   string nJob = "";
   if( argc==3 )
@@ -1453,14 +1578,35 @@ int main(int argc, const char* argv[])
       }
 
       int pos_weight2 = 0;
-      if( syst_name.find( th_sys_names[0] )  !=string::npos )
+      if( syst_name.find( "Q2ScaleUp"   )  !=string::npos )
 	pos_weight2 = 2;
-      if( syst_name.find( th_sys_names[1] )  !=string::npos )
+      if( syst_name.find( "Q2ScaleDown" )  !=string::npos )
 	pos_weight2 = 1;
-      if( syst_name.find( th_sys_names[2] )  !=string::npos )
+      if( syst_name.find( "TopPtUp"     )  !=string::npos )
 	pos_weight2 = -1;
-      if( syst_name.find( th_sys_names[3] )  !=string::npos )
+      if( syst_name.find( "TopPtDown"   )  !=string::npos )
 	pos_weight2 = -2;
+      if( syst_name.find( "Q2Scale1pUp"   )  !=string::npos )
+	pos_weight2 = 3;
+      if( syst_name.find( "Q2Scale1pDown" )  !=string::npos )
+	pos_weight2 = 4;
+      if( syst_name.find( "Q2Scale2pUp"   )  !=string::npos )
+	pos_weight2 = 5;
+      if( syst_name.find( "Q2Scale2pDown" )  !=string::npos )
+	pos_weight2 = 6;
+      if( syst_name.find( "Q2ScaleHFbbUp"   )  !=string::npos )
+	pos_weight2 = 7;
+      if( syst_name.find( "Q2ScaleHFbbDown" )  !=string::npos )
+	pos_weight2 = 8;
+      if( syst_name.find( "Q2ScaleHFbUp"   )   !=string::npos )
+	pos_weight2 = 9;
+      if( syst_name.find( "Q2ScaleHFbDown" )   !=string::npos )
+	pos_weight2 = 10;
+      if( syst_name.find( "Q2ScaleLFUp"   )    !=string::npos )
+	pos_weight2 = 11;
+      if( syst_name.find( "Q2ScaleLFDown" )    !=string::npos )
+	pos_weight2 = 12;
+
 
 
       // fill the histogram
@@ -1815,6 +1961,10 @@ int main(int argc, const char* argv[])
 
       // do it only once per systematic
       if( sy%2==0 ){
+
+	bool isNotForHFbb = sys_name.find("LF") != string::npos || (sys_name.find("HFb")!=string::npos && sys_name.find("HFbb")==string::npos );
+	bool isNotForHFb  = sys_name.find("LF") != string::npos || sys_name.find("HFbb")!=string::npos;
+	bool isNotForLF   = sys_name.find("HFb")!= string::npos ;
 	
 	if( sys_name.find("Up")!=string::npos )
 	  sys_name.erase( sys_name.find("Up"),   2 );
@@ -1827,9 +1977,18 @@ int main(int argc, const char* argv[])
 	
 	line = sys_name+"                 shape  ";                              
 	if( isTTH125there )     line += " -         ";       
-	if( isTTJetsHFbbthere ) line += "1.0        ";       
-	if( isTTJetsHFbthere )  line += "1.0        ";       
-	if( isTTJetsLFthere )   line += "1.0        ";       
+	if( isTTJetsHFbbthere ) {
+	  if( !isNotForHFbb ) line += "1.0        ";  
+	  else                line += " -         ";       
+	}     	
+	if( isTTJetsHFbthere){
+	  if( !isNotForHFb ) line += "1.0        "; 
+	  else               line += " -         ";         
+	}
+	if( isTTJetsLFthere ) {
+	  if( !isNotForLF ) line += "1.0        ";       
+	  else              line += " -         "; 
+	}
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += " -         ";
 	out<<line;
