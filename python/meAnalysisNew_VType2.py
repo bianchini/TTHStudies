@@ -13,6 +13,8 @@ process.fwliteInput = cms.PSet(
     outFileName   = cms.string("./root/MEAnalysisNew.root"),
     pathToTF      = cms.string("./root/transferFunctionsNew_partonE_new.root"),
     pathToCP      = cms.string("./root/ControlPlotsNew_new.root"),
+    pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
+
     pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt"+VType+"/v2/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
@@ -144,8 +146,8 @@ process.fwliteInput = cms.PSet(
 
 
     cms.PSet(
-    skip     = cms.bool(False),  
-    name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'+VType),
+    skip     = cms.bool(True),  
+    name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6_v2'+VType),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
     xSec     = cms.double(0.1302*0.569)
@@ -406,5 +408,7 @@ process.fwliteInput = cms.PSet(
     doJECdown  = cms.untracked.int32(0),
     doJERup    = cms.untracked.int32(0),
     doJERdown  = cms.untracked.int32(0),
+
+    doGenLevelAnalysis  = cms.untracked.int32(1)
 
     )

@@ -1,7 +1,7 @@
 import FWCore.ParameterSet.Types  as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-VType     = "_VType1"
+VType     = ""
 
 xsecTT_SL = 103.0
 xsecTT_FL = 24.8
@@ -13,6 +13,8 @@ process.fwliteInput = cms.PSet(
     outFileName   = cms.string("./root/MEAnalysisNew.root"),
     pathToTF      = cms.string("./root/transferFunctionsNew_partonE_new.root"),
     pathToCP      = cms.string("./root/ControlPlotsNew_new.root"),
+    pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
+
     pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt"+VType+"/v2/"),
     ordering      = cms.string("DiJetPt_"),
     lumi          = cms.double(12.1),
@@ -179,7 +181,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTZJets_8TeV-madgraph'+VType),
+    name     = cms.string('TTZJets_8TeV-madgraph_v2'+VType),
     nickName = cms.string('TTZ'),
     color    = cms.int32(18),
     xSec     = cms.double(0.2057),
@@ -188,7 +190,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_SL),
@@ -196,7 +198,7 @@ process.fwliteInput = cms.PSet(
 
     cms.PSet(
     skip     = cms.bool(True),  
-    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph-part'+VType),
+    name     = cms.string('TTJets_FullLeptMGDecays_8TeV-madgraph'+VType),
     nickName = cms.string('TTJetsFullLept'),
     color    = cms.int32(41),
     xSec     = cms.double(xsecTT_FL),
@@ -258,6 +260,7 @@ process.fwliteInput = cms.PSet(
     doubleGaussianB  = cms.untracked.int32(1),
     useBtag          = cms.untracked.int32(1),
     selectByBTagShape= cms.untracked.int32(1),
+    useRegression    = cms.untracked.int32(0),
     
     printout     = cms.int32(0),
     debug        = cms.int32(0),   
@@ -292,4 +295,6 @@ process.fwliteInput = cms.PSet(
     doJERup    = cms.untracked.int32(0),
     doJERdown  = cms.untracked.int32(0),
 
+    doGenLevelAnalysis  = cms.untracked.int32(1)
+    
     )
