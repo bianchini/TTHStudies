@@ -65,8 +65,10 @@ c      print *, "P(i,j) ", P(i,j)
      & use_coli_cache, check_Ward_tree, check_Ward_loop, out_symmetry,
      & leading_colour)
 c      print *, "Param init"
+c      it was set_permutation_ppHtt_ttxHgg_1
       call set_permutation_ppHtt_ttxHgg_1([4, 5, 3, 2, 1])
 c      print *, "set_permut"
+c      it was AMP2tree_ppHtt_ttxHgg_1
       call AMP2tree_ppHtt_ttxHgg_1(P, M2)
 c      print *, "Amp2"
       end 
