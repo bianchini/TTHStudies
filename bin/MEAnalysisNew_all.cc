@@ -185,6 +185,7 @@ int main(int argc, const char* argv[])
   int   useMET           ( in.getUntrackedParameter<int>    ("useMET",             1));
   int   useTF            ( in.getUntrackedParameter<int>    ("useTF",              1));
   int   usePDF           ( in.getUntrackedParameter<int>    ("usePDF",             1));
+  int   useAnalyticalFormula ( in.getUntrackedParameter<int>    ("useAnalyticalFormula",             0));
   int   norm             ( in.getUntrackedParameter<int>    ("norm",               0));
   int   hypo             ( in.getUntrackedParameter<int>    ("hypo",               0));
   int   SoB              ( in.getUntrackedParameter<int>    ("SoB",                1));
@@ -436,6 +437,7 @@ int main(int argc, const char* argv[])
   meIntegrator->setUseMET(useMET);
   meIntegrator->setUseTF (useTF);
   meIntegrator->setUsePDF(usePDF);
+  meIntegrator->setUseAnalyticalFormula(useAnalyticalFormula);
 
   // use double-gaussian for b quark energy TF
   meIntegrator->setUseRefinedTF(doubleGaussianB);
@@ -2014,18 +2016,15 @@ int main(int argc, const char* argv[])
 	      if     ( doCSVup  ) csv =  TMath::Max(csv_upBC,   csv_upL);
 	      else if( doCSVdown) csv =  TMath::Min(csv_downBC, csv_downL);
 	      else{}
+	    
+	      // if we apply SF for b-tag, or it is data, then deafult is 'reco' csv
+	      if( useCSVcalibration || !isMC ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
 
 	      // FIX the b-tagger output 
 	      //  ==> Min needed because in csvUp, csv can exceed 1..., 
 	      //      Max needed because we crunch  [-inf,0[ -> {0.}
 	      csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
-
-	      // if we apply SF for b-tag, then deafult is 'reco' csv
-	      if( useCSVcalibration ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
-
-	      // if running on data,deafult is 'reco' csv (dummy: if data, csv_nominal == csv)
-	      if( !isMC )             csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];	     
-	    	      	      
+      
 	      // the jet observables (p4 and csv)
 	      JetObservable myJet;
 	      myJet.p4     = p4;
@@ -2303,7 +2302,7 @@ int main(int argc, const char* argv[])
       jetsAboveCut_ = jetsAboveCut;
 
       // continue if not enough jets
-      if( jetsAboveCut_<jetMultLoose ) { //|| hJetAmong_ < 2) //fix 
+      if( jetsAboveCut_<jetMultLoose ) {
 	if( debug>=2 ){
 	  cout << "Rejected by min jet cut (>= " <<jetMultLoose << " jets above " << jetPtLoose << " GeV)" << endl ;
 	  cout << " => go to next event!" << endl;
