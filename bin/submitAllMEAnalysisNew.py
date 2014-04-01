@@ -10,10 +10,14 @@ sys.path.append('./')
 
 import FWCore.ParameterSet.Config as cms
 
-#### mass scan
+# mass scan
+
 massesH     = cms.vdouble(125)
-#massesH     = cms.vdouble(55., 65., 75., 85., 95., 105., 115., 125., 135., 145., 155., 165., 185., 205., 225., 250., 275., 300.)
+#massesH     = cms.vdouble(45., 55., 65., 75., 85., 95., 105., 115., 125., 135., 145., 155., 165., 185., 205., 225., 250., 275., 300.)
 massesT     = cms.vdouble(174.3)
+#massesT     = cms.vdouble(115., 125., 135., 145., 155., 165., 175., 185., 195., 205.,215., 225.)
+
+# cetral mass values
 MH          = 125.00
 MT          = 174.30
 
@@ -50,6 +54,16 @@ csv_WP_T = 0.898
 
 # select bt btag_LR
 selectByBTagShape = 0
+
+# an extra name for the output files
+extraoutname = ""
+if len(massesH)>1:
+    extraoutname = "MHscan_"
+if len(massesT)>1:
+    extraoutname = "MTscan_"
+
+# run integral optimization
+integralOption2 = 1
 
 
 def submitMEAnalysisNew(type,
@@ -88,7 +102,7 @@ def submitMEAnalysisNew(type,
         else:
             sam.skip = cms.bool(False)
             
-    process.fwliteInput.outFileName      = cms.string('../root/MEAnalysisNew_'+script+'.root')
+    process.fwliteInput.outFileName      = cms.string('../root/MEAnalysisNew_'+extraoutname+script+'.root')
     process.fwliteInput.pathToFile       = cms.string('dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/')
 
     if useRegression:
@@ -107,6 +121,8 @@ def submitMEAnalysisNew(type,
     process.fwliteInput.useTF            = cms.int32(useTF)
     process.fwliteInput.usePDF           = cms.int32(usePDF)
 
+    process.fwliteInput.integralOption2  = cms.untracked.int32( integralOption2 )
+
     process.fwliteInput.selectByBTagShape = cms.untracked.int32(selectByBTagShape)
     
     if re.search("VType0",   type )!=None or re.search("VType1",   type )!=None:
@@ -115,13 +131,33 @@ def submitMEAnalysisNew(type,
         process.fwliteInput.doType7            = cms.untracked.int32(0)
     else:
         process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+
+        if len(massesH) == 1 and len(massesT) == 1:
+            process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        else:
+            process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(0)
+
         process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+
+        if len(massesH) == 1 and len(massesT) == 1:
+            process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        else:
+            process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(0)
+
         process.fwliteInput.doType0            = cms.untracked.int32(not selectByBTagShape)
-        process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
+
+        if len(massesH) == 1 and len(massesT) == 1:
+            #process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
+            process.fwliteInput.doType1            = cms.untracked.int32(0)
+        else:
+            process.fwliteInput.doType1            = cms.untracked.int32(0)
+
         process.fwliteInput.doType2            = cms.untracked.int32(not selectByBTagShape)
-        process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
+
+        if len(massesH) == 1 and len(massesT) == 1:
+            process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
+        else:
+            process.fwliteInput.doType3            = cms.untracked.int32(0)
 
     
     process.fwliteInput.btag_prob_cut_6jets = cms.untracked.double(btag_prob_cut_6jets)
@@ -154,8 +190,7 @@ def submitMEAnalysisNew(type,
     process.fwliteInput.speedup             = cms.untracked.int32(0)
     process.fwliteInput.ntuplizeAll         = cms.untracked.int32(0)
 
-
-
+ 
     out = open(jobName+'.py','w')
     out.write(process.dumpPython())
    
@@ -241,7 +276,7 @@ def submitFullMEAnalysisNew( type, analysis ):
         evs_per_job =   4250000/2  # ---> <~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
 
     ###################################################### TTJets FL
     ######################################################
@@ -259,7 +294,7 @@ def submitFullMEAnalysisNew( type, analysis ):
          evs_per_job = 404000/2  # ---> ~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown, i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown, i*evs_per_job+1, (i+1)*evs_per_job )
 
     ###################################################### TTH
     ######################################################
@@ -292,21 +327,21 @@ def submitFullMEAnalysisNew( type, analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
     # DYJets50
     sample  = 'DYJets50'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
     # WJets 
     sample  = 'WJets'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
     ###################################################### Single-top
     ######################################################
@@ -316,42 +351,42 @@ def submitFullMEAnalysisNew( type, analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
         
    # Tt
     sample  = 'Tt'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Ts
     sample  = 'Ts'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # TbartW
     sample  = 'TbartW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Tbart
     sample  = 'Tbart'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # Tbars
     sample  = 'Tbars'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
 
     ###################################################### Di-boson
@@ -363,21 +398,21 @@ def submitFullMEAnalysisNew( type, analysis ):
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # WZ
     sample  = 'WZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
    # ZZ
     sample  = 'ZZ'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
 
     ###################################################### TTZ
@@ -396,14 +431,14 @@ def submitFullMEAnalysisNew( type, analysis ):
          evs_per_job = 60000/2    # ---> ~ 40/job
     for i in range(num_of_jobs):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,i*evs_per_job+1, (i+1)*evs_per_job )
 
     # TTW
     sample  = 'TTW'
     counter = 0
     for i in range(1):
         counter = counter + 1
-        submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
+        #submitMEAnalysisNew(type,'SL_'+type+'_'+analysis+'_'+sample+'_p'+str(counter), sample, doCSVup, doCSVdown, doJECup, doJECdown, doJERup, doJERdown,0, -1 )
 
 
     ###################################################### Data
@@ -509,7 +544,7 @@ def submitFullMEAnalysisNew( type, analysis ):
 ###########################################
 
 
-analyses = ['nominal_v4',
+analyses = ['nominal_test',
             #'csvUp_v2',
             #'csvDown_v2',
             #'JECUp_v2',
