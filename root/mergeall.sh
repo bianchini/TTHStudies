@@ -24,6 +24,7 @@ ls -ltr
 
 if [ $DOSYS == 0 ] || [ $DOSYS == 2 ] ; then
     ./hadd.sh  $1${NOMINAL}_$2_TTJetsSemiLept  $NAME
+    ./hadd.sh  $1${NOMINAL}_$2_TTJetsFullHad   $NAME
     ./hadd.sh  $1${NOMINAL}_$2_TTJetsFullLept  $NAME
     ./hadd.sh  $1${NOMINAL}_$2_TTH125          $NAME
     ./hadd.sh  $1${NOMINAL}_$2_TTZ             $NAME
@@ -86,10 +87,10 @@ if [ $DOSYS == 0 ] || [ $DOSYS == 2 ] ; then
 	fi
     fi
 
-    if ls MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root  &> /dev/null ; then
-	hadd -f MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJets.root    MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root 
+    if ls MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullHad.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root  &> /dev/null ; then
+	hadd -f MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJets.root  MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root  MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullHad.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root 
 	if ls MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJets.root  &> /dev/null ; then
-	    rm MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root
+	    rm MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullLept.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsFullHad.root MEAnalysis${NAME}_$1${NOMINAL}_$2_TTJetsSemiLept.root
 	fi
     fi
 fi

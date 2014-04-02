@@ -1,7 +1,7 @@
 #! /bin/sh
 
 
-VERSION="all_rec_std"
+VERSION="all_CSVcalibration_rec_std"
 
 data=$(ls *${VERSION}*)
 outdir="srm://t3se01.psi.ch:8443/srm/managerv2?SFN=/pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/"

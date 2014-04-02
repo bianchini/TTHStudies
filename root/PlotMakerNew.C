@@ -43,7 +43,7 @@
 
 typedef TMatrixT<double> TMatrixD;
 
-#define RUNONDATA 1
+#define RUNONDATA 0
 
 
 
@@ -182,7 +182,8 @@ pair<double,double> getMaxValue( TH1F* hMassProb){
 
 
 
-void plot_category(string type = "MEM", 
+void plot_category(string dir  = "Mar25_2014",
+		   string type = "MEM", 
 		   string cat  = "cat1",
 		   string tag = "New_rec_std_byLLR_bj",
 		   string header = "Cat 1",
@@ -219,11 +220,12 @@ void plot_category(string type = "MEM",
   leg->SetFillColor(10);
   leg->SetTextSize(0.04); 
 
-  THStack* aStack = new THStack("aStack","CMS preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1};  L_{S}/(L_{S}+L_{B}) ; events ");
+  THStack* aStack = new THStack("aStack","CMS preliminary #sqrt{s}=8 TeV, L=19.6 fb^{-1}; P_{s/b} ; events ");
 
   vector<string> samples;
   samples.push_back("SingleT");
   samples.push_back("TTV");
+  //samples.push_back("EWK");
   samples.push_back("TTJetsHFbb");
   samples.push_back("TTJetsHFb");
   samples.push_back("TTJetsLF");
@@ -235,7 +237,7 @@ void plot_category(string type = "MEM",
   TH1F* hData = 0;
   TH1F* hErr  = 0;
 
-  TFile* f = TFile::Open(("datacards/Mar17_2014/"+type+"_"+tag+".root").c_str());
+  TFile* f = TFile::Open(("datacards/"+dir+"/"+type+"_"+tag+".root").c_str());
   if(f==0 || f->IsZombie() ) return;
 
 
@@ -301,73 +303,6 @@ void plot_category(string type = "MEM",
 
     }
 
-    /*
-    if( hname.find("csvUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_csvUp==0 ) h_csvUp = (TH1F*)hist->Clone("csvUp");
-      else             h_csvUp->Add( hist );
-      cout << "Merge csvUp" << endl; 
-    }
-
-    if( hname.find("JECUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_JECUp==0 ) h_JECUp = (TH1F*)hist->Clone("JECUp");
-      else             h_JECUp->Add( hist );	    	
-      cout << "Merge JECUp" << endl; 
-    }
-
-    if( hname.find("JERUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_JERUp==0 ) h_JERUp = (TH1F*)hist->Clone("JERUp");
-      else             h_JERUp->Add( hist );
-      cout << "Merge JERUp" << endl; 	    	
-    }
-
-    if( hname.find("lumiUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_lumiUp==0 ) h_lumiUp = (TH1F*)hist->Clone("lumiUp");
-      else              h_lumiUp->Add( hist );	    	
-    }
-
-    if( hname.find("pdf_ggUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_pdf_ggUp==0 ) h_pdf_ggUp = (TH1F*)hist->Clone("pdf_ggUp");
-      else                h_pdf_ggUp->Add( hist );	    	
-      cout << "Merge lumiUp" << endl; 
-    }
-
-    if( hname.find("QCDscale_TTbbUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_QCDscale_TTbbUp==0 ) h_QCDscale_TTbbUp = (TH1F*)hist->Clone("QCDscale_TTbbUp");
-      else                h_QCDscale_TTbbUp->Add( hist );	    	
-      cout << "Merge QCDscale_TTbbUp" << endl; 
-    }
-
-   if( hname.find("QCDscale_TTbUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_QCDscale_TTbUp==0 ) h_QCDscale_TTbUp = (TH1F*)hist->Clone("QCDscale_TTbUp");
-      else             h_QCDscale_TTbUp->Add( hist );	  
-      cout << "Merge QCDscale_TTbUp" << endl;   	
-    }
-
-   if( hname.find("QCDscale_TTJetsHFUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_QCDscale_TTJetsHFUp==0 ) h_QCDscale_TTJetsHFUp = (TH1F*)hist->Clone("QCDscale_TTJetsHFUp");
-      else             h_QCDscale_TTJetsHFUp->Add( hist );
-      cout << "Merge QCDscale_TTJetsHFUp" << endl; 	    	
-    }
-   
-   if( hname.find("QCDscale_TTJetsLFUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_QCDscale_TTJetsLFUp==0 ) h_QCDscale_TTJetsLFUp = (TH1F*)hist->Clone("QCDscale_TTJetsLFUp");
-      else             h_QCDscale_TTJetsLFUp->Add( hist );
-      cout << "Merge QCDscale_TTJetsLFUp" << endl; 	    		    	
-    }
-
-   if( hname.find("Norm_TTVUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_Norm_TTVUp==0 ) h_Norm_TTVUp = (TH1F*)hist->Clone("Norm_TTVUp");
-      else             h_Norm_TTVUp->Add( hist );
-      cout << "Merge Norm_TTVUp" << endl; 	    		    	
-    }
-
-   if( hname.find("Norm_SingleTUp")!=string::npos && hname.find("TTH125")==string::npos && hname.find("data")==string::npos ){
-      if( h_Norm_SingleTUp==0 ) h_Norm_SingleTUp = (TH1F*)hist->Clone("Norm_SingleTUp");
-      else             h_Norm_SingleTUp->Add( hist );
-      cout << "Merge Norm_SingleTUp" << endl; 	    		    		    	
-    }
-    */
-
   }
 
   cout << endl << "SUMMARY: " << endl;
@@ -397,7 +332,7 @@ void plot_category(string type = "MEM",
     if( samples[sample].find("TTH125") != string::npos ){
       hS = (TH1F*)h->Clone("hS");
       hS->Reset();
-      hS->Add(h,5.0);
+      hS->Add(h,10.0);
       hS->SetLineWidth(3);
       hS->SetLineStyle(kDashed);
       hS->SetLineColor(kRed);
@@ -483,20 +418,7 @@ void plot_category(string type = "MEM",
     float syst_b2 = 0.;
     for( map<string,TH1F*>::iterator it = h_Ups.begin() ; it != h_Ups.end() ; it++){
       if( (it->second) ) syst_b2 += TMath::Power(hErr->GetBinContent(b)- (it->second)->GetBinContent(b), 2);
-    }
-    /*
-    if( h_csvUp ) syst_b2 += (hErr->GetBinContent(b)-h_csvUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_csvUp->GetBinContent(b));
-    if( h_JECUp ) syst_b2 += (hErr->GetBinContent(b)-h_JECUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JECUp->GetBinContent(b));
-    if( h_JERUp ) syst_b2 += (hErr->GetBinContent(b)-h_JERUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_JERUp->GetBinContent(b));
-    if( h_lumiUp ) syst_b2 += (hErr->GetBinContent(b)-h_lumiUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_lumiUp->GetBinContent(b));
-    if( h_pdf_ggUp ) syst_b2 += (hErr->GetBinContent(b)-h_pdf_ggUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_pdf_ggUp->GetBinContent(b));
-    if( h_QCDscale_TTbbUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTbbUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTbbUp->GetBinContent(b));
-    if( h_QCDscale_TTbUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTbUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTbUp->GetBinContent(b));
-    if( h_QCDscale_TTJetsHFUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTJetsHFUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTJetsHFUp->GetBinContent(b));
-    if( h_QCDscale_TTJetsLFUp ) syst_b2 += (hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_QCDscale_TTJetsLFUp->GetBinContent(b));
-    if( h_Norm_TTVUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_TTVUp->GetBinContent(b));
-    if( h_Norm_SingleTUp ) syst_b2 += (hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b))*(hErr->GetBinContent(b)-h_Norm_SingleTUp->GetBinContent(b));
-    */
+    }   
     hErr->SetBinError(b, sqrt(hErr->GetBinError(b)*hErr->GetBinError(b) + syst_b2) );
   }
 
@@ -504,16 +426,18 @@ void plot_category(string type = "MEM",
   hErr->GetYaxis()->SetTitle("Events");
   if( tag.find("_sb") != string::npos )
     hErr->GetXaxis()->SetTitle("P_{s/b}");
+  if( tag.find("_sb_nb") != string::npos )
+    hErr->GetXaxis()->SetTitle("P_{s/b}^{1 perm}");
   if( tag.find("_bj") != string::npos )
     hErr->GetXaxis()->SetTitle("P_{b/j}");
 
   if(RUNONDATA==0)
-    hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+    hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
   else
-    hErr->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+    hErr->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
   hErr->SetTitleSize  (0.04,"X");
   hErr->SetTitleOffset(0.95,"X");
-  float max =  TMath::Max(float(hErr->GetMaximum()*1.35),(hData!=0 ? hData->GetMaximum()*1.35 : -1.));
+  float max =  TMath::Max(float(hErr->GetMaximum()*1.45),(hData!=0 ? hData->GetMaximum()*1.45 : -1.));
   hErr->GetYaxis()->SetRangeUser(0., max );
   hErr->SetLineColor(kBlack);
 
@@ -528,7 +452,7 @@ void plot_category(string type = "MEM",
   //hErr->Draw("HISTE1");
   aStack->Draw("HISTSAME");
   leg->SetHeader( header.c_str() );
-  leg->AddEntry(hS, "signal x 5", "L");
+  leg->AddEntry(hS, "signal x 10", "L");
   hS->Draw("HISTSAME");
   hErr_clone  ->Draw("E2SAME");
 
@@ -561,8 +485,9 @@ void plot_category(string type = "MEM",
 
   cout << "Signal = " << hS->Integral()/5. << endl;
 
-  if(0){
-    c1->SaveAs(  ("Plots/Feb24_2014/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
+  if(1){
+    c1->SaveAs(  ("datacards/"+dir+"/Plot_"+cat+"_"+fname+"_"+tag+".png").c_str() );
+    c1->SaveAs(  ("datacards/"+dir+"/Plot_"+cat+"_"+fname+"_"+tag+".pdf").c_str() );
   }
 
   cout << "REMOVE: " << endl;
@@ -575,598 +500,31 @@ void plot_category(string type = "MEM",
 
 void plotAll(){
 
-
-/////////////////////////////////////////////
-
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byCSV_sb",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  return;
-
-/////////////////////////////////////////////
-
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_reg_byLLR_sb",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  return;
-  ////////////////////////////////////////
-  
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 5 (4b3j)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 6 (4b)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  /////////////////////////////////////////////
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 1 (4b2j W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 5 (4b3j)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 6 (4b)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  /////////////////////////////////////////////
-
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byLLR_sb_nb",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  /////////////////////////////////////////////
-
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byLLR_bj",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-
- 
-  
-  //\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
- 
- 
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 5 (4b3j)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 6 (4b)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  /////////////////////////////////////////////
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 1 (4b2j W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 5 (4b3j)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 6 (4b)",
-		 "Scale",
-		 0, 
-		 1.6, 1.6, 1.0
-		 );
-
-
-  /////////////////////////////////////////////
-
-
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byCSV_sb_nb",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  /////////////////////////////////////////////
-
-  
-  plot_category( "MEM", 
-		 "cat1",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 1 (4b2j W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat2",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 2 (4b2j !W-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-
-  plot_category( "MEM", 
-		 "cat3",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 3 (4b1j cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat4",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 4 (4b1j !cs-tag)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat5",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 5 (4b3j)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
-  plot_category( "MEM", 
-		 "cat6",
-		 "New_rec_std_byCSV_bj",
-		 "Cat. 6 (4b)",
-		 "",
-		 0, 
-		 1.0, 1.0, 1.0
-		 );
-
+  /*
+  plot_category("Mar25_2014/with_data","MEM", "cat1", "New_CSVcalibration_rec_std_bj", "SL Cat-1", "", 0);
+  plot_category("Mar25_2014/with_data","MEM", "cat2", "New_CSVcalibration_rec_std_bj", "SL Cat-2", "", 0);
+  plot_category("Mar25_2014/with_data","MEM", "cat3", "New_CSVcalibration_rec_std_bj", "SL Cat-3", "", 0);
+  plot_category("Mar25_2014/with_data","MEM", "cat6", "New_CSVcalibration_rec_std_bj_cat6_bj", "DL", "", 0);
+
+  plot_category("Mar25_2014/with_data","MEM", "cat1", "New_CSVcalibration_rec_std_sb_nb", "SL Cat-1", "", 1);
+  plot_category("Mar25_2014/with_data","MEM", "cat2", "New_CSVcalibration_rec_std_sb_nb", "SL Cat-2", "", 1);
+  plot_category("Mar25_2014/with_data","MEM", "cat3", "New_CSVcalibration_rec_std_sb_nb", "SL Cat-3", "", 1);
+  plot_category("Mar25_2014/with_data","MEM", "cat6", "New_CSVcalibration_rec_std_sb_nb_cat6_sb_nb", "DL", "", 1);
+  */
+  //return;
+
+  plot_category("Mar25_2014/old_categories","MEM", "cat1", "New_CSVcalibration_rec_std_sb", "SL Cat-1", "",   1);
+  plot_category("Mar25_2014/old_categories","MEM", "cat2", "New_CSVcalibration_rec_std_sb", "SL Cat-2", "",   1);
+  plot_category("Mar25_2014/old_categories","MEM", "cat3", "New_CSVcalibration_rec_std_sb", "SL Cat-3", "",   1);
+  plot_category("Mar25_2014/old_categories","MEM", "cat6", "New_CSVcalibration_rec_std_sb", "DL", "", 1);
+
+  //plot_category("Mar25_2014/new_categories","MEM", "cat1_H", "New_CSVcalibration_rec_std_sb", "SL Cat-1 Tight", "", 1);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat1_L", "New_CSVcalibration_rec_std_sb", "SL Cat-1 Loose", "", 0);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat2_H", "New_CSVcalibration_rec_std_sb", "SL Cat-2 Tight", "", 1);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat2_L", "New_CSVcalibration_rec_std_sb", "SL Cat-2 Loose", "", 0);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat3_H", "New_CSVcalibration_rec_std_sb", "SL Cat-3 Tight", "", 1);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat3_L", "New_CSVcalibration_rec_std_sb", "SL Cat-3 Loose", "", 0);
+  //plot_category("Mar25_2014/new_categories","MEM", "cat6_H", "New_CSVcalibration_rec_std_sb_cat6_sb_H", "DL", "", 1);
 
 }
 
@@ -1207,24 +565,37 @@ void plot_limit(string version = "_New",
 
 
   vector<string> categories;        vector<string> names;
-  categories.push_back("MEM_cat1"+version);  names.push_back("Cat 1");
-  categories.push_back("MEM_cat2"+version);  names.push_back("Cat 2");
-  //categories.push_back("MEM_cat3"+version);  names.push_back("Cat 3");
-  categories.push_back("MEM_cat4"+version);  names.push_back("Cat 4");
-  //categories.push_back("MEM_cat5"+version);  names.push_back("Cat 5");
-  categories.push_back("MEM_cat6"+version);  names.push_back("Cat 6"); 
+  
+  
+  categories.push_back("MEM_cat1_H"+version);  names.push_back("SL Cat-1 Tight");
+  categories.push_back("MEM_cat2_H"+version);  names.push_back("SL Cat-2 Tight");
+  categories.push_back("MEM_cat3_H"+version);  names.push_back("SL Cat-3 Tight");
+  categories.push_back("MEM_cat6_H"+version);  names.push_back("DL"); 
+  categories.push_back("MEM_cat1_L"+version);  names.push_back("SL Cat-1 Loose");
+  categories.push_back("MEM_cat2_L"+version);  names.push_back("SL Cat-2 Loose");
+  categories.push_back("MEM_cat3_L"+version);  names.push_back("SL Cat-3 Loose");
   categories.push_back("MEM_SL"+version);       names.push_back("SL comb.");
-  //categories.push_back("DL_cat7");names.push_back();
   categories.push_back("MEM_DL"+version);       names.push_back("DL comb."); 
   categories.push_back("MEM_COMB"+version);     names.push_back("All comb.");
+  
+  
+  /*
+  categories.push_back("MEM_cat1"+version);  names.push_back("SL Cat-1");
+  categories.push_back("MEM_cat2"+version);  names.push_back("SL Cat-2");
+  categories.push_back("MEM_cat3"+version);  names.push_back("SL Cat-3");
+  categories.push_back("MEM_cat6"+version);  names.push_back("DL"); 
+  categories.push_back("MEM_SL"+version);    names.push_back("SL comb.");
+  categories.push_back("MEM_DL"+version);    names.push_back("DL comb."); 
+  categories.push_back("MEM_COMB"+version);  names.push_back("All comb.");
+  */
 
   int nBins = categories.size();
 
   for( int b = 0; b < nBins; b++){
 
     TFile* f = doMLFit ? 
-      TFile::Open(("datacards/Mar10_2014/higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
-      TFile::Open(("datacards/Mar10_2014/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
+      TFile::Open(("datacards/Mar25_2014/new_categories/higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
+      TFile::Open(("datacards/Mar25_2014/new_categories/higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
     if( f==0 ) continue;
     
     Double_t r;
@@ -1261,7 +632,7 @@ void plot_limit(string version = "_New",
 
 
   TMultiGraph *mg = new TMultiGraph();
-  mg->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+  mg->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
 
   TGraphAsymmErrors* observed = new TGraphAsymmErrors(10, X, obsY, expXs ,expXs,  expYs,   expYs);
   TGraphAsymmErrors* expected = new TGraphAsymmErrors(10, X, expY, expXs ,expXs,  expYs,   expYs);
@@ -1384,7 +755,7 @@ void plot_limit(string version = "_New",
   //c1->Modified();
   //c1->Draw();
 
-  TLine* del = new TLine(6., maxY, 6., 0. );
+  TLine* del = new TLine( categories.size()-3, maxY, categories.size()-3, 0. );
   del->SetLineWidth(3);
   del->SetLineStyle(kSolid);
   del->SetLineColor(kBlack);
@@ -1396,7 +767,7 @@ void plot_limit(string version = "_New",
   del_->SetLineColor(kBlack);
   //del_->Draw("SAME");
 
-  TLine* del2 = new TLine(8., maxY, 8., 0. );
+  TLine* del2 = new TLine(categories.size()-1, maxY, categories.size()-1, 0. );
   del2->SetLineWidth(3);
   del2->SetLineStyle(kSolid);
   del2->SetLineColor(kBlack);
@@ -1409,8 +780,8 @@ void plot_limit(string version = "_New",
   //del2_->Draw("SAME");
 
   if(1){
-    c1->SaveAs("Plots/Feb24_2014/Limits"+TString(version.c_str())+".png");
-    //c1->SaveAs("datacards/Limits"+TString(version.c_str())+".pdf");
+    c1->SaveAs("datacards/Mar25_2014/new_categories/Limits"+TString(version.c_str())+".png");
+    c1->SaveAs("datacards/Mar25_2014/new_categories/Limits"+TString(version.c_str())+".pdf");
   }
 
 }
@@ -1434,7 +805,8 @@ void plot_limitAll(){
 
 
 
-void plot_syst(string type = "SL",
+void plot_syst(string input = "",
+	       string type = "SL",
 	       string cat  = "cat1",
 	       string proc = "TTH125",
 	       string syst = "csv",
@@ -1475,7 +847,7 @@ void plot_syst(string type = "SL",
   TH1F* hU = 0;
   TH1F* hD = 0;
 
-  TFile* f = TFile::Open((type+".root").c_str());
+  TFile* f = TFile::Open(("datacards/Mar25_2014/old_categories/"+input+".root").c_str());
   if(f==0 || f->IsZombie() ) return;
 
   for(unsigned int sample = 0; sample < samples.size(); sample++){
@@ -1537,7 +909,7 @@ void plot_syst(string type = "SL",
       hU->GetXaxis()->SetTitle("P_{s/b}(y)");
     else
       hU->GetXaxis()->SetTitle("P_{s/b}(y)");
-    hU->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+    hU->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
     hU->SetTitleSize  (0.04,"X");
     hU->SetTitleOffset(0.95,"X");
     hU->Draw("HISTE");
@@ -1551,7 +923,7 @@ void plot_syst(string type = "SL",
       hD->GetXaxis()->SetTitle("P_{s/b}(y)");
     else
       hD->GetXaxis()->SetTitle("P_{s/b}(y)");
-    hD->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+    hD->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
     hD->SetTitleSize  (0.04,"X");
     hD->SetTitleOffset(0.95,"X");
     hD->Draw("HISTE");
@@ -1560,16 +932,18 @@ void plot_syst(string type = "SL",
   }
 
   leg->SetHeader(header.c_str());
-  leg->AddEntry( hN, (syst+" nominal").c_str(), "L");
   leg->AddEntry( hU, (syst+" up").c_str(),      "L");
+  leg->AddEntry( hN, (syst+" nominal").c_str(), "L");
   leg->AddEntry( hD, (syst+" down").c_str(),    "L");
 
   leg->Draw();
 
   if(1){
-    c1->SaveAs(  ("Plots/"+fname+"_AN"+".png").c_str() );
-    c1->SaveAs(  ("Plots/"+fname+"_AN"+".pdf").c_str() );
+    c1->SaveAs(  ("datacards/Mar25_2014/old_categories/"+fname+".png").c_str() );
   }
+
+  delete c1; delete leg;
+  f->Close();
 
 }
 
@@ -1577,53 +951,36 @@ void plot_syst(string type = "SL",
 
 void plot_systAll(){
 
-  plot_syst("SL", "cat1", "TTH125", "csv", "Cat 1, ttH", "Plots_SL_Cat1_TTH_csv");
-  plot_syst("SL", "cat2", "TTH125", "csv", "Cat 2, ttH", "Plots_SL_Cat2_TTH_csv");
-  plot_syst("SL", "cat3", "TTH125", "csv", "Cat 3, ttH", "Plots_SL_Cat3_TTH_csv");
-  plot_syst("SL", "cat4", "TTH125", "csv", "Cat 4, ttH", "Plots_SL_Cat4_TTH_csv");
-  plot_syst("SL", "cat5", "TTH125", "csv", "Cat 5, ttH", "Plots_SL_Cat5_TTH_csv");
-  plot_syst("DL", "cat6", "TTH125", "csv", "Cat 6, ttH", "Plots_DL_Cat6_TTH_csv");
-  plot_syst("DL", "cat7", "TTH125", "csv", "Cat 7, ttH", "Plots_DL_Cat7_TTH_csv");
+  vector<string> sys;
+  sys.push_back("csv_sys_CSVHF");
+  sys.push_back("csv_sys_CSVLF");
+  sys.push_back("csv_sys_CSVHFStats1");
+  sys.push_back("csv_sys_CSVHFStats2");
+  sys.push_back("Q2Scale");
+  sys.push_back("TopPt");
+  sys.push_back("JEC");
+  sys.push_back("JER");
+  
+  vector<string> samples;
+  samples.push_back("TTH125");
+  samples.push_back("TTJetsHFbb");
+  samples.push_back("TTJetsHFb");
+  samples.push_back("TTJetsLF");
+  samples.push_back("TTV");
 
-  plot_syst("SL", "cat1", "TTJetsHF", "csv", "Cat 1, ttbb", "Plots_SL_Cat1_TTJetsHF_csv");
-  plot_syst("SL", "cat2", "TTJetsHF", "csv", "Cat 2, ttbb", "Plots_SL_Cat2_TTJetsHF_csv");
-  plot_syst("SL", "cat3", "TTJetsHF", "csv", "Cat 3, ttbb", "Plots_SL_Cat3_TTJetsHF_csv");
-  plot_syst("SL", "cat4", "TTJetsHF", "csv", "Cat 4, ttbb", "Plots_SL_Cat4_TTJetsHF_csv");
-  plot_syst("SL", "cat5", "TTJetsHF", "csv", "Cat 5, ttbb", "Plots_SL_Cat5_TTJetsHF_csv");
-  plot_syst("DL", "cat6", "TTJetsHF", "csv", "Cat 6, ttbb", "Plots_DL_Cat6_TTJetsHF_csv");
-  plot_syst("DL", "cat7", "TTJetsHF", "csv", "Cat 7, ttbb", "Plots_DL_Cat7_TTJetsHF_csv");
+  vector<string> cat;
+  cat.push_back("cat1");
+  cat.push_back("cat2");
+  cat.push_back("cat3");
+  cat.push_back("cat6");
 
-  plot_syst("SL", "cat1", "TTJetsLF", "csv", "Cat 1, ttjj", "Plots_SL_Cat1_TTJetsLF_csv");
-  plot_syst("SL", "cat2", "TTJetsLF", "csv", "Cat 2, ttjj", "Plots_SL_Cat2_TTJetsLF_csv");
-  plot_syst("SL", "cat3", "TTJetsLF", "csv", "Cat 3, ttjj", "Plots_SL_Cat3_TTJetsLF_csv");
-  plot_syst("SL", "cat4", "TTJetsLF", "csv", "Cat 4, ttjj", "Plots_SL_Cat4_TTJetsLF_csv");
-  plot_syst("SL", "cat5", "TTJetsLF", "csv", "Cat 5, ttjj", "Plots_SL_Cat5_TTJetsLF_csv");
-  plot_syst("DL", "cat6", "TTJetsLF", "csv", "Cat 6, ttjj", "Plots_DL_Cat6_TTJetsLF_csv");
-  plot_syst("DL", "cat7", "TTJetsLF", "csv", "Cat 7, ttjj", "Plots_DL_Cat7_TTJetsLF_csv");
-
-  plot_syst("SL", "cat1", "TTH125", "JEC", "Cat 1, ttH", "Plots_SL_Cat1_TTH_JEC");
-  plot_syst("SL", "cat2", "TTH125", "JEC", "Cat 2, ttH", "Plots_SL_Cat2_TTH_JEC");
-  plot_syst("SL", "cat3", "TTH125", "JEC", "Cat 3, ttH", "Plots_SL_Cat3_TTH_JEC");
-  plot_syst("SL", "cat4", "TTH125", "JEC", "Cat 4, ttH", "Plots_SL_Cat4_TTH_JEC");
-  plot_syst("SL", "cat5", "TTH125", "JEC", "Cat 5, ttH", "Plots_SL_Cat5_TTH_JEC");
-  plot_syst("DL", "cat6", "TTH125", "JEC", "Cat 6, ttH", "Plots_DL_Cat6_TTH_JEC");
-  plot_syst("DL", "cat7", "TTH125", "JEC", "Cat 7, ttH", "Plots_DL_Cat7_TTH_JEC");
-
-  plot_syst("SL", "cat1", "TTJetsHF", "JEC", "Cat 1, ttbb", "Plots_SL_Cat1_TTJetsHF_JEC");
-  plot_syst("SL", "cat2", "TTJetsHF", "JEC", "Cat 2, ttbb", "Plots_SL_Cat2_TTJetsHF_JEC");
-  plot_syst("SL", "cat3", "TTJetsHF", "JEC", "Cat 3, ttbb", "Plots_SL_Cat3_TTJetsHF_JEC");
-  plot_syst("SL", "cat4", "TTJetsHF", "JEC", "Cat 4, ttbb", "Plots_SL_Cat4_TTJetsHF_JEC");
-  plot_syst("SL", "cat5", "TTJetsHF", "JEC", "Cat 5, ttbb", "Plots_SL_Cat5_TTJetsHF_JEC");
-  plot_syst("DL", "cat6", "TTJetsHF", "JEC", "Cat 6, ttbb", "Plots_DL_Cat6_TTJetsHF_JEC");
-  plot_syst("DL", "cat7", "TTJetsHF", "JEC", "Cat 7, ttbb", "Plots_DL_Cat7_TTJetsHF_JEC");
-
-  plot_syst("SL", "cat1", "TTJetsLF", "JEC", "Cat 1, ttjj", "Plots_SL_Cat1_TTJetsLF_JEC");
-  plot_syst("SL", "cat2", "TTJetsLF", "JEC", "Cat 2, ttjj", "Plots_SL_Cat2_TTJetsLF_JEC");
-  plot_syst("SL", "cat3", "TTJetsLF", "JEC", "Cat 3, ttjj", "Plots_SL_Cat3_TTJetsLF_JEC");
-  plot_syst("SL", "cat4", "TTJetsLF", "JEC", "Cat 4, ttjj", "Plots_SL_Cat4_TTJetsLF_JEC");
-  plot_syst("SL", "cat5", "TTJetsLF", "JEC", "Cat 5, ttjj", "Plots_SL_Cat5_TTJetsLF_JEC");
-  plot_syst("DL", "cat6", "TTJetsLF", "JEC", "Cat 6, ttjj", "Plots_DL_Cat6_TTJetsLF_JEC");
-  plot_syst("DL", "cat7", "TTJetsLF", "JEC", "Cat 7, ttjj", "Plots_DL_Cat7_TTJetsLF_JEC");
+  for( int i = 0 ; i < sys.size() ; i++){
+    for( int j = 0 ; j < samples.size() ; j++){
+      for( int k = 0 ; k < cat.size() ; k++){
+	plot_syst("MEM_New_CSVcalibration_rec_std_sb","MEM", cat[k], samples[j], sys[i], cat[k]+", "+samples[j], "Plots_MEM_"+cat[k]+"_"+samples[j]+"_"+sys[i]);
+      }
+    }
+  }
 
 }
 

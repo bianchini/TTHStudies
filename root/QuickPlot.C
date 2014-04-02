@@ -36,12 +36,9 @@
 
 
 
-void plot_analysis(TString cat   ="SL", 
-		   string header="type==3",
-		   TString title = "",
-		   string fname= "type0",
-		   float fact = 1, float fact2 = 1
-		   ){
+void plot_analysis( string header="syst==0 && type==0",
+		    float fact = 1
+		    ){
 
   gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
@@ -70,60 +67,30 @@ void plot_analysis(TString cat   ="SL",
   leg->SetFillColor(10);
   leg->SetTextSize(0.06); 
 
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTH125.root");
-
-  TFile* fS = TFile::Open("MEAnalysis_"+cat+"_nominal_v7_TTJets.root");
-  TFile* fB = TFile::Open("MEAnalysis_"+cat+"_nominal_v7_TTJets.root");
-
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTH125.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTH125.root");
-
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTJetsSemiLept.root");
-  
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTJetsSemiLept.root");
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTJetsFullLept.root");
-
-
+  TFile* fS = TFile::Open("files/byLLR/CSVcalibration_V3/MEAnalysisNew_all_CSVcalibration_rec_std_TTJets.root");
+  TFile* fB = TFile::Open("MEAnalysisNew_test_analyticalME_v2_rec_std_TTJets.root");
 
   TTree* tS = (TTree*)fS->Get("tree");
   TTree* tB = (TTree*)fB->Get("tree");
 
-  TH1F* hS = new TH1F("hS","Simulation #sqrt{s}=8 TeV, "+title+"; P_{S/B}(y); units",5, 0,1);
+  TH1F* hS = new TH1F("hS","Simulation #sqrt{s}=8 TeV; P_{S/B}(y); units",12, 0,1);
   hS->SetLineColor(kRed);
   hS->SetLineWidth(3);
   hS->SetFillStyle(3005);
   hS->SetFillColor(kRed);
   hS->Sumw2();
-  TH1F* hB = new TH1F("hB","Simulation #sqrt{s}=8 TeV, "+title+"; P_{S/B}(y); units",5, 0,1);
+  TH1F* hB = new TH1F("hB","Simulation #sqrt{s}=8 TeV,; P_{S/B}(y); units",12, 0,1);
   hB->SetLineColor(kBlue);
   hB->SetLineWidth(3);
   hB->SetFillStyle(3004);
   hB->SetFillColor(kBlue);
   hB->Sumw2();
 
-  //tS->Draw(Form("p_125_all_rec/2.5e+16/(p_125_all_rec/2.5e+16+p_125_all_alt_rec/(2.7e+18)/%f)>>hS", fact));
-  //tB->Draw(Form("p_125_all_rec/2.5e+16/(p_125_all_rec/2.5e+16+p_125_all_alt_rec/(2.7e+18)/%f)>>hB", fact));
+  tS->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hS", fact), "weight"*TCut((header+" && nSimBs>=2").c_str()));
+  tB->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hB", fact), "weight"*TCut((header+" && nSimBs>=2").c_str()));
 
-  //tS->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hS", fact), TCut((header+" && nSimBs>2 && nMatchSimBs>=2").c_str()));
-  //tB->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hB", fact), TCut((header+" && nSimBs>2 && nMatchSimBs<2").c_str()));
-
-  //tS->Draw(Form("p_125_all_b_ttbb/((p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hS", fact), TCut((header+" && nSimBs>2  && p_125_all_s_ttbb/(p_125_all_s_ttbb+0.02*((1-0.5)*p_125_all_b_ttbb+0.5*p_125_all_b_ttjj))<0.1").c_str()));
-  //tB->Draw(Form("p_125_all_b_ttbb/((p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hB", fact), TCut((header+" && nSimBs==2 && p_125_all_s_ttbb/(p_125_all_s_ttbb+0.02*((1-0.5)*p_125_all_b_ttbb+0.5*p_125_all_b_ttjj))<0.1").c_str()));
-
-  if(fname.find("DL")!=string::npos){
-    tS->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hS", fact), TCut((header+" && nSimBs>2 && nMatchSimBs>=2").c_str()));
-    tB->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hB", fact), TCut((header+" && nSimBs>2 && nMatchSimBs<2").c_str()));
-  }
-  else{
-    tS->Draw(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*((1-%f)*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hS", fact, fact2, fact2), TCut((header+" && nSimBs>2 && nMatchSimBs>=2").c_str()) );
-    tB->Draw(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*((1-%f)*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hB", fact, fact2, fact2), TCut((header+" && nSimBs>2 && nMatchSimBs<2").c_str()) );
-  }
-
-  cout << "hS=" << hS->Integral() << endl;
-  cout << "hB=" << hB->Integral() << endl;
+  cout << "hS=" << hS->GetEntries() << endl;
+  cout << "hB=" << hB->GetEntries() << endl;
 
   hS->SetTitleSize(0.05,"X");
   hS->SetTitleSize(0.05,"Y");
@@ -153,8 +120,8 @@ void plot_analysis(TString cat   ="SL",
   }
 
   //leg->SetHeader( Form("#sigma(S)/#sigma(B)=%.2f 10^{-2}",1./fact ) );
-  leg->AddEntry(hS,"t#bar{t}bb");
-  leg->AddEntry(hB,"t#bar{t}b");
+  leg->AddEntry(hS,"OLD");
+  leg->AddEntry(hB,"NEW");
   leg->Draw();
 
   TH1F* hRatio = (TH1F*) hS->Clone("hRatio");
@@ -454,64 +421,44 @@ void plot_analysis_MW(TString cat   ="SL",
   leg->SetFillColor(10);
   leg->SetTextSize(0.06); 
 
+  TString version   =  "v4_gen_std" ;
+  TString inputpath = "gsidcap://t3se01.psi.ch:22128//pnfs/psi.ch/cms/trivcat/store/user/bianchi/Trees/MEM/Dec06_2013/WS/";
+
   //TTJetsSemiLept
   TFile* fS = 0;
   if(fname.find("SL")!=string::npos) 
-    fS = TFile::Open("MEAnalysis_SL_nominal_v6_TTH125.root");
+    fS = TFile::Open(inputpath+"MEAnalysisNew_SL_nominal_"+version+"_TTH125.root");
   else
-    fS = TFile::Open("MEAnalysis_DL_nominal_v5_TTH125.root");
+    fS = TFile::Open(inputpath+"MEAnalysisNew_DL_nominal_"+version+"_TTH125.root");
    
   TFile* fB = 0;
   if(fname.find("SL")!=string::npos) 
-    fB = TFile::Open("MEAnalysis_SL_nominal_v6_TTJets.root");
+    fB = TFile::Open(inputpath+"MEAnalysisNew_SL_nominal_"+version+"_TTJets.root");
   else
-    fB = TFile::Open("MEAnalysis_DL_nominal_v5_TTJetsFullLept.root");
-
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTH125.root");
-
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTJetsSemiLept.root");
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTJetsSemiLept.root");
-
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTH125.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTH125.root");
-
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_nSvs_TTJetsSemiLept.root");
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_VType2_nominal_v5_TTJetsSemiLept.root");
-  
-  //TFile* fS = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTJetsSemiLept.root");
-  //TFile* fB = TFile::Open("MEAnalysis_"+cat+"_nominal_v6_TTJetsFullLept.root");
-
+    fB = TFile::Open(inputpath+"MEAnalysisNew_DL_nominal_"+version+"_TTJets.root");
 
 
   TTree* tS = (TTree*)fS->Get("tree");
   TTree* tB = (TTree*)fB->Get("tree");
 
-  TH1F* hS = new TH1F("hS","Simulation #sqrt{s}=8 TeV, "+title+"; P_{S/B}(y); units",20, 0,1);
+  TH1F* hS = new TH1F("hS","Simulation #sqrt{s}=8 TeV "+title+"; P_{S/B}(y); units",20, 0,1);
   hS->SetLineColor(kRed);
   hS->SetLineWidth(3);
   hS->SetFillStyle(3005);
   hS->SetFillColor(kRed);
   hS->Sumw2();
-  TH1F* hB = new TH1F("hB","Simulation #sqrt{s}=8 TeV, "+title+"; P_{S/B}(y); units",20, 0,1);
+  //if( fname=="DL" ) hS->Rebin(2);
+
+  TH1F* hB = new TH1F("hB","Simulation #sqrt{s}=8 TeV "+title+"; P_{S/B}(y); units",20, 0,1);
   hB->SetLineColor(kBlue);
   hB->SetLineWidth(3);
   hB->SetFillStyle(3004);
   hB->SetFillColor(kBlue);
   hB->Sumw2();
+  //if( fname=="DL" ) hB->Rebin(2);
 
-  //tS->Draw(Form("p_125_all_rec/2.5e+16/(p_125_all_rec/2.5e+16+p_125_all_alt_rec/(2.7e+18)/%f)>>hS", fact));
-  //tB->Draw(Form("p_125_all_rec/2.5e+16/(p_125_all_rec/2.5e+16+p_125_all_alt_rec/(2.7e+18)/%f)>>hB", fact));
-
-  tS->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hS", fact), TCut((header+" && nSimBs>2").c_str()));
-  tB->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hB", fact), TCut((header+" && nSimBs==2").c_str()));
-
-  //tS->Draw(Form("p_125_all_b_ttbb/((p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hS", fact), TCut((header+" && nSimBs>2  && p_125_all_s_ttbb/(p_125_all_s_ttbb+0.02*((1-0.5)*p_125_all_b_ttbb+0.5*p_125_all_b_ttjj))<0.1").c_str()));
-  //tB->Draw(Form("p_125_all_b_ttbb/((p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hB", fact), TCut((header+" && nSimBs==2 && p_125_all_s_ttbb/(p_125_all_s_ttbb+0.02*((1-0.5)*p_125_all_b_ttbb+0.5*p_125_all_b_ttjj))<0.1").c_str()));
-
-  //tS->Draw(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*((1-%f)*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hS", fact, fact2, fact2), TCut((header+" && nSimBs>=2").c_str()) );
-  //tB->Draw(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*((1-%f)*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))>>hB", fact, fact2, fact2), TCut((header+" && nSimBs>=2").c_str()) );
+  tS->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hS", fact), TCut((header+" && nSimBs>=2").c_str()));
+  tB->Draw(Form("p_125_all_s/(p_125_all_s+p_125_all_b*%f)>>hB", fact), TCut((header+" && nSimBs>=2").c_str()));
 
   cout << "hS=" << hS->Integral() << endl;
   cout << "hB=" << hB->Integral() << endl;
@@ -526,17 +473,16 @@ void plot_analysis_MW(TString cat   ="SL",
   hB->SetTitleOffset(0.88,"X");
   hB->SetTitleOffset(0.75,"Y");
 
-  if(hS->GetMaximum()>=hB->GetMaximum()){
-    hS->Scale( 1./hS->Integral());
-    hB->Scale( 1./hB->Integral());
+  hS->Scale( 1./hS->Integral());
+  hB->Scale( 1./hB->Integral());
+
+  if(hS->GetMaximum()>=hB->GetMaximum()){  
     hS->SetMaximum(0.4);
     hS->SetMinimum(0.);
     hS->Draw("HISTE");
     hB->Draw("HISTESAME");
   }
   else{
-    hS->Scale( 1./hS->Integral());
-    hB->Scale( 1./hB->Integral());
     hB->SetMaximum(0.4);
     hB->SetMinimum(0.);
     hB->Draw("HISTE");
@@ -558,8 +504,21 @@ void plot_analysis_MW(TString cat   ="SL",
   //hRatio->Draw("HISTE");
   //c1->SaveAs("SoB_"+cat+"_"+fname+".png");
 
+
+  TPaveText *pt1 = new TPaveText(0.61, 0.43, 0.71, 0.49,"brNDC");
+  pt1->SetFillStyle(1001);
+  pt1->SetBorderSize(0);
+  pt1->SetFillColor(kWhite);
+  pt1->SetTextSize(0.09); 
+  if( fname=="SL" )
+    pt1->AddText("single-lepton channel");
+  else
+    pt1->AddText("di-lepton channel");
+  pt1->Draw();
+
+
   if(1)
-    c1->SaveAs(("plot_"+fname+"_AN_CompMadWeight.pdf").c_str());
+    c1->SaveAs(("Plots/WS/Plot_"+fname+"_CompMadWeight.png").c_str());
 
   //c1->SaveAs("ttbb_vs_ttjj.png");
 
@@ -800,7 +759,7 @@ void plot_param(TString header = "Light jet TF",
   c1->SetTicky();
   c1->SetObjectStat(0);
 
-  TFile *f = TFile::Open("../bin/root/ControlPlots_new.root","READ");
+  TFile *f = TFile::Open("../bin/root/ControlPlotsTEST_std_gen.root","READ");
   TH1F* hBestMass = (TH1F*)f->Get(hname);
 
 
@@ -815,14 +774,11 @@ void plot_param(TString header = "Light jet TF",
   TObject* obj = iter();
   while ( obj!=0 ){
     TF1* func = dynamic_cast<TF1*>(obj);
-    //cout << func->GetName() << endl;
     fname = func->GetName();
     obj = iter();
   }
   TF1 *func = hBestMass->GetFunction(fname);
   if(func) func->SetRange(xLow,xHigh);
-  //cout << "Param 0: " << func->GetParameter(0) << endl;
-  //cout << "Param 1: " << func->GetParameter(1) << endl;
 
   hBestMass->SetMarkerStyle(kFullCircle);
   hBestMass->SetMarkerColor(kBlue);
@@ -836,8 +792,11 @@ void plot_param(TString header = "Light jet TF",
   hBestMass->SetTitleOffset(0.83,"Y");
 
   hBestMass->GetXaxis()->SetRangeUser(xLow,xHigh);
-  if(yLow!=-999 && yHigh!=-999)
+  if(func) func->GetXaxis()->SetRangeUser(xLow,xHigh);
+  if(yLow!=-999 && yHigh!=-999){
     hBestMass->GetYaxis()->SetRangeUser(yLow,yHigh);
+    if(func) func->GetYaxis()->SetRangeUser(yLow,yHigh);
+  }
 
   TLegend* leg = new TLegend(0.15,0.65,0.55,0.85,NULL,"brNDC");
   leg->SetHeader( header );
@@ -847,8 +806,10 @@ void plot_param(TString header = "Light jet TF",
   leg->SetTextSize(0.06); 
   if(func) leg->AddEntry(func, param, "L");
 
-  if(func)
-    hBestMass->Draw("PE");
+  if(func){
+    //hBestMass->Draw("PE");
+    func->Draw();
+  }
   else{
     hBestMass->SetFillColor(kRed);
     hBestMass->SetFillStyle(3004);
@@ -857,14 +818,310 @@ void plot_param(TString header = "Light jet TF",
 
   leg->Draw();
 
-  if(1){
+  if(func) cout << "f(50,100,150)=" << string(Form("(%.1f, %.1f, %.1f)",func->Eval(50), func->Eval(100), func->Eval(150))) << endl;
+
+  if(0){
     c1->SaveAs("Plots/Plot_"+hname+"_tf_"+extraLabel+".png");
     c1->SaveAs("Plots/Plot_"+hname+"_tf_"+extraLabel+".pdf");
   }
 
+  delete c1;
+  return;
+}
+
+
+void plot_paramAll(){
+
+  vector<string> hnames;
+  hnames.push_back("resolLightBin0");
+  hnames.push_back("respLightBin0");
+  hnames.push_back("resolLightBin1");
+  hnames.push_back("respLightBin1");
+  hnames.push_back("resolHeavyBin0");
+  hnames.push_back("respHeavyBin0");
+  hnames.push_back("resolHeavyBin1");
+  hnames.push_back("respHeavyBin1");
+  hnames.push_back("respG1HeavyBin0");
+  hnames.push_back("respG2HeavyBin0");
+  hnames.push_back("resolG1HeavyBin0");
+  hnames.push_back("resolG2HeavyBin0");
+  hnames.push_back("respG1HeavyBin1");
+  hnames.push_back("respG2HeavyBin1");
+  hnames.push_back("resolG1HeavyBin1");
+  hnames.push_back("resolG2HeavyBin1");
+
+
+  for(int k = 0 ; k < hnames.size(); k++){
+    cout << hnames[k] << endl;
+    plot_param( "","","",TString(hnames[k])); 
+    cout << endl;
+  }
+
+
+}
+
+
+void plot_param_3(int isB = 1, TString header = "Light jet TF"){
+
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.1);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
+
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TString SG_formula("[0]*exp(-0.5*(x-[1])*(x-[1])/[2]/[2])");
+  TString DG_formula(Form("[0]*( %f*exp(-0.5*(x-[1])*(x-[1])/[2]/[2]) + (1-%f)*exp(-0.5*(x-[4])*(x-[4])/[3]/[3]))",           0.65, 0.65));
+
+  TF1* l_Bin0_1 = new TF1("l_Bin0_1", SG_formula , 0, 400); l_Bin0_1->SetLineWidth(2) ; l_Bin0_1->SetLineColor(kMagenta); l_Bin0_1->SetLineStyle(kSolid);
+  TF1* l_Bin0_2 = new TF1("l_Bin0_2", SG_formula , 0, 400); l_Bin0_2->SetLineWidth(2) ; l_Bin0_2->SetLineColor(kRed);     l_Bin0_2->SetLineStyle(kSolid);
+  TF1* l_Bin0_3 = new TF1("l_Bin0_3", SG_formula , 0, 400); l_Bin0_3->SetLineWidth(2) ; l_Bin0_3->SetLineColor(kBlue);    l_Bin0_3->SetLineStyle(kSolid);
+
+  TF1* l_Bin1_1 = new TF1("l_Bin1_1", SG_formula , 0, 400); l_Bin1_1->SetLineWidth(2) ; l_Bin1_1->SetLineColor(kMagenta); l_Bin1_1->SetLineStyle(kDashed);
+  TF1* l_Bin1_2 = new TF1("l_Bin1_2", SG_formula , 0, 400); l_Bin1_2->SetLineWidth(2) ; l_Bin1_2->SetLineColor(kRed);     l_Bin1_2->SetLineStyle(kDashed);
+  TF1* l_Bin1_3 = new TF1("l_Bin1_3", SG_formula , 0, 400); l_Bin1_3->SetLineWidth(2) ; l_Bin1_3->SetLineColor(kBlue);    l_Bin1_3->SetLineStyle(kDashed);
+  
+  TF1* b_Bin0_1 = new TF1("b_Bin0_1", DG_formula , 0, 400); b_Bin0_1->SetLineWidth(2) ; b_Bin0_1->SetLineColor(kMagenta); b_Bin0_1->SetLineStyle(kSolid);
+  TF1* b_Bin0_2 = new TF1("b_Bin0_2", DG_formula , 0, 400); b_Bin0_2->SetLineWidth(2) ; b_Bin0_2->SetLineColor(kRed);     b_Bin0_2->SetLineStyle(kSolid);
+  TF1* b_Bin0_3 = new TF1("b_Bin0_3", DG_formula , 0, 400); b_Bin0_3->SetLineWidth(2) ; b_Bin0_3->SetLineColor(kBlue);    b_Bin0_3->SetLineStyle(kSolid);
+
+  TF1* b_Bin1_1 = new TF1("b_Bin1_1", DG_formula , 0, 400); b_Bin1_1->SetLineWidth(2) ; b_Bin1_1->SetLineColor(kMagenta); b_Bin1_1->SetLineStyle(kDashed);
+  TF1* b_Bin1_2 = new TF1("b_Bin1_2", DG_formula , 0, 400); b_Bin1_2->SetLineWidth(2) ; b_Bin1_2->SetLineColor(kRed);     b_Bin1_2->SetLineStyle(kDashed);
+  TF1* b_Bin1_3 = new TF1("b_Bin1_3", DG_formula , 0, 400); b_Bin1_3->SetLineWidth(2) ; b_Bin1_3->SetLineColor(kBlue);    b_Bin1_3->SetLineStyle(kDashed);
+ 
+
+  TH1F* h = new TH1F("h"," ; parton energy (GeV) ; transfer function (1/GeV)",1,5,225);
+  h->GetYaxis()->SetRangeUser( 0, 0.07);
+  h->GetYaxis()->SetTitleSize(0.05);
+  h->GetXaxis()->SetTitleSize(0.05);
+
+  h->GetYaxis()->SetTitleOffset(0.95);
+  h->GetXaxis()->SetTitleOffset(0.90);
+
+  TFile *f = TFile::Open("../bin/root/ControlPlotsTEST.root","READ");
+
+
+  TH1F* hBestMass = (TH1F*)f->Get("resolLightBin0");
+  if( !hBestMass ){
+    cout << "No such histogram" << endl;
+    return;
+  }
+  TString fname;
+  TIter iter( hBestMass->GetListOfFunctions() );
+  TObject* obj = iter();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter();
+  }
+  TF1 *func = hBestMass->GetFunction(fname);
+  l_Bin0_1->SetParameter(2, func->Eval(50.) ); l_Bin0_2->SetParameter(2, func->Eval(100.) ); l_Bin0_3->SetParameter(2, func->Eval(150.) );
+  
+  hBestMass = (TH1F*)f->Get("resolLightBin1");
+  if( !hBestMass ){
+    cout << "No such histogram" << endl;
+    return;
+  }
+  TIter iter2( hBestMass->GetListOfFunctions() );
+  obj = iter2();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter2();
+  }
+  func = hBestMass->GetFunction(fname);
+  l_Bin1_1->SetParameter(2, func->Eval(50.) ); l_Bin1_2->SetParameter(2, func->Eval(100.) ); l_Bin1_3->SetParameter(2, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("respLightBin0");
+  if( !hBestMass ){
+    cout << "No such histogram" << endl;
+    return;
+  }
+  TIter iter3( hBestMass->GetListOfFunctions() );
+  obj = iter3();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter3();
+  }
+  func = hBestMass->GetFunction(fname);
+  l_Bin0_1->SetParameter(1, func->Eval(50.) ); l_Bin0_2->SetParameter(1, func->Eval(100.) ); l_Bin0_3->SetParameter(1, func->Eval(150.) );
+  
+  hBestMass = (TH1F*)f->Get("respLightBin1");
+  if( !hBestMass ){
+    cout << "No such histogram" << endl;
+    return;
+  }
+  TIter iter4( hBestMass->GetListOfFunctions() );
+  obj = iter4();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter4();
+  }
+  func = hBestMass->GetFunction(fname);
+  l_Bin1_1->SetParameter(1, func->Eval(50.) ); l_Bin1_2->SetParameter(1, func->Eval(100.) ); l_Bin1_3->SetParameter(1, func->Eval(150.) );
+
+  l_Bin0_1->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin0_1->GetParameter(2) );
+  l_Bin0_2->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin0_2->GetParameter(2) );
+  l_Bin0_3->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin0_3->GetParameter(2) );
+
+  l_Bin1_1->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin1_1->GetParameter(2) );
+  l_Bin1_2->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin1_2->GetParameter(2) );
+  l_Bin1_3->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ l_Bin1_3->GetParameter(2) );
+
+
+  hBestMass = (TH1F*)f->Get("respG1HeavyBin0");
+  TIter iter5( hBestMass->GetListOfFunctions() );
+  obj = iter5();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter5();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin0_1->SetParameter(1, func->Eval(50.) ); b_Bin0_2->SetParameter(1, func->Eval(100.) ); b_Bin0_3->SetParameter(1, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("respG2HeavyBin0");
+  TIter iter6( hBestMass->GetListOfFunctions() );
+  obj = iter6();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter6();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin0_1->SetParameter(4, func->Eval(50.) ); b_Bin0_2->SetParameter(4, func->Eval(100.) ); b_Bin0_3->SetParameter(4, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("resolG1HeavyBin0");
+  TIter iter7( hBestMass->GetListOfFunctions() );
+  obj = iter7();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter7();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin0_1->SetParameter(2, func->Eval(50.) ); b_Bin0_2->SetParameter(2, func->Eval(100.) ); b_Bin0_3->SetParameter(2, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("resolG2HeavyBin0");
+  TIter iter8( hBestMass->GetListOfFunctions() );
+  obj = iter8();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter8();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin0_1->SetParameter(3, func->Eval(50.) ); b_Bin0_2->SetParameter(3, func->Eval(100.) ); b_Bin0_3->SetParameter(3, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("respG1HeavyBin1");
+  TIter iter9( hBestMass->GetListOfFunctions() );
+  obj = iter9();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter9();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin1_1->SetParameter(1, func->Eval(50.) ); b_Bin1_2->SetParameter(1, func->Eval(100.) ); b_Bin1_3->SetParameter(1, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("respG2HeavyBin1");
+  TIter iter10( hBestMass->GetListOfFunctions() );
+  obj = iter10();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter10();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin1_1->SetParameter(4, func->Eval(50.) ); b_Bin1_2->SetParameter(4, func->Eval(100.) ); b_Bin1_3->SetParameter(4, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("resolG1HeavyBin1");
+  TIter iter11( hBestMass->GetListOfFunctions() );
+  obj = iter11();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter11();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin1_1->SetParameter(2, func->Eval(50.) ); b_Bin1_2->SetParameter(2, func->Eval(100.) ); b_Bin1_3->SetParameter(2, func->Eval(150.) );
+
+  hBestMass = (TH1F*)f->Get("resolG2HeavyBin1");
+  TIter iter12( hBestMass->GetListOfFunctions() );
+  obj = iter12();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter12();
+  }
+  func = hBestMass->GetFunction(fname);
+  b_Bin1_1->SetParameter(3, func->Eval(50.) ); b_Bin1_2->SetParameter(3, func->Eval(100.) ); b_Bin1_3->SetParameter(3, func->Eval(150.) );
+
+
+  b_Bin0_1->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin0_1->GetParameter(2) + 0.35*b_Bin0_1->GetParameter(3) ) );
+  b_Bin0_2->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin0_2->GetParameter(2) + 0.35*b_Bin0_2->GetParameter(3) ) );
+  b_Bin0_3->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin0_3->GetParameter(2) + 0.35*b_Bin0_3->GetParameter(3) ) );
+
+  b_Bin1_1->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin1_1->GetParameter(2) + 0.35*b_Bin1_1->GetParameter(3) ) );
+  b_Bin1_2->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin1_2->GetParameter(2) + 0.35*b_Bin1_2->GetParameter(3) ) );
+  b_Bin1_3->SetParameter(0,1./TMath::Sqrt( 2* TMath::Pi())/ ( 0.65*b_Bin1_3->GetParameter(2) + 0.35*b_Bin1_3->GetParameter(3) ) );
+
+
+  TLegend* leg = new TLegend(0.15,0.65,0.55,0.85,NULL,"brNDC");
+  leg->SetHeader( header );
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.05); 
+  leg->AddEntry(l_Bin0_1 , "50 GeV" ,  "L");
+  leg->AddEntry(l_Bin0_2 , "100 GeV" , "L");
+  leg->AddEntry(l_Bin0_3 , "150 GeV" , "L");
+
+  h->Draw();
+  if(isB==0){
+  l_Bin0_1->Draw("SAME");
+  l_Bin0_2->Draw("SAME");
+  l_Bin0_3->Draw("SAME");
+  l_Bin1_1->Draw("SAME");
+  l_Bin1_2->Draw("SAME");
+  l_Bin1_3->Draw("SAME");
+  }
+  if(isB){
+  b_Bin0_1->Draw("SAME");
+  b_Bin0_2->Draw("SAME");
+  b_Bin0_3->Draw("SAME");
+  b_Bin1_1->Draw("SAME");
+  b_Bin1_2->Draw("SAME");
+  b_Bin1_3->Draw("SAME");
+  }
+
+  leg->Draw();
+
+  if(0){
+  }
 
   return;
 }
+
+
+
+
 
 void plot_Slice(
 		TString header = "Light jet TF",
@@ -898,13 +1155,18 @@ void plot_Slice(
   c1->SetTicky();
   c1->SetObjectStat(0);
 
-  TFile *f = TFile::Open("../bin/root/ControlPlots_new.root","READ");
+  TFile *f = TFile::Open("../bin/root/ControlPlotsTEST"+extraLabel+".root","READ");
   TH1F* hBestMass = (TH1F*)f->Get(TString(Form("Bin%s%d_%d/hCorr%s_py",flavor.c_str(), event, bin,flavor.c_str())));
 
-  TF1* funcP = 0;
-  if( flavor.find("Heavy")!=string::npos )
-    funcP = (TF1*)f->Get(TString(Form("Bin%s%d_%d/resolDG_fit%d_%d",flavor.c_str(), event, bin, event, bin)));
+  TF1* funcP  = 0;
+  TF1* funcP2 = 0;
+  if( flavor.find("DUMMY")==string::npos ){
+    funcP  = (TF1*)f->Get(TString(Form("Bin%s%d_%d/resolDG_fit%d_%d",flavor.c_str(), event, bin, event, bin)));
+    funcP2 = (TF1*)f->Get(TString(Form("Bin%s%d_%d/resolSG_fit%d_%d",flavor.c_str(), event, bin, event, bin)));
+  }
   
+  if(!funcP)  cout << "Could not find funcP" << endl;
+  if(!funcP2) cout << "Could not find funcP2" << endl;
 
   if( !hBestMass ){
     cout << "No such histogram" << endl;
@@ -922,38 +1184,153 @@ void plot_Slice(
   TF1 *func = hBestMass->GetFunction(fname);
 
   hBestMass->SetMarkerStyle(kFullCircle);
-  hBestMass->SetMarkerColor(kBlue);
+  hBestMass->SetMarkerColor(kBlack);
   hBestMass->SetTitle("");
   hBestMass->SetXTitle( unitsX );
   //hBestMass->SetYTitle( "units" );
   hBestMass->SetTitleSize(0.04,"X");
   hBestMass->SetTitleSize(0.04,"Y");
 
-  TLegend* leg = new TLegend(0.27,0.64,0.61,0.87,NULL,"brNDC");
+  TLegend* leg = new TLegend(0.11,0.71,0.45,0.94,NULL,"brNDC");
   leg->SetHeader( header );
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetFillColor(10);
   leg->SetTextSize(0.06); 
   //leg->AddEntry(hBestMass, unitsY);
-  if(func)  leg->AddEntry(func, param, "L");
-  //if(funcP) leg->AddEntry(funcP, "from parametrization", "L");
 
-  hBestMass->SetMaximum( hBestMass->GetMaximum()*1.8);
+  float normFunc = 0.;  
+  if(func) {
+    leg->AddEntry(func, param, "L");
+    func->SetNpx(1000);
+    normFunc = func->GetParameter(0);
+    cout << "Bin: " << func->Integral(-800,800) << endl;
+  }
+  if(funcP){
+    leg->AddEntry(funcP,  "2G parametrization", "L");
+    funcP->SetNpx(1000);
+    funcP->SetParameter(0, normFunc);
+    cout << "Param 2G: " << funcP->Integral(-800,800) << endl;
+    if( TMath::Abs(funcP->Integral(-800,800)/func->Integral(-800,800)-1)>1e-02  )
+      funcP->SetParameter(0, funcP->GetParameter(0)*func->Integral(-800,800)/funcP->Integral(-800,800)  );
+    cout << "RESCALE: Param 2G: " << funcP->Integral(-800,800) << endl;
+  }
+  if(funcP2){
+    leg->AddEntry(funcP2, "1G parametrization", "L");
+    funcP2->SetNpx(1000);
+    funcP2->SetParameter(0, normFunc);
+    cout << "Param 1G: " << funcP2->Integral(-800,800) << endl;
+    if( TMath::Abs(funcP2->Integral(-800,800)/func->Integral(-800,800)-1)>1e-02  )
+      funcP2->SetParameter(0, funcP2->GetParameter(0)*func->Integral(-800,800)/funcP2->Integral(-800,800)  );
+    cout << "RESCALE: Param 1G: " << funcP2->Integral(-800,800) << endl;
+  }
+
+  hBestMass->GetXaxis()->SetRangeUser(0,350);
+  hBestMass->SetMaximum( hBestMass->GetMaximum()*1.4);
   hBestMass->Draw("PE");
   if( func ) func->Draw("SAME");
-  //if( funcP) funcP->Draw("SAME");
+  if( funcP)  funcP->Draw("SAME");
+  if( funcP2) funcP2->Draw("SAME");
   leg->Draw();
 
   if(1){
-    c1->SaveAs(Form("Plots/Plot_%s_%d_%d.png", flavor.c_str(), event, bin));
-    c1->SaveAs(Form("Plots/Plot_%s_%d_%d.pdf", flavor.c_str(), event, bin));
+    string eventStr = event<10 ? string(Form("0%d",event)) : string(Form("%d",event));
+    c1->SaveAs(Form("Plots/Plot_%s_%s_%d%s.png", flavor.c_str(), eventStr.c_str(), bin, extraLabel.Data()));
+    //c1->SaveAs(Form("Plots/Plot_%s_%d_%d.pdf", flavor.c_str(), event, bin));
   }
 
 
   return;
 }
 
+
+void plot_Slice_Reg(
+		    TString header = "Light jet TF",
+		    TString unitsX = "jet E (GeV)",
+		    TString unitsY = "TF(E|#hat{E})",
+		    int event = 1,
+		    string flavor = "",
+		    int bin = 0,
+		    TString extraLabel = "",
+		    TString param = ""
+		    ){
+  
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.1);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
+
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TFile *f     = TFile::Open("../bin/root/ControlPlotsTEST.root",    "READ");
+  TFile *f_reg = TFile::Open("../bin/root/ControlPlotsTEST_reg.root","READ");
+
+  TH1F* hBestMass = (TH1F*)f->Get(TString(Form("Bin%s%d_%d/hCorr%s_py",flavor.c_str(), event, bin,flavor.c_str())));
+
+  TF1* func     = 0;
+  TF1* func_reg = 0;
+  if( flavor.find("Heavy")!=string::npos ){
+    func     = (TF1*)f    ->Get(TString(Form("Bin%s%d_%d/resolDG_fit%d_%d",flavor.c_str(), event, bin, event, bin)));
+    func_reg = (TF1*)f_reg->Get(TString(Form("Bin%s%d_%d/resolDG_fit%d_%d",flavor.c_str(), event, bin, event, bin)));
+  }
+  
+  if(!func)     cout << "Could not find func"     << endl;
+  if(!func_reg) cout << "Could not find func_reg" << endl;
+
+  TLegend* leg = new TLegend(0.11,0.71,0.45,0.94,NULL,"brNDC");
+  leg->SetHeader( header );
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.06); 
+
+  float normFunc = 0.;  
+  if(func) {
+    leg->AddEntry(func, "Reco", "L");
+    func->SetNpx(1000);
+    normFunc = func->GetParameter(0);
+    cout << "Bin: " << func->Integral(-800,800) << endl;
+  }
+  if(func_reg){
+    leg->AddEntry(func_reg,  "Regression", "L");
+    func_reg->SetNpx(1000);
+    func_reg->SetParameter(0, normFunc);
+    cout << "Param 2G: " << func_reg->Integral(-800,800) << endl;
+    if( TMath::Abs(func_reg->Integral(-800,800)/func->Integral(-800,800)-1)>1e-02  )
+      func_reg->SetParameter(0, func_reg->GetParameter(0)*func->Integral(-800,800)/func_reg->Integral(-800,800)  );
+    cout << "RESCALE: Param 2G: " << func_reg->Integral(-800,800) << endl;
+  }
+
+  hBestMass->GetXaxis()->SetRangeUser(0,350);
+  hBestMass->Scale(0.);
+  hBestMass->Draw("P");
+  if( func )     func    ->Draw("SAME");
+  if( func_reg)  func_reg->Draw("SAME");
+  leg->Draw();
+
+  if(0){
+    string eventStr = event<10 ? string(Form("0%d",event)) : string(Form("%d",event));
+    c1->SaveAs(Form("Plots/Plot_%s_%s_%d%s.png", flavor.c_str(), eventStr.c_str(), bin, extraLabel.Data()));
+    //c1->SaveAs(Form("Plots/Plot_%s_%d_%d.pdf", flavor.c_str(), event, bin));
+  }
+
+
+  return;
+}
 
 
 
@@ -1489,5 +1866,18 @@ void plot_bj(){
   
   plot_analysis_bj("SL", "type<=3", "SL All Cat.", "SL_Comb_BJ_AN_ttbb_vs_ttb",
 		   "nSimBs>2  && nMatchSimBs>=2", "nSimBs>2  && nMatchSimBs<2" );
+
+}
+
+
+
+void plotTFAll(float binW=(300.-30.)/58., TString extra = ""){
+
+  for(int b = 0 ; b <2 ; b++){
+    for(int s = 1; s <= 58; s++){
+      plot_Slice(string(Form("b-jet %.1f<|#eta|<%.1f, %.0f<E<%.0f",     b==0 ? 0. : 1., b==0 ? 1.0 : 2.5, 30+(s-1)*binW,30+s*binW)),"jet energy (GeV)","f(#hat{E}|E)", s, "Heavy", b, extra, "2G fit");
+      plot_Slice(string(Form("light-jet %.1f<|#eta|<%.1f, %.0f<E<%.0f", b==0 ? 0. : 1., b==0 ? 1.0 : 2.5, 30+(s-1)*binW,30+s*binW)),"jet energy (GeV)","f(#hat{E}|E)", s, "Light", b, extra, "1G fit");
+    }
+  }
 
 }
