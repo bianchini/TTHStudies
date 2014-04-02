@@ -22,7 +22,7 @@ process.fwliteInput = cms.PSet(
 
     # input file directory
     #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_new/"),
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2/"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V3/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
     #pathToFile    = cms.string("/shome/bianchi/CMSSW_5_3_3_patch2_New/src/VHbbAnalysis/VHbbDataFormats/bin/"),
@@ -31,7 +31,27 @@ process.fwliteInput = cms.PSet(
     ordering      = cms.string("DiJetPt_"),
 
     # the samples
-    samples = samples_V3,
+    #samples = samples_V3,
+    samples  =   cms.VPSet(
+
+    cms.PSet(
+    skip     = cms.bool(False),  
+    name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
+    nickName = cms.string('TTH125'),
+    color    = cms.int32(2),
+    xSec     = cms.double(0.1302*0.569)
+    ),
+    
+    cms.PSet(
+    skip     = cms.bool(True),  
+    name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'),
+    nickName = cms.string('TTJetsSemiLept'),
+    color    = cms.int32(41),
+    xSec     = cms.double(107.66),
+    ),
+
+
+    ),
 
     # the target luminosity (used to calculate the 'weight' variable)
     lumi          = cms.untracked.double(19.04),
@@ -79,20 +99,20 @@ process.fwliteInput = cms.PSet(
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
 
     # skip VEGAS call
-    speedup       = cms.untracked.int32(1), ###### CHECK HERE
+    speedup       = cms.untracked.int32(0), ###### CHECK HERE
 
     # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
     doTypeBTag5   = cms.untracked.int32(0),  #SL 5 jets
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets       
-    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
-    doType1       = cms.untracked.int32(1),  #SL(4,2)  w/o W-tag
-    doType2       = cms.untracked.int32(1),  #SL(4,1)
-    doType3       = cms.untracked.int32(1),  #SL(4,3) 
+    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
+    doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
+    doType2       = cms.untracked.int32(0),  #SL(4,1)
+    doType3       = cms.untracked.int32(0),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
-    doType6       = cms.untracked.int32(1),  #DL(4,X)
+    doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
-    doType0ByBTagShape = cms.untracked.int32(0),
+    doType0ByBTagShape = cms.untracked.int32(1),
     doType1ByBTagShape = cms.untracked.int32(0),
     doType2ByBTagShape = cms.untracked.int32(0),
     doType3ByBTagShape = cms.untracked.int32(0),
@@ -104,6 +124,8 @@ process.fwliteInput = cms.PSet(
     useMET        = cms.untracked.int32(1),
     useTF         = cms.untracked.int32(1),
     usePDF        = cms.untracked.int32(1),
+    useAnalyticalFormula = cms.untracked.int32(1),
+
 
     # use DG for b-jet TF
     doubleGaussianB  = cms.untracked.int32(1),
@@ -164,7 +186,7 @@ process.fwliteInput = cms.PSet(
 
     # jet preselection
     jetMultLoose = cms.untracked.int32(4),
-    jetPtLoose   = cms.untracked.double(30.),
+    jetPtLoose   = cms.untracked.double(40.),
 
     # needed for category classification
     MwL          = cms.untracked.double(60),
@@ -176,7 +198,7 @@ process.fwliteInput = cms.PSet(
     MwHType3     = cms.untracked.double(92.),
 
     # Reject run range 207883-208307 because of a pixel misalignment problem ( following VHbb )
-    reject_pixel_misalign_evts = cms.untracked.int32(1),
+    reject_pixel_misalign_evts = cms.untracked.int32(0),
 
     # Higgs and top mass values to be scanned
     massesH      = cms.vdouble(125.),

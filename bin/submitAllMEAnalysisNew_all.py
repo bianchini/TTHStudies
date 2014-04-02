@@ -11,93 +11,9 @@ sys.path.append('./')
 
 import FWCore.ParameterSet.Config as cms
 
-from Bianchi.TTHStudies.samples_cff import *
 
-pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
-ordering   = 'DiJetPt_'
-
-samples = samples_V3
-
-massesH     = cms.vdouble(125)
-#massesH     = cms.vdouble(45., 55., 65., 75., 85., 95., 105., 115., 125., 135., 145., 155., 165., 185., 205., 225., 250., 275., 300.)
-massesT     = cms.vdouble(174.3)
-#massesT     = cms.vdouble(115., 125., 135., 145., 155., 165., 175., 185., 195., 205.,215., 225.)
-
-# cetral mass values
-MH          = 125.00
-MT          = 174.30
-
-# 0 = all events between evLow and evHigh will be considered
-# 1 = process (evHigh-evLow) events of the desired type starting from the beginning
-fixNumEvJob = 0
-
-#### flags
-norm        = 0
-useME       = 1
-useJac      = 1
-useMET      = 1
-useTF       = 1
-usePDF      = 1
-
-# to print intermediate steps
-printout    = 0
-
-# speed up the job not doing VEGAS integration
-speedup     = 1
-
-# cut values to select events
-btag_prob_cut_6jets = 0.96675 # <--- 0.988
-btag_prob_cut_5jets = 0.98225 # <--- 0.992
-btag_prob_cut_4jets = 0.95295 # <--- 0.85 <--- 0.95295 <--- 0.992
-
-# regression
-useRegression = 0
-
-# use gen-jets or reco-jets ???
-doGenLevelAnalysis = 0
-
-# smear jets by TF_smear
-smearJets = 0
-
-# btag-thresholds
-csv_WP_L = 0.244
-csv_WP_M = 0.679 
-csv_WP_T = 0.898
-
-# select by btag_LR
-selectByBTagShape  = 1
-
-# use the csv calibration from BDT
-useCSVcalibration  = 1
-    
-# recover the <4 btag bin
-recoverTopBTagBin  = 1
-
-# test SLw1j hypothesis on type3 events
-testSLw1jType3     = 1
-
-# test hypo SLw1j on up to nMaxJetsSLw1jType3 untagged jets
-nMaxJetsSLw1jType3 = 4
-
-# an extra name for the output files
-extraoutname = ""
-if len(massesH)>1:
-    extraoutname = "MHscan_"
-if len(massesT)>1:
-    extraoutname = "MTscan_"
-
-# set integral optimizations
-integralOption0 = 0 # chi2-optimization
-integralOption1 = 0 # permutation pruning
-integralOption2 = 1 # integration speed-up
-
-# ntuplize all events ?
-ntuplizeAll = 1
-
-# systematics
-systematics = cms.vint32(0,3,4,5,6)
-
-
+# load the configuration
+from Bianchi.TTHStudies.mem_parameters_cff import *
 
 def getSplitting( path, sample, numjobs ):
     
@@ -113,7 +29,7 @@ def getSplitting( path, sample, numjobs ):
         if f != None :        
             t = f.Get("tree")
             entries = t.GetEntries()
-            entries_per_job = (entries/numjobs + 1)
+            entries_per_job = (entries/numjobs + 1 )
 
             print "\033[94mProcessing..... %s jobs will run on (%.2fK ev/job) * (%.0f job) = %.0f events (%.1f%% of %s)\033[0m" % (numjobs, float(entries_per_job)/1000., numjobs, entries_per_job*numjobs, float(entries_per_job*numjobs)/float(entries)*100, sample) 
             f.Close()
@@ -190,11 +106,19 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.useMET           = cms.untracked.int32(useMET)
     process.fwliteInput.useTF            = cms.untracked.int32(useTF)
     process.fwliteInput.usePDF           = cms.untracked.int32(usePDF)
+    process.fwliteInput.useAnalyticalFormula = cms.untracked.int32(useAnalyticalFormula)
 
     process.fwliteInput.integralOption0  = cms.untracked.int32( integralOption0 )
     process.fwliteInput.integralOption1  = cms.untracked.int32( integralOption1 )
     process.fwliteInput.integralOption2  = cms.untracked.int32( integralOption2 )
+    process.fwliteInput.speedup          = cms.untracked.int32(speedup)
+    process.fwliteInput.integralOption2_stage     = cms.untracked.int32(integralOption2_stage)
+    process.fwliteInput.integralOption2_niter     = cms.untracked.int32(integralOption2_niter)
+    process.fwliteInput.integralOption2_nevalfact = cms.untracked.double(integralOption2_nevalfact)
+    process.fwliteInput.switchoffOL               = cms.untracked.int32(switchoffOL)
 
+    process.fwliteInput.doubleGaussianB    = cms.untracked.int32(doubleGaussianB)
+    process.fwliteInput.useBtag            = cms.untracked.int32(useBtag)
     process.fwliteInput.selectByBTagShape  = cms.untracked.int32(selectByBTagShape)
     process.fwliteInput.useCSVcalibration  = cms.untracked.int32(useCSVcalibration)
 
@@ -203,6 +127,9 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.testSLw1jType3     = cms.untracked.int32(testSLw1jType3)
     process.fwliteInput.nMaxJetsSLw1jType3 = cms.untracked.int32(nMaxJetsSLw1jType3)
 
+    process.fwliteInput.jetMultLoose       = cms.untracked.int32(jetMultLoose)
+    process.fwliteInput.jetPtLoose         = cms.untracked.double(jetPtLoose)
+
     process.fwliteInput.doType0            = cms.untracked.int32(not selectByBTagShape)
     process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
     process.fwliteInput.doType2            = cms.untracked.int32(not selectByBTagShape)
@@ -210,12 +137,17 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
     process.fwliteInput.doType7            = cms.untracked.int32(0)
 
+    #process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    #process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    #process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
+    #process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    #process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
     process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    0)
     process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-    process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    0)
     process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    
+
     process.fwliteInput.btag_prob_cut_6jets = cms.untracked.double(btag_prob_cut_6jets)
     process.fwliteInput.btag_prob_cut_5jets = cms.untracked.double(btag_prob_cut_5jets)
     process.fwliteInput.btag_prob_cut_4jets = cms.untracked.double(btag_prob_cut_4jets)
@@ -230,15 +162,36 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.massesT             = massesT
     process.fwliteInput.MH                  = cms.untracked.double(MH)
     process.fwliteInput.MT                  = cms.untracked.double(MT)
+
+    process.fwliteInput.lepPtLoose   = cms.untracked.double(lepPtLoose)
+    process.fwliteInput.lepPtTight   = cms.untracked.double(lepPtTight)
+    process.fwliteInput.lepIsoLoose  = cms.untracked.double(lepIsoLoose)
+    process.fwliteInput.lepIsoTight  = cms.untracked.double(lepIsoTight)
+    process.fwliteInput.elEta        = cms.untracked.double(elEta)
+    process.fwliteInput.muEtaTight   = cms.untracked.double(muEtaTight)
+    process.fwliteInput.muEtaLoose   = cms.untracked.double(muEtaLoose)
+
+    process.fwliteInput.jetMultLoose = cms.untracked.int32(jetMultLoose)
+    process.fwliteInput.jetPtLoose   = cms.untracked.double(jetPtLoose)
+    process.fwliteInput.MwL          = cms.untracked.double(MwL)
+    process.fwliteInput.MwH          = cms.untracked.double(MwH)
+    process.fwliteInput.MhL          = cms.untracked.double(MhL)
+    process.fwliteInput.MhH          = cms.untracked.double(MhH)
+    process.fwliteInput.MwLType3     = cms.untracked.double(MwLType3)
+    process.fwliteInput.MwHType3     = cms.untracked.double(MwHType3)
+    process.fwliteInput.reject_pixel_misalign_evts = cms.untracked.int32(reject_pixel_misalign_evts)
+
     process.fwliteInput.fixNumEvJob         = cms.untracked.int32(fixNumEvJob)
     process.fwliteInput.evLimits            = cms.vint32(evLow,evHigh)
 
+    process.fwliteInput.lumi                = cms.untracked.double(lumi)
+        
     process.fwliteInput.printout            = cms.untracked.int32(printout)
+    process.fwliteInput.debug               = cms.untracked.int32(debug)
 
     process.fwliteInput.doGenLevelAnalysis  = cms.untracked.int32(doGenLevelAnalysis)
     process.fwliteInput.smearJets           = cms.untracked.int32(smearJets)
 
-    process.fwliteInput.speedup             = cms.untracked.int32(speedup)
     process.fwliteInput.ntuplizeAll         = cms.untracked.int32(ntuplizeAll)
 
     process.fwliteInput.systematics         = systematics
@@ -254,7 +207,6 @@ def submitMEAnalysisNew_all(script,
     f.write('export SCRAM_ARCH="slc5_amd64_gcc462"\n')
     f.write('source $VO_CMS_SW_DIR/cmsset_default.sh\n')
     f.write('eval `scramv1 runtime -sh`\n')
-    f.write('\n\n')
     f.write('\n\n')
     f.write('MEAnalysisNew_all ./'+jobName+'.py\n')
     f.close()
@@ -275,72 +227,71 @@ def submitMEAnalysisNew_all(script,
 
 def submitFullMEAnalysisNew_all( analysis ):
 
-    version = '_V3/'
 
-    print "Running full analysis for %s, version %s" %  (analysis, version)
+    print "Running full analysis for %s" %  (analysis)
 
 
     toBeRun = [
-        ['TTH125',        270,'_V3/'],
-        ['TTJetsSemiLept',155,'_V3/'],
+        ['TTH125',        270,'_V3/'], 
+        ['TTJetsSemiLept',150,'_V3/'],
         ['TTJetsFullLept', 48,'_V3/'],
-        ['TTJetsFullHad',   5,'_V3/'],
-        ['DYJets10to50',    1,'_V3/'],
-        ['DYJets50',        1,'_V3/'],
-        ['WJets',           1,'_V3/'],
-        ['TtW',             1,'_V3/'],
-        ['Tt',              1,'_V3/'],
-        ['Ts',              1,'_V3/'],
-        ['TbartW',          1,'_V3/'],
-        ['Tbart',           1,'_V3/'],
-        ['Tbars',           1,'_V3/'],
-        ['WW',              1,'_V3/'],
-        ['WZ',              1,'_V3/'],
-        ['ZZ',              1,'_V3/'],
-        ['TTZ',            15,'_V3/'],
-        ['TTW',             5,'_V3/'],
-        ['Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',                1, '_V2/'],
-        ['Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',           1, '_V2/'],
-        ['Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               12, '_V2/'],
-        ['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1', 4, '_V2/'],
-        ['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2', 4, '_V2/'],
-        ['Run2012_DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, '_V2/'],
-        ['Run2012_DoubleElectronRun2012CAug24RerecoEdmV42',                       4, '_V2/'],
-        ['Run2012_DoubleElectronRun2012D',                                        6, '_V2/'],        
-        ['Run2012_SingleElectronRun2012AAug06EdmV42',                             1, '_V2/'],
-        ['Run2012_SingleElectronRun2012AJul13EdmV42b',                            1, '_V2/'],
-        ['Run2012_SingleElectronRun2012BJul13EdmV42',                            18, '_V2/'],
-        ['Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, '_V2/'],
-        ['Run2012_SingleElectronRun2012CAug24RerecoEdmV42',                       4, '_V2/'],
-        ['Run2012_SingleElectronRun2012CPromptv2EdmV42',                          8, '_V2/'],
-        ['Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42',                     8, '_V2/'],
-        ['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, '_V2/'],               
-        ['Run2012_SingleMuRun2012AAug06',                                         1, '_V3/'],
-        ['Run2012_SingleMuRun2012AJul13',                                         1, '_V3/'],
-        ['Run2012_SingleMuRun2012BJul13',                                        18, '_V3/'],
-        ['Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',                  1, '_V3/'],
-        ['Run2012_SingleMuRun2012CAug24Rereco',                                   4, '_V3/'],
-        ['Run2012_SingleMuRun2012CPromptv2',                                      8, '_V3/'],
-        ['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, '_V3/'],
-        ['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, '_V3/'],        
+        #['TTJetsFullHad',   5,'_V4/'],
+        #['DYJets10to50',    1,'_V4/'],
+        #['DYJets50',        1,'_V4/'],
+        #['WJets',           1,'_V4/'],
+        #['TtW',             1,'_V4/'],
+        #['Tt',              1,'_V4/'],
+        #['Ts',              1,'_V4/'],
+        #['TbartW',          1,'_V4/'],
+        #['Tbart',           1,'_V4/'],
+        #['Tbars',           1,'_V4/'],
+        #['WW',              1,'_V4/'],
+        #['WZ',              1,'_V4/'],
+        #['ZZ',              1,'_V4/'],
+        #['TTZ',            15,'_V4/'],
+        #['TTW',             5,'_V4/'],
+        #['Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',                1, '_V4/'],
+        #['Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',           1, '_V4/'],
+        #['Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               12, '_V4/'],
+        #['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1', 4, '_V4/'],
+        #['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2', 4, '_V4/'],
+        #['Run2012_DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, '_V4/'],
+        #['Run2012_DoubleElectronRun2012CAug24RerecoEdmV42',                       4, '_V4/'],
+        #['Run2012_DoubleElectronRun2012D',                                        6, '_V4/'],        
+        #['Run2012_SingleElectronRun2012AAug06EdmV42',                             1, '_V4/'],
+        #['Run2012_SingleElectronRun2012AJul13EdmV42b',                            1, '_V4/'],
+        #['Run2012_SingleElectronRun2012BJul13EdmV42',                            18, '_V4/'],
+        #['Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, '_V4/'],
+        #['Run2012_SingleElectronRun2012CAug24RerecoEdmV42',                       4, '_V4/'],
+        #['Run2012_SingleElectronRun2012CPromptv2EdmV42',                          8, '_V4/'],
+        #['Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42',                     8, '_V4/'],
+        #['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, '_V4/'],               
+        #['Run2012_SingleMuRun2012AAug06',                                         1, '_V4/'],
+        #['Run2012_SingleMuRun2012AJul13',                                         1, '_V4/'],
+        #['Run2012_SingleMuRun2012BJul13',                                        18, '_V4/'],
+        #['Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',                  1, '_V4/'],
+        #['Run2012_SingleMuRun2012CAug24Rereco',                                   4, '_V4/'],
+        #['Run2012_SingleMuRun2012CPromptv2',                                      8, '_V4/'],
+        #['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, '_V4/'],
+        #['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, '_V4/'],        
         ]
 
     for run in toBeRun:
         counter     = 0
         sample      = run[0]
         num_of_jobs = run[1]
-        #num_of_jobs = 100
         version     = run[2]
         evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
+        #continue
         for i in range(num_of_jobs):
             counter = counter + 1
-            submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job+1, (i+1)*evs_per_job )
+            submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
 
 ###########################################
 ###########################################
 
 
-analyses = ['all_CSVcalibration']
+analyses = ['test_MT173']
 
 for analysis in analyses:
     if doGenLevelAnalysis:
@@ -354,288 +305,5 @@ for analysis in analyses:
     submitFullMEAnalysisNew_all( analysis)
 
 
-
-
-
-
-
-
-'''
-
-    ###################################################### TTH
-    ######################################################
-
-    # TTH125 
-    sample  = 'TTH125'
-    counter = 0
-    num_of_jobs = 270
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-     
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job+1, (i+1)*evs_per_job )
-    
-    ###################################################### TTJets SL
-    ######################################################
-        
-    # TTJetsSemiLept 
-    sample  = 'TTJetsSemiLept'
-    counter = 0
-    num_of_jobs = 155
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-     
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-
-    ###################################################### TTJets FL
-    ######################################################
-
-    # TTJetsFullLept
-    sample  = 'TTJetsFullLept'
-    counter = 0
-    num_of_jobs =  48
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-     
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-
-    ###################################################### TTJets FH
-    ######################################################
-     
-    # TTJetsFullHad
-    sample  = 'TTJetsFullHad'
-    counter = 0
-    num_of_jobs =  5
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-     
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-
-     
-    if re.search("all",   analysis )==None and re.search("nominal",   analysis )==None:
-        return
-
-
-    ###################################################### EWK
-    ######################################################
-
-    # DYJets10to50
-    sample  = 'DYJets10to50'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # DYJets50
-    sample  = 'DYJets50'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # WJets 
-    sample  = 'WJets'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    ###################################################### Single-top
-    ######################################################
-
-    # TtW
-    sample  = 'TtW'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-        
-   # Tt
-    sample  = 'Tt'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-   # Ts
-    sample  = 'Ts'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # TbartW
-    sample  = 'TbartW'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # Tbart
-    sample  = 'Tbart'
-    counter = 0
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # Tbars
-    sample  = 'Tbars'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-
-    ###################################################### Di-boson
-    ######################################################
-
-
-   # WW
-    sample  = 'WW'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-   # WZ
-    sample  = 'WZ'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-   # ZZ
-    sample  = 'ZZ'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-
-    ###################################################### TTZ
-    ######################################################
-
-    # TTZ  
-    sample  = 'TTZ'
-    counter = 0
-    num_of_jobs =   15
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs )      
-
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    # TTW
-    sample  = 'TTW'
-    counter = 0
-    num_of_jobs =   1
-    evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-
-    for i in range(num_of_jobs):
-        counter = counter + 1
-        #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version,  i*evs_per_job+1, (i+1)*evs_per_job )
-
-    ###################################################### Data
-    ######################################################
-
-    datasamples = ['DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',
-                   'DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',
-                   'DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',
-                   'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1',
-                   'DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2',
-                   'DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   'DoubleElectronRun2012CAug24RerecoEdmV42',
-                   'DoubleElectronRun2012D',
-
-                   'SingleElectronRun2012AAug06EdmV42',
-                   'SingleElectronRun2012AJul13EdmV42b',
-                   'SingleElectronRun2012BJul13EdmV42',
-                   'SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   'SingleElectronRun2012CAug24RerecoEdmV42',
-                   'SingleElectronRun2012CPromptv2EdmV42',
-                   'SingleElectronRun2012CPromptV2TopUpEdmV42',
-                   'SingleElectronRun2012D-PromptReco-v1_v3',
-
-                   #'SingleMuRun2012AAug06EdmV42',
-                   #'SingleMuRun2012AJul13EdmV42',
-                   #'SingleMuRun2012BJul13EdmV42',
-                   #'SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   #'SingleMuRun2012CAug24RerecoEdmV42',
-                   #'SingleMuRun2012CPromptv2EdmV42',
-                   #'SingleMuRun2012CPromptV2TopUpEdmV42',
-                   #'SingleMuRun2012D-PromptReco-v1'
-
-                   'SingleMuRun2012AAug06',
-                   'SingleMuRun2012AJul13',
-                   'SingleMuRun2012BJul13',
-                   'SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',
-                   'SingleMuRun2012CAug24Rereco',
-                   'SingleMuRun2012CPromptv2',
-                   'SingleMuRun2012CPromptV2TopUp',
-                   'SingleMuRun2012D-PromptReco-v1'
-
-                   ]
-
-    for datasample in datasamples:
-
-        #continue
-
-        # this is a workaround
-        if (re.search("Electron",datasample)!=None):  
-            version = '_V2/'
-        else :
-            version = '_V3/'
-
-        
-        sample  = 'Run2012_'+datasample
-
-        counter     =    0
-        num_of_jobs =    1
-
-        if (re.search("Run2012BJul13",          datasample)!=None):
-            num_of_jobs = 12
-        if (re.search("Run2012CPromptV2TopUp",  datasample)!=None):
-            num_of_jobs = 4
-        if (re.search("Run2012CAug24Rereco",    datasample)!=None):
-            num_of_jobs = 8
-        if (re.search("Run2012CPromptv2",       datasample)!=None):  
-            num_of_jobs = 8
-        if (re.search("Run2012D-PromptReco-v1", datasample)!=None): 
-            num_of_jobs = 18
-            
-        evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-
-        for i in range(num_of_jobs):
-            counter = counter + 1
-            #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample, version ,  i*evs_per_job+1, (i+1)*evs_per_job  )
-
-
-'''
+###########################################
+###########################################

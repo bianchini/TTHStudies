@@ -185,7 +185,7 @@ int main(int argc, const char* argv[])
   int   useMET           ( in.getUntrackedParameter<int>    ("useMET",             1));
   int   useTF            ( in.getUntrackedParameter<int>    ("useTF",              1));
   int   usePDF           ( in.getUntrackedParameter<int>    ("usePDF",             1));
-  int   useAnalyticalFormula ( in.getUntrackedParameter<int>    ("useAnalyticalFormula",             0));
+  int   useAnalyticalFormula ( in.getUntrackedParameter<int>("useAnalyticalFormula",0));
   int   norm             ( in.getUntrackedParameter<int>    ("norm",               0));
   int   hypo             ( in.getUntrackedParameter<int>    ("hypo",               0));
   int   SoB              ( in.getUntrackedParameter<int>    ("SoB",                1));
@@ -792,7 +792,7 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_wp95",             lepton_wp95_,  "lepton_wp95[nLep]/F");
 
   // additional electron SF
-  tree->Branch("weightEle",                   &sf_ele_,      "weightEle/F");
+  tree->Branch("weightEle",               &sf_ele_,      "weightEle/F");
 
   // MET kinematics
   tree->Branch("MET_pt",                  &MET_pt_,    "MET_pt/F");

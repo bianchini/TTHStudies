@@ -159,6 +159,7 @@ class MEIntegratorNew {
   void   setUseMET  (int);
   void   setUseTF   (int);
   void   setUsePDF  (int);
+  void   setUseAnalyticalFormula(int);
   void   setTopFlags(int,int);
   void   setWeightNorm(NormalizationType);
   void   setNormFormulas(TString, TString, TString, TString, TString, TString);
@@ -220,6 +221,11 @@ class MEIntegratorNew {
   double topHadDensity   (double, double)  const;
   double topLepDensity   (double, double)  const;
   double higgsDensity    (double)  const;
+
+  double topHadDensity_analytical( TLorentzVector*, TLorentzVector*, TLorentzVector*, TLorentzVector*) const;
+  double topLepDensity_analytical( TLorentzVector*, TLorentzVector*, TLorentzVector*, TLorentzVector*) const;
+
+
   //double tthDensity      (double, double, double, double)  const;
   //double meSquaredAtQ    (double, double, double, double) const;
   double meSquaredOpenLoops      (TLorentzVector*, TLorentzVector*, TLorentzVector*, double&, double&) const;
@@ -292,6 +298,7 @@ class MEIntegratorNew {
   int useMET_;
   int useTF_;
   int usePDF_;
+  int useAnalyticalFormula_;
 
   TH1F* debugHisto1_;
   TH1F* partonLuminosity_;
@@ -374,6 +381,7 @@ MEIntegratorNew::MEIntegratorNew( string fileName , int param , int verbose ) {
   useMET_  = 1;
   useTF_   = 1;
   usePDF_  = 1;
+  useAnalyticalFormula_ = 0;
 
   top1Flag_ = 0;
   top2Flag_ = 0;
@@ -1684,7 +1692,9 @@ void MEIntegratorNew::setUseRefinedTF(int use){
   useRefinedTF_ = use;
 }
 
-
+void MEIntegratorNew::setUseAnalyticalFormula(int use){
+  useAnalyticalFormula_ = use;
+}
 
 void MEIntegratorNew::switchOffOL(){
   top1Flag_ = 0; top2Flag_ = 0;
@@ -2950,8 +2960,24 @@ double MEIntegratorNew::topLepDensity ( double cos1, double cos2)  const{
 
 }
 
+
 double MEIntegratorNew::higgsDensity ( double cos1 )  const{
   return 1.0;
+}
+
+
+double MEIntegratorNew::topLepDensity_analytical( TLorentzVector* t, TLorentzVector* b, TLorentzVector* l, TLorentzVector* v) const{
+
+  double ampl = ( (*t)*(*l) * ((*b)*(*v)) );
+
+  return TMath::Max( ampl , 0.);
+}
+
+double MEIntegratorNew::topHadDensity_analytical( TLorentzVector* t, TLorentzVector* b, TLorentzVector* q1, TLorentzVector* q2) const{
+
+  double ampl_sym = ( (*t)*(*q1) * ((*b)*(*q2)) + (*t)*(*q2) * ((*b)*(*q1)) );
+
+  return TMath::Max( ampl_sym, 0.);
 }
 
 
@@ -3232,12 +3258,19 @@ double MEIntegratorNew::probabilitySL2wj(const double* x, int sign) const{
     me2 = 1.;
   }
 
-  double MEpart = 
-    topHadDensity(cos1Had,cos2Had) * 
-    topLepDensity(cos1Lep,cos2Lep) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topHadDensity(cos1Had,cos2Had) * 
+      topLepDensity(cos1Lep,cos2Lep) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep, &bLep, &WLepLep, &WLepNu ) *
+      topHadDensity_analytical( &topHad, &bHad, &W1Had,   &W2Had )  *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
 
   double Jpart = 
     topHadJakobi( Eq1,  Eq2, EbHad, &WHad ) * 
@@ -3419,13 +3452,19 @@ double MEIntegratorNew::probabilitySL1wj(const double* x, int sign) const{
     me2 = 1.;
   }
 
-
-  double MEpart = 
-    topHadDensity(cos1Had,cos2Had) * 
-    topLepDensity(cos1Lep,cos2Lep) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topHadDensity(cos1Had,cos2Had) * 
+      topLepDensity(cos1Lep,cos2Lep) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep, &bLep, &WLepLep, &WLepNu ) *
+      topHadDensity_analytical( &topHad, &bHad, &W1Had,   &W2Had )  *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
 
   double Jpart = 
     topHadLostJakobi( Eq1,  Eq2, EbHad, &WHad ) * 
@@ -3672,12 +3711,19 @@ double MEIntegratorNew::probabilitySLNoBHad(const double* x, int sign) const{
     me2 = 1.;
   }
 
-  double MEpart = 
-    topHadDensity(cos1Had,cos2Had) * 
-    topLepDensity(cos1Lep,cos2Lep) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topHadDensity(cos1Had,cos2Had) * 
+      topLepDensity(cos1Lep,cos2Lep) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep, &bLep, &WLepLep, &WLepNu ) *
+      topHadDensity_analytical( &topHad, &bHad, &W1Had,   &W2Had )  *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
 
   double Jpart = 
     topHadBLostJakobi( Eq1,  Eq2, EbHad, &WHad ) * 
@@ -3925,12 +3971,19 @@ double MEIntegratorNew::probabilitySLNoBLep(const double* x, int sign) const{
     me2 = 1.;
   }
 
-  double MEpart = 
-    topHadDensity(cos1Had,cos2Had) * 
-    topLepDensity(cos1Lep,cos2Lep) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topHadDensity(cos1Had,cos2Had) * 
+      topLepDensity(cos1Lep,cos2Lep) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep, &bLep, &WLepLep, &WLepNu ) *
+      topHadDensity_analytical( &topHad, &bHad, &W1Had,   &W2Had )  *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
 
   double Jpart = 
     topHadJakobi( Eq1,  Eq2, EbHad, &WHad ) * 
@@ -4177,12 +4230,19 @@ double MEIntegratorNew::probabilitySLNoHiggs(const double* x, int sign) const{
     me2 = 1.;
   }
 
-  double MEpart = 
-    topHadDensity(cos1Had,cos2Had) * 
-    topLepDensity(cos1Lep,cos2Lep) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topHadDensity(cos1Had,cos2Had) * 
+      topLepDensity(cos1Lep,cos2Lep) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep, &bLep, &WLepLep, &WLepNu ) *
+      topHadDensity_analytical( &topHad, &bHad, &W1Had,   &W2Had )  *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
 
   double Jpart = 
     topHadBLostJakobi( Eq1,  Eq2, EbHad, &WHad ) * 
@@ -4417,12 +4477,21 @@ double MEIntegratorNew::probabilityDL(const double* x, int sign) const{
     me2 = 1.;
   }
 
-  double MEpart = 
-    topLepDensity(cos1Lep1,cos2Lep1) * 
-    topLepDensity(cos1Lep2,cos2Lep2) * 
-    (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
-    me2
-    ;
+
+  double MEpart = 1.0;
+  if( useAnalyticalFormula_==0 )
+    MEpart = 
+      topLepDensity(cos1Lep1,cos2Lep1) * 
+      topLepDensity(cos1Lep2,cos2Lep2) * 
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+  else
+    MEpart = 
+      topLepDensity_analytical( &topLep1, &bLep1, &WLep1Lep, &WLep1Nu ) *
+      topLepDensity_analytical( &topLep2, &bLep2, &WLep2Lep, &WLep2Nu ) *
+      (hypo_==0 ? higgsDensity(cos1Higgs) : 1.0)*
+      me2 ;
+
 
   double Jpart = 
     topLepJakobi( Enu1, Elep1, EbLep1, &WLep1 ) * 
