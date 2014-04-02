@@ -11,14 +11,14 @@ process = cms.Process("MEAnalysisNew")
 process.fwliteInput = cms.PSet(
 
     outFileName   = cms.string("./root/MEAnalysisNewTEST.root"),
-    pathToTF      = cms.string("./root/transferFunctionsTEST_reg.root"),
-    pathToCP      = cms.string("./root/ControlPlotsTEST_reg.root"),
+    pathToTF      = cms.string("./root/transferFunctionsTEST.root"),
+    pathToCP      = cms.string("./root/ControlPlotsTEST.root"),
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
-    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
-    pathToFile    = cms.string("./"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V2"+VType+"/"),
+    #pathToFile    = cms.string("./"),
     ordering      = cms.string("DiJetPt_"),
-    lumi          = cms.double(12.1),
+    lumi          = cms.untracked.double(12.1),
 
     samples       = cms.VPSet(
 
@@ -390,20 +390,35 @@ process.fwliteInput = cms.PSet(
     #SL2wj     2000
     #SL1wj     4000
     #DL       10000
-    
-    hypo          = cms.untracked.int32(0),
-    SoB           = cms.untracked.int32(1),
-    maxChi2       = cms.untracked.double(2.5), # 2.5
-    norm          = cms.untracked.int32(0),
 
-     functions     = cms.vstring(
+    # run both S and B hypotheses
+    SoB             = cms.untracked.int32(1),
+
+    # in case SoB=0, run only this hypothesis
+    hypo            = cms.untracked.int32(0),
+
+    # optimization0: re-run integral if bad chi2
+    integralOption0 = cms.untracked.int32(1),
+    
+    # max chi2 for optimization0
+    maxChi2         = cms.untracked.double(2.5),
+
+    # optimization1: skip combinations loosely compatible with H/t/W mass
+    integralOption1 = cms.untracked.int32(0),
+
+    # optimization2: re-run the integral using last VEGAS grid only
+    integralOption2 = cms.untracked.int32(0),
+
+    norm            = cms.untracked.int32(0),
+
+    functions     = cms.vstring(
     '8.95351e+18*TMath::Landau(x, 5.67600e+01,1.01258e+01)',                # incl
     '2.95547e+17*TMath::Landau(x,7.61581e+01 ,1.89245e+01)',                # SL2wj
     '2.98474e+17*TMath::Landau(x,7.40196e+01 ,1.80142e+01)',                # SL1wj
     '6.28300e+16*TMath::Landau(x,8.03060e+01 ,1.81679e+01)',                # SLNoBHad
     'x>150?2.44515e+27*x^(-5.35628e+00):1.24208e+18*exp((-3.63162e-02)*x)', # SLNoHiggs
     'x>=12 ? x^(-2.010e-01)*exp((-1.5785e-02)*x) : 4.184e-02*x'),           # tth Pt
- 
+    
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
     speedup       = cms.untracked.int32(0), ###### CHECK HERE
 
@@ -412,12 +427,12 @@ process.fwliteInput = cms.PSet(
     doTypeBTag4   = cms.untracked.int32(0),  #DL 4 jets
     
     
-    doType0       = cms.untracked.int32(1),  #SL(4,2)  w/  W-tag
+    doType0       = cms.untracked.int32(0),  #SL(4,2)  w/  W-tag
     doType1       = cms.untracked.int32(0),  #SL(4,2)  w/o W-tag
     doType2       = cms.untracked.int32(0),  #SL(4,1)
     doType3       = cms.untracked.int32(0),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
-    doType6       = cms.untracked.int32(0),  #DL(4,X)
+    doType6       = cms.untracked.int32(1),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
 
     doType0ByBTagShape = cms.untracked.int32(0),
@@ -426,11 +441,11 @@ process.fwliteInput = cms.PSet(
     doType3ByBTagShape = cms.untracked.int32(0),
     doType6ByBTagShape = cms.untracked.int32(0),
 
-    useME         = cms.int32(1),
-    useJac        = cms.int32(1),
-    useMET        = cms.int32(1),
-    useTF         = cms.int32(1),
-    usePDF        = cms.int32(1),
+    useME         = cms.untracked.int32(1),
+    useJac        = cms.untracked.int32(1),
+    useMET        = cms.untracked.int32(1),
+    useTF         = cms.untracked.int32(1),
+    usePDF        = cms.untracked.int32(1),
 
 
     doubleGaussianB  = cms.untracked.int32(1),
@@ -438,8 +453,8 @@ process.fwliteInput = cms.PSet(
     selectByBTagShape= cms.untracked.int32(0),
     useRegression    = cms.untracked.int32(0),
     
-    printout     = cms.int32(1),
-    debug        = cms.int32(0),   
+    printout     = cms.untracked.int32(0),
+    debug        = cms.untracked.int32(2),   
     verbose      = cms.bool(False),
 
     MH           = cms.untracked.double(125.00),
@@ -460,11 +475,12 @@ process.fwliteInput = cms.PSet(
     massesT      = cms.vdouble(174.3),
     #massesT      = cms.vdouble(145, 155, 165, 174, 185, 195, 205),
 
-    fixNumEvJob    = cms.untracked.int32(1),
-    evLimits       = cms.vint32(0,10),
+    fixNumEvJob    = cms.untracked.int32(0),
+    #evLimits       = cms.vint32(0,-1),
+    evLimits       = cms.vint32(137796,138880),
 
     doJERbias  = cms.untracked.int32(0),   
-    doCSVup    = cms.untracked.int32(0),
+    doCSVup    = cms.untracked.int32(1),
     doCSVdown  = cms.untracked.int32(0),
     doJECup    = cms.untracked.int32(0),
     doJECdown  = cms.untracked.int32(0),
