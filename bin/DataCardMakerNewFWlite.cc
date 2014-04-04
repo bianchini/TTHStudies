@@ -1876,7 +1876,7 @@ int main(int argc, const char* argv[])
   if( isTTJetsLFthere   ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isTTVthere        ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isSingleTthere    ) line += string(Form("%s    ", (fname+"_"+category).Data()));
-  if( isSingleEWKthere  ) line += string(Form("%s    ", (fname+"_"+category).Data()));
+  if( isEWKthere        ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   out<<line;
   out<<endl; 
   line = "process                     ";
