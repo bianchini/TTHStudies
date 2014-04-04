@@ -88,9 +88,9 @@ csv_WP_T = 0.898
 selectByBTagShape  = 1
 
 # cut values to select events
-btag_prob_cut_6jets = 0.96675 
-btag_prob_cut_5jets = 0.98225 
-btag_prob_cut_4jets = 0.90 
+btag_prob_cut_6jets = 0.960 
+btag_prob_cut_5jets = 0.970 
+btag_prob_cut_4jets = 0.850 
 
 ############################################### Category definition
 ###############################################
