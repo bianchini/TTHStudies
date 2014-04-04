@@ -147,9 +147,9 @@ int main(int argc, const char* argv[])
   double muEtaLoose         ( in.getUntrackedParameter<double>  ("muEtaLoose", 2.4));
   double muEtaTight         ( in.getUntrackedParameter<double>  ("muEtaTight", 2.1));
 
-  int    jetMultLoose       ( in.getUntrackedParameter<int>     ("jetMultLoose", 4 ));
-  double jetPtLoose         ( in.getUntrackedParameter<double>  ("jetPtLoose",  40.));
-
+  int    jetMultLoose       ( in.getUntrackedParameter<int>     ("jetMultLoose",    4 ));
+  double jetPtLoose         ( in.getUntrackedParameter<double>  ("jetPtLoose",     40.));
+  double jetPtThreshold     ( in.getUntrackedParameter<double>  ("jetPtThreshold", 30.));
 
   vector<int> systematics   ( in.getParameter<vector<int> > ("systematics"));
 
@@ -158,6 +158,7 @@ int main(int argc, const char* argv[])
   int   speedup          ( in.getUntrackedParameter<int>    ("speedup",          0));
   int   doubleGaussianB  ( in.getUntrackedParameter<int>    ("doubleGaussianB",  1));
   int   useBtag          ( in.getUntrackedParameter<int>    ("useBtag",          1));
+  int   useCMVA          ( in.getUntrackedParameter<int>    ("useCMVA",          0));
   int   selectByBTagShape( in.getUntrackedParameter<int>    ("selectByBTagShape",0));
   int   useCSVcalibration( in.getUntrackedParameter<int>    ("useCSVcalibration",0));
   int   recoverTopBTagBin( in.getUntrackedParameter<int>    ("recoverTopBTagBin",0));
@@ -257,6 +258,7 @@ int main(int argc, const char* argv[])
 
   // name of csv in the input file ()
   TString csvName = "csv_rec";
+  if( useCMVA ) csvName = "csv_mva_rec";
 
   // b-tag pdf for b-quark ('b'), c-quark ('c'), and light jets ('l')
   map<string,TH1F*> btagger; 
@@ -315,6 +317,7 @@ int main(int argc, const char* argv[])
     }
     if( countFailures>0 )  return 0;
   }
+
   else if( useBtag && fCP==0 ){
     cout << "Cound not find " << pathToCP << ": exit" << endl;
     return 0;
@@ -650,6 +653,7 @@ int main(int argc, const char* argv[])
   float lepton_dz_    [2];
   float lepton_wp80_  [2];
   float lepton_wp95_  [2];
+  float Mll_, MTln_;
 
   // additional SF for electrons;
   float sf_ele_;
@@ -790,6 +794,8 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_dz",               lepton_dz_,    "lepton_dz[nLep]/F");
   tree->Branch("lepton_wp80",             lepton_wp80_,  "lepton_wp80[nLep]/F");
   tree->Branch("lepton_wp95",             lepton_wp95_,  "lepton_wp95[nLep]/F");
+  tree->Branch("Mll",                     &Mll_,         "Mll/F");
+  tree->Branch("MTln",                    &MTln_,        "MTln/F");
 
   // additional electron SF
   tree->Branch("weightEle",               &sf_ele_,      "weightEle/F");
@@ -951,6 +957,7 @@ int main(int argc, const char* argv[])
     Float_t hJet_flavour      [999];
     Float_t hJet_puJetIdL     [999];
     Float_t hJet_csv          [999];
+    Float_t hJet_cmva         [999];
     Float_t hJet_csv_nominal  [999];
     Float_t hJet_csv_upBC     [999];
     Float_t hJet_csv_downBC   [999];
@@ -967,6 +974,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_flavour      [999];
     Float_t aJet_puJetIdL     [999];
     Float_t aJet_csv          [999];    
+    Float_t aJet_cmva         [999];
     Float_t aJet_csv_nominal  [999];
     Float_t aJet_csv_upBC     [999];
     Float_t aJet_csv_downBC   [999];
@@ -1044,6 +1052,7 @@ int main(int argc, const char* argv[])
       currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
       currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
       currentTree->SetBranchAddress("hJet_csv",         hJet_csv);
+      currentTree->SetBranchAddress("hJet_cmva",        hJet_cmva);
       currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
       currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
       currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
@@ -1061,6 +1070,8 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_flavour",     aJet_flavour);    
     currentTree->SetBranchAddress("aJet_puJetIdL",    aJet_puJetIdL);
     currentTree->SetBranchAddress("aJet_csv",         aJet_csv);
+    if( currentTree->GetBranch("aJet_cmva") )
+      currentTree->SetBranchAddress("aJet_cmva",      aJet_cmva);
     currentTree->SetBranchAddress("aJet_csv_nominal", aJet_csv_nominal);
     currentTree->SetBranchAddress("aJet_csv_upBC",    aJet_csv_upBC);
     currentTree->SetBranchAddress("aJet_csv_downBC",  aJet_csv_downBC);
@@ -1204,6 +1215,9 @@ int main(int argc, const char* argv[])
       for( int k = 0; k < 2; k++){
 	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99; lepton_dxy_[k] = -99; lepton_dz_[k] = -99; lepton_wp80_[k] = -99; lepton_wp95_[k] = -99;
       }
+      Mll_  = -99.;
+      MTln_ = -99.;
+
       for( int k = 0; k < NMAXJETS; k++){
 	jet_pt_[k] = -99; jet_pt_alt_[k] = -99; jet_eta_[k] = -99; jet_phi_[k] = -99; jet_m_[k] = -99;  jet_csv_[k] = -99;
       }
@@ -1993,7 +2007,7 @@ int main(int argc, const char* argv[])
 	      if( id < 0.5 ) continue;	
 	      
 	      // only jets above pt cut...
-	      if( pt < 30  ) continue;	  
+	      if( pt < jetPtThreshold  ) continue;	  
 	      
 	      // if this is one of hJet, increment by one
 	      if( coll==0 ) hJetAmong_++;
@@ -2019,6 +2033,16 @@ int main(int argc, const char* argv[])
 	    
 	      // if we apply SF for b-tag, or it is data, then deafult is 'reco' csv
 	      if( useCSVcalibration || !isMC ) csv = (coll==0) ? hJet_csv[hj] : aJet_csv[hj];
+
+	      // if using thr MVA btagger:
+	      if( useCMVA ){
+
+		// this is needed to remove the spike at zero!
+		if( csv>0. )
+		  csv = (coll==0) ? hJet_cmva[hj] : aJet_cmva[hj];
+		else
+		  csv = 0.;
+	      }
 
 	      // FIX the b-tagger output 
 	      //  ==> Min needed because in csvUp, csv can exceed 1..., 
@@ -2145,7 +2169,7 @@ int main(int argc, const char* argv[])
 	      deltaPy += ( pt*TMath::Sin(phi) );
 	      
 	      // only jets above pt cut...
-	      if( pt < 30 ) continue;	  
+	      if( pt < jetPtThreshold ) continue;	  
 	      
 	      // the jet four-vector
 	      TLorentzVector p4;
@@ -2226,6 +2250,24 @@ int main(int argc, const char* argv[])
 	Nus_pt_    = INVISIBLE.Pt();
 	Nus_phi_   = INVISIBLE.Phi();
 	
+	// save di-lepton mass
+	if( properEventSL ){
+	  TLorentzVector l;
+	  l.SetPtEtaPhiM( lepton_pt_[0], lepton_eta_[0], lepton_phi_[0], lepton_m_[0]);
+	  TLorentzVector n;
+	  n.SetPtEtaPhiM( MET_pt_, 0., MET_phi_, 0.);
+	  MTln_ = (l+n).Mt();
+	}
+	if( properEventDL ){
+	  TLorentzVector l1;
+	  l1.SetPtEtaPhiM( lepton_pt_[0], lepton_eta_[0], lepton_phi_[0], lepton_m_[0]);
+	  TLorentzVector l2;
+	  l2.SetPtEtaPhiM( lepton_pt_[1], lepton_eta_[1], lepton_phi_[1], lepton_m_[1]);
+	  Mll_  = (l1+l2).M();
+	}
+
+
+
 	////////////////////////////////////////////////////////////////////////
       
 
@@ -2353,30 +2395,30 @@ int main(int argc, const char* argv[])
 	int btag_T = csv_k>csv_WP_T ;	
 
 	// any btag value...
-	if( pt_k>30 ) banytag_indices.push_back( k );
+	if( pt_k>jetPtThreshold ) banytag_indices.push_back( k );
 
 	// passing at least CSVL...
-	if( pt_k>30 &&  btag_L ){
+	if( pt_k>jetPtThreshold &&  btag_L ){
 	  numJets30BtagL ++;
 	  btagLoose_indices.push_back( k );
 	}
 	// passing at least CSVM...
-	if( pt_k>30 &&  btag_M ){
+	if( pt_k>jetPtThreshold &&  btag_M ){
 	  numJets30BtagM ++;
 	  btag_indices.push_back( k );
 	}
 	// passing at least CSVT...
-	if( pt_k>30 &&  btag_T ){
+	if( pt_k>jetPtThreshold &&  btag_T ){
 	  numJets30BtagT ++;
 	}
 
 	// failing at most CSVL...
-	if( pt_k>30 && !btag_L ){
+	if( pt_k>jetPtThreshold && !btag_L ){
 	  numJets30UntagL++;
 	  buntagLoose_indices.push_back( k );
 	}
 	// failing at most CSVM...
-	if( pt_k>30 && !btag_M ){
+	if( pt_k>jetPtThreshold && !btag_M ){
 	  numJets30UntagM++;
 	  buntag_indices.push_back( k );
 	}

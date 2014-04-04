@@ -11,6 +11,7 @@ sys.path.append('./')
 
 import FWCore.ParameterSet.Config as cms
 
+DOMEMCATEGORIES = 1
 
 # load the configuration
 from Bianchi.TTHStudies.mem_parameters_cff import *
@@ -40,10 +41,10 @@ def getSplitting( path, sample, numjobs ):
                 return int(entries_per_job)
         else:
             print 'Cannot open file %s' % sample
-            return -1
+            return -2
     else:
         print 'Cannot find file %s' % sample
-        return -1
+        return -2
     
 
 ###########################################
@@ -119,6 +120,7 @@ def submitMEAnalysisNew_all(script,
 
     process.fwliteInput.doubleGaussianB    = cms.untracked.int32(doubleGaussianB)
     process.fwliteInput.useBtag            = cms.untracked.int32(useBtag)
+    process.fwliteInput.useCMVA            = cms.untracked.int32(useCMVA)
     process.fwliteInput.selectByBTagShape  = cms.untracked.int32(selectByBTagShape)
     process.fwliteInput.useCSVcalibration  = cms.untracked.int32(useCSVcalibration)
 
@@ -129,24 +131,38 @@ def submitMEAnalysisNew_all(script,
 
     process.fwliteInput.jetMultLoose       = cms.untracked.int32(jetMultLoose)
     process.fwliteInput.jetPtLoose         = cms.untracked.double(jetPtLoose)
+    process.fwliteInput.jetPtThreshold     = cms.untracked.double(jetPtThreshold)
 
-    process.fwliteInput.doType0            = cms.untracked.int32(not selectByBTagShape)
-    process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
-    process.fwliteInput.doType2            = cms.untracked.int32(not selectByBTagShape)
-    process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
-    process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
-    process.fwliteInput.doType7            = cms.untracked.int32(0)
-
-    #process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    #process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    #process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-    #process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    #process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-    process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    0)
-    process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-    process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    0)
-    process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+    if DOMEMCATEGORIES:
+        process.fwliteInput.doType0            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType1            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType2            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
+        process.fwliteInput.doType7            = cms.untracked.int32(0)        
+        process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
+        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doTypeBTag6        = cms.untracked.int32(0)
+        process.fwliteInput.doTypeBTag5        = cms.untracked.int32(0)
+        process.fwliteInput.doTypeBTag4        = cms.untracked.int32(0)
+    else:
+        process.fwliteInput.doType0            = cms.untracked.int32(0)
+        process.fwliteInput.doType1            = cms.untracked.int32(0)
+        process.fwliteInput.doType2            = cms.untracked.int32(0)
+        process.fwliteInput.doType3            = cms.untracked.int32(0)
+        process.fwliteInput.doType6            = cms.untracked.int32(0)
+        process.fwliteInput.doType7            = cms.untracked.int32(0)        
+        process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(0)
+        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(0)
+        process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(0)        
+        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(0)
+        process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(0)
+        process.fwliteInput.doTypeBTag6        = cms.untracked.int32(1)
+        process.fwliteInput.doTypeBTag5        = cms.untracked.int32(1)
+        process.fwliteInput.doTypeBTag4        = cms.untracked.int32(1)
 
     process.fwliteInput.btag_prob_cut_6jets = cms.untracked.double(btag_prob_cut_6jets)
     process.fwliteInput.btag_prob_cut_5jets = cms.untracked.double(btag_prob_cut_5jets)
@@ -232,13 +248,13 @@ def submitFullMEAnalysisNew_all( analysis ):
 
 
     toBeRun = [
-        ['TTH125',        270,'_V3/'], 
-        ['TTJetsSemiLept',150,'_V3/'],
-        ['TTJetsFullLept', 48,'_V3/'],
+        ['TTH125',        20,'_V4/'], #270 
+        #['TTJetsSemiLept',50,'_V4/'], #150
+        #['TTJetsFullLept',30,'_V4/'], #48
         #['TTJetsFullHad',   5,'_V4/'],
-        #['DYJets10to50',    1,'_V4/'],
-        #['DYJets50',        1,'_V4/'],
-        #['WJets',           1,'_V4/'],
+        #['DYJets10to50',    10,'_V4/'],
+        #['DYJets50',        10,'_V4/'],
+        #['WJets',           10,'_V4/'],
         #['TtW',             1,'_V4/'],
         #['Tt',              1,'_V4/'],
         #['Ts',              1,'_V4/'],
@@ -282,16 +298,18 @@ def submitFullMEAnalysisNew_all( analysis ):
         num_of_jobs = run[1]
         version     = run[2]
         evs_per_job = getSplitting( pathToFile+version+ordering , sample, num_of_jobs ) 
-        #continue
+        if evs_per_job==-2:
+            print "Error in getSplitting.. please check again."
+            continue
         for i in range(num_of_jobs):
             counter = counter + 1
             submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
-
+        
 ###########################################
 ###########################################
 
 
-analyses = ['test_MT173']
+analyses = ['test']
 
 for analysis in analyses:
     if doGenLevelAnalysis:
