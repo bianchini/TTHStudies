@@ -14,7 +14,7 @@ ordering   = 'DiJetPt_'
 lumi = 19.04
 
 # sample list
-samples = samples_V3
+samples = samples_V4
 
 # Reject run range 207883-208307 because of a pixel misalignment problem ( following VHbb )
 reject_pixel_misalign_evts = 0
@@ -30,7 +30,7 @@ evLimits = cms.vint32(0, -1),
 ntuplizeAll = 0
 
 # print intermediate steps
-printout    = 1
+printout    = 0
 
 # verbosity [0,1,2,3]
 debug       = 0
@@ -57,6 +57,7 @@ doubleGaussianB    = 1
 
 # use csv
 useBtag            = 1
+useCMVA            = 0
 
 # use the csv calibration from BDT
 useCSVcalibration  = 1
@@ -65,8 +66,9 @@ useCSVcalibration  = 1
 ###############################################
 
 # jet preselection
-jetMultLoose = 4
-jetPtLoose   = 40.
+jetMultLoose   = 0
+jetPtLoose     = 40.
+jetPtThreshold = 30.
 
 # lepton selection cut thresholds
 lepPtLoose   = 20.
@@ -86,9 +88,9 @@ csv_WP_T = 0.898
 selectByBTagShape  = 1
 
 # cut values to select events
-btag_prob_cut_6jets = 0.96675 
-btag_prob_cut_5jets = 0.98225 
-btag_prob_cut_4jets = 0.95295 
+btag_prob_cut_6jets = 0.960 
+btag_prob_cut_5jets = 0.970 
+btag_prob_cut_4jets = 0.850 
 
 ############################################### Category definition
 ###############################################
@@ -167,7 +169,7 @@ integralOption2_niter     = 1
 integralOption2_nevalfact = 1.0
 
 # switch off ME calculation
-speedup              = 0
+speedup              = 1
 
 # switch off OL calculation
 switchoffOL          = 0
