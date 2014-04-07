@@ -1,7 +1,9 @@
 import FWCore.ParameterSet.Config as cms
 
 
-ADDZLLVETO = 1
+ADDZLLVETO    = 1
+
+ADDDIJETPTCUT = 0
 
 
 # baseline
@@ -208,6 +210,3 @@ cat6_sb_L =  cat6_bj.clone(
     splitFirstBin = cms.int32(1),
     nBins     = cms.int32(6),
     )
-
-
-# Zll veto: ( Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8.) )  

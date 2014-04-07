@@ -14,10 +14,28 @@ import FWCore.ParameterSet.Config as cms
 from Bianchi.TTHStudies.mem_categories_cff import *
 
 
+###########################################
+###########################################
 
-def addZllVeto( process ):
+PSI  = 0
+qsub = ''
+if PSI==1:
+    qsub            = 'qsub -V -cwd -l h_vmem=2G -q all.q'
+else:
+    qsub            = 'qsub -q main'
+
+
+###########################################
+###########################################
+
+    
+def addZllVeto   ( process ):
     old_cut     = process.cut.value()
     process.cut =  cms.string("("+old_cut+") && (Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8.))")
+        
+def addDiJetPtCut( process ):
+    old_cut     = process.cut.value()
+    process.cut =  cms.string("("+old_cut+") && hJetAmong>=2")
         
 
 ###########################################
@@ -101,7 +119,7 @@ def submitDataCardMakerFWlite_Limits(category):
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = 'qsub -V -cwd -l h_vmem=6G -q all.q -N job'+category+' '+scriptName 
+    submitToQueue = qsub+' -N job'+category+' '+scriptName 
     print submitToQueue
     #os.system(submitToQueue)
     
@@ -173,7 +191,9 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 
     if fact1>=0:
          process.fwliteInput.fact1 = cms.double(fact1)
-    
+
+    if ADDZLLVETO and re.search("cat6", category)!=None:
+        addZllVeto( process.fwliteInput )
 
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+category+'_'+trial+'.sh'
@@ -195,7 +215,7 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = 'qsub -V -cwd -l h_vmem=6G -q all.q -N job'+category+' '+scriptName 
+    submitToQueue = qsub+' -N job'+category+' '+scriptName 
     print submitToQueue
     os.system(submitToQueue)
     
@@ -221,7 +241,10 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     process.fwliteInput.part      = cms.int32(part)
     process.fwliteInput.binvec    = cms.vdouble(binvec)
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
-    
+
+    if ADDZLLVETO and re.search("cat6", category)!=None:
+        addZllVeto( process.fwliteInput )
+        
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
     jobName    = 'job_'+script
@@ -242,7 +265,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = 'qsub -V -cwd -l h_vmem=1G -q all.q -N job'+category+' '+scriptName 
+    submitToQueue = qsub+' -N job'+category+' '+scriptName 
     print submitToQueue
     os.system(submitToQueue)
     
