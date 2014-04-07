@@ -76,7 +76,7 @@ typedef TMatrixT<double> TMatrixD;
 #define NCSVSYS          16
 
 // number of extra systematics
-#define NTHSYS            4 // used to be 4
+#define NTHSYS            4 // used to be 16
 
 // test effect of matching MEt phi distribution to data
 #define RESHAPEMETPHI     0
@@ -121,6 +121,8 @@ const string th_sys_names[4] = {
   //"Q2ScaleHFbDown",
   //"Q2ScaleLFUp",
   //"Q2ScaleLFDown",
+  //"Q2Scale3pUp",
+  //"Q2Scale3pDown",
 };
 
 typedef struct 
@@ -699,6 +701,13 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       case 12:
 	equivalent_pos_weight2 = nSimBs<=2 ?  1 : 0; //Q2 Down
 	break;
+      case 13:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==3 ?  2 : 0; //Q2 Up
+	break;
+      case 14:
+	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==3 ?  1 : 0; //Q2 Down
+	break;
+
       default:
 	equivalent_pos_weight2 = 0;
 	break;
@@ -1619,6 +1628,10 @@ int main(int argc, const char* argv[])
 	pos_weight2 = 11;
       if( syst_name.find( "Q2ScaleLFDown" )    !=string::npos )
 	pos_weight2 = 12;
+      if( syst_name.find( "Q2Scale3pUp"   )  !=string::npos )
+	pos_weight2 = 13;
+      if( syst_name.find( "Q2Scale3pDown" )  !=string::npos )
+	pos_weight2 = 14;
 
 
 

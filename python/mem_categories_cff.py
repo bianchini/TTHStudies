@@ -3,6 +3,8 @@ import FWCore.ParameterSet.Config as cms
 
 ADDZLLVETO    = 1
 
+ADDPIXELVETO  = 0
+
 ADDDIJETPTCUT = 0
 
 

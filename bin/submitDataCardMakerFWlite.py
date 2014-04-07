@@ -32,7 +32,11 @@ else:
 def addZllVeto   ( process ):
     old_cut     = process.cut.value()
     process.cut =  cms.string("("+old_cut+") && (Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8.))")
-        
+
+def addPixelVeto ( process ):
+    old_cut     = process.cut.value()
+    process.cut =  cms.string("("+old_cut+") && !(EVENT.run>207883 && EVENT.run<208307)")
+    
 def addDiJetPtCut( process ):
     old_cut     = process.cut.value()
     process.cut =  cms.string("("+old_cut+") && hJetAmong>=2")
@@ -98,6 +102,12 @@ def submitDataCardMakerFWlite_Limits(category):
 
     if ADDZLLVETO and re.search("cat6", category)!=None:
         addZllVeto( process.fwliteInput )
+
+    if ADDPIXELVETO:
+        addPixelVeto ( process.fwliteInput )
+
+    if ADDDIJETPTCUT:
+        addDiJetPtCut( process.fwliteInput )
 
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+category+'.sh'
@@ -195,6 +205,12 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
     if ADDZLLVETO and re.search("cat6", category)!=None:
         addZllVeto( process.fwliteInput )
 
+    if ADDPIXELVETO:
+        addPixelVeto( process.fwliteInput )
+
+    if ADDDIJETPTCUT:
+        addDiJetPtCut( process.fwliteInput )
+        
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+category+'_'+trial+'.sh'
     jobName    = 'job_'+category+'_'+trial
@@ -244,6 +260,12 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
 
     if ADDZLLVETO and re.search("cat6", category)!=None:
         addZllVeto( process.fwliteInput )
+
+    if ADDPIXELVETO:
+        addPixelVeto( process.fwliteInput )
+
+    if ADDDIJETPTCUT:
+        addDiJetPtCut( process.fwliteInput )
         
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
