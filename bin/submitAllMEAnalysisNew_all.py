@@ -210,8 +210,6 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.muEtaTight   = cms.untracked.double(muEtaTight)
     process.fwliteInput.muEtaLoose   = cms.untracked.double(muEtaLoose)
 
-    process.fwliteInput.jetMultLoose = cms.untracked.int32(jetMultLoose)
-    process.fwliteInput.jetPtLoose   = cms.untracked.double(jetPtLoose)
     process.fwliteInput.MwL          = cms.untracked.double(MwL)
     process.fwliteInput.MwH          = cms.untracked.double(MwH)
     process.fwliteInput.MhL          = cms.untracked.double(MhL)
@@ -270,6 +268,8 @@ def submitFullMEAnalysisNew_all( analysis ):
     print "Running full analysis for %s" %  (analysis)
 
 
+    total_jobs = 0
+
     toBeRun = [
         ['TTH125',         20,'_V4/'], 
         ['TTJetsSemiLept', 40,'_V4/'],
@@ -326,8 +326,11 @@ def submitFullMEAnalysisNew_all( analysis ):
             continue
         for i in range(num_of_jobs):
             counter = counter + 1
-            submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
-        
+            #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
+            total_jobs += 1
+
+    print "Total jobs submitted.....%d" % total_jobs
+            
 ###########################################
 ###########################################
 
