@@ -197,7 +197,8 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.csv_WP_T            =  cms.untracked.double(csv_WP_T)
 
     process.fwliteInput.useRegression       = cms.untracked.int32(useRegression)
-
+    process.fwliteInput.triggerErrors       = cms.untracked.int32(triggerErrors)
+    
     process.fwliteInput.massesH             = massesH
     process.fwliteInput.massesT             = massesT
     process.fwliteInput.MH                  = cms.untracked.double(MH)

@@ -47,6 +47,9 @@ systematics = cms.vint32(0,3,4,5,6)
 # use b-energy regression
 useRegression      = 0
 
+# read the (statistical error on the trigger/id scale factors
+triggerErrors      = 0
+
 # use gen-jets or reco-jets
 doGenLevelAnalysis = 0
 
