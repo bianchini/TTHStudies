@@ -30,8 +30,8 @@ if PSI==1:
     address2        = 'dcap://t3se01.psi.ch:22125/'
     qsub            = 'qsub -V -cwd -l h_vmem=2G -q all.q'
 else:
-    address1        = ''
     address2        = ''
+    address1        = ''
     qsub            = 'qsub -q main'
     
 
@@ -131,6 +131,7 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.useTF            = cms.untracked.int32(useTF)
     process.fwliteInput.usePDF           = cms.untracked.int32(usePDF)
     process.fwliteInput.useAnalyticalFormula = cms.untracked.int32(useAnalyticalFormula)
+    process.fwliteInput.useDynamicalScale    = cms.untracked.int32(useDynamicalScale)
 
     process.fwliteInput.integralOption0  = cms.untracked.int32( integralOption0 )
     process.fwliteInput.integralOption1  = cms.untracked.int32( integralOption1 )
@@ -163,10 +164,10 @@ def submitMEAnalysisNew_all(script,
         process.fwliteInput.doType3            = cms.untracked.int32(not selectByBTagShape)
         process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
         process.fwliteInput.doType7            = cms.untracked.int32(0)        
-        process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
         process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
         process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
         process.fwliteInput.doTypeBTag6        = cms.untracked.int32(0)
         process.fwliteInput.doTypeBTag5        = cms.untracked.int32(0)
@@ -271,9 +272,9 @@ def submitFullMEAnalysisNew_all( analysis ):
     total_jobs = 0
 
     toBeRun = [
-        ['TTH125',         20,'_V4/'], 
-        ['TTJetsSemiLept', 40,'_V4/'],
-        ['TTJetsFullLept', 40,'_V4/'],
+        ['TTH125',         50,'_V4/'], 
+        ['TTJetsSemiLept', 50,'_V4/'],
+        ['TTJetsFullLept', 50,'_V4/'],
         #['TTJetsFullHad',   5,'_V4/'],
         #['DYJets10to50',    1,'_V4/'],
         #['DYJets50',        1,'_V4/'],
@@ -326,7 +327,7 @@ def submitFullMEAnalysisNew_all( analysis ):
             continue
         for i in range(num_of_jobs):
             counter = counter + 1
-            #submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
+            submitMEAnalysisNew_all(analysis+'_'+sample+'_p'+str(counter), sample,  version,  i*evs_per_job, (i+1)*evs_per_job )
             total_jobs += 1
 
     print "Total jobs submitted.....%d" % total_jobs
@@ -335,7 +336,7 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 
 
-analyses = ['pt25']
+analyses = ['test_dynamicalscale_v2']
 
 for analysis in analyses:
     if doGenLevelAnalysis:
