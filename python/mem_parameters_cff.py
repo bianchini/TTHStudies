@@ -11,7 +11,7 @@ pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJ
 ordering   = 'DiJetPt_'
 
 # luminosity
-lumi = 19.04
+lumi = 12.1
 
 # sample list
 samples = samples_V4
@@ -30,14 +30,14 @@ evLimits = cms.vint32(0, -1),
 ntuplizeAll = 0
 
 # print intermediate steps
-printout    = 0
+printout    = 1
 
 # verbosity [0,1,2,3]
 debug       = 0
 
 # systematics
-#systematics = cms.vint32(0,3,4,5,6)
-systematics = cms.vint32(0)
+systematics = cms.vint32(0,3,4,5,6)
+#systematics = cms.vint32(0)
 
 
 ############################################### Object definition
@@ -155,6 +155,9 @@ usePDF               = 1
 # use analytical t decay amplitude in weight calculation
 useAnalyticalFormula = 1
 
+# use dynamical state when evaluating ttbb prob.
+useDynamicalScale    = 1
+
 # chi2-optimization
 integralOption0      = 0 
 maxChi2              = 2.5
@@ -169,7 +172,7 @@ integralOption2_niter     = 1
 integralOption2_nevalfact = 1.0
 
 # switch off ME calculation
-speedup              = 1
+speedup              = 0
 
 # switch off OL calculation
 switchoffOL          = 0

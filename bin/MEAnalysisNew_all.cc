@@ -187,6 +187,7 @@ int main(int argc, const char* argv[])
   int   useTF            ( in.getUntrackedParameter<int>    ("useTF",              1));
   int   usePDF           ( in.getUntrackedParameter<int>    ("usePDF",             1));
   int   useAnalyticalFormula ( in.getUntrackedParameter<int>("useAnalyticalFormula",0));
+  int   useDynamicalScale    ( in.getUntrackedParameter<int>("useDynamicalScale",   0));
   int   norm             ( in.getUntrackedParameter<int>    ("norm",               0));
   int   hypo             ( in.getUntrackedParameter<int>    ("hypo",               0));
   int   SoB              ( in.getUntrackedParameter<int>    ("SoB",                1));
@@ -441,6 +442,7 @@ int main(int argc, const char* argv[])
   meIntegrator->setUseTF (useTF);
   meIntegrator->setUsePDF(usePDF);
   meIntegrator->setUseAnalyticalFormula(useAnalyticalFormula);
+  meIntegrator->setUseDynamicalScale   (useDynamicalScale);
 
   // use double-gaussian for b quark energy TF
   meIntegrator->setUseRefinedTF(doubleGaussianB);

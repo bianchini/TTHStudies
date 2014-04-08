@@ -22,7 +22,7 @@ process.fwliteInput = cms.PSet(
 
     # input file directory
     #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_new/"),
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V3/"),
+    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V4/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
     #pathToFile    = cms.string("/shome/bianchi/CMSSW_5_3_3_patch2_New/src/VHbbAnalysis/VHbbDataFormats/bin/"),
@@ -112,7 +112,7 @@ process.fwliteInput = cms.PSet(
     doType4       = cms.untracked.int32(0),  #SL(3,2)
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
-    doType0ByBTagShape = cms.untracked.int32(1),
+    doType0ByBTagShape = cms.untracked.int32(0),
     doType1ByBTagShape = cms.untracked.int32(0),
     doType2ByBTagShape = cms.untracked.int32(0),
     doType3ByBTagShape = cms.untracked.int32(0),
@@ -125,13 +125,14 @@ process.fwliteInput = cms.PSet(
     useTF         = cms.untracked.int32(1),
     usePDF        = cms.untracked.int32(1),
     useAnalyticalFormula = cms.untracked.int32(1),
-
+    useDynamicalScale    = cms.untracked.int32(0),
 
     # use DG for b-jet TF
     doubleGaussianB  = cms.untracked.int32(1),
 
     # use jet b-tag information
     useBtag          = cms.untracked.int32(1),
+    useCMVA          = cms.untracked.int32(0),
 
     # select events based on btag LLR
     selectByBTagShape= cms.untracked.int32(1),
@@ -185,9 +186,10 @@ process.fwliteInput = cms.PSet(
     muEtaLoose   = cms.untracked.double(2.4),
 
     # jet preselection
-    jetMultLoose = cms.untracked.int32(4),
-    jetPtLoose   = cms.untracked.double(40.),
-
+    jetMultLoose   = cms.untracked.int32(4),
+    jetPtLoose     = cms.untracked.double(40.),
+    jetPtThreshold = cms.untracked.double(30.),
+    
     # needed for category classification
     MwL          = cms.untracked.double(60),
     MwH          = cms.untracked.double(100),

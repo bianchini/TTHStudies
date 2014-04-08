@@ -160,6 +160,7 @@ class MEIntegratorNew {
   void   setUseTF   (int);
   void   setUsePDF  (int);
   void   setUseAnalyticalFormula(int);
+  void   setUseDynamicalScale(int);
   void   setTopFlags(int,int);
   void   setWeightNorm(NormalizationType);
   void   setNormFormulas(TString, TString, TString, TString, TString, TString);
@@ -299,6 +300,7 @@ class MEIntegratorNew {
   int useTF_;
   int usePDF_;
   int useAnalyticalFormula_;
+  int useDynamicalScale_;
 
   TH1F* debugHisto1_;
   TH1F* partonLuminosity_;
@@ -382,6 +384,7 @@ MEIntegratorNew::MEIntegratorNew( string fileName , int param , int verbose ) {
   useTF_   = 1;
   usePDF_  = 1;
   useAnalyticalFormula_ = 0;
+  useDynamicalScale_    = 0;
 
   top1Flag_ = 0;
   top2Flag_ = 0;
@@ -1694,6 +1697,10 @@ void MEIntegratorNew::setUseRefinedTF(int use){
 
 void MEIntegratorNew::setUseAnalyticalFormula(int use){
   useAnalyticalFormula_ = use;
+}
+
+void MEIntegratorNew::setUseDynamicalScale(int use){
+  useDynamicalScale_ = use;
 }
 
 void MEIntegratorNew::switchOffOL(){
@@ -3246,6 +3253,8 @@ double MEIntegratorNew::probabilitySL2wj(const double* x, int sign) const{
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
 
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
+
   //cout << "x1 (NLO) = " << x1 << ", x2 (NLO) = " << x2 << endl;
 
   double me2;
@@ -3439,6 +3448,8 @@ double MEIntegratorNew::probabilitySL1wj(const double* x, int sign) const{
   double x1 = (  tot.Pz() + tot.E() )/SqrtS_;
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
+
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
 
   TVector3 boostToCMS  = tot.BoostVector();
 
@@ -3698,6 +3709,8 @@ double MEIntegratorNew::probabilitySLNoBHad(const double* x, int sign) const{
   double x1 = (  tot.Pz() + tot.E() )/SqrtS_;
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
+
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
 
   TVector3 boostToCMS  = tot.BoostVector();
 
@@ -3959,6 +3972,8 @@ double MEIntegratorNew::probabilitySLNoBLep(const double* x, int sign) const{
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
 
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
+  
   TVector3 boostToCMS  = tot.BoostVector();
 
   double me2 = 1.0;
@@ -4218,6 +4233,8 @@ double MEIntegratorNew::probabilitySLNoHiggs(const double* x, int sign) const{
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
 
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
+
   TVector3 boostToCMS  = tot.BoostVector();
 
   double me2 = 1.0;
@@ -4467,6 +4484,8 @@ double MEIntegratorNew::probabilityDL(const double* x, int sign) const{
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
 
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
+  
   double me2;
   if(useME_==1 && top1Flag_ == +1 && top2Flag_ == -1)               // topLep = t,  topHad = tx
     me2 =  hypo_==0 ? meSquaredOpenLoops( &topLep1, &topLep2, &higgs, x1, x2 ): meSquaredOpenLoops_ttbb( &topLep1, &topLep2, &higgs1, &higgs2, x1, x2 );
@@ -4721,6 +4740,8 @@ double MEIntegratorNew::probabilitySLUnconstrained(const double* x, int acceptan
   double x2 = ( -tot.Pz() + tot.E() )/SqrtS_;
   double Q  = (2*Mtop_ + M_)/2.;
 
+  if( useDynamicalScale_ && hypo_==1 ) Q = TMath::Sqrt( 4*Mtop_*Mtop_ + TMath::Power(higgs1.Pt() + higgs2.Pt(), 2) );
+  
   float SumPt  = tot.Pt() ;
   //cout << "Sum Pt = " << tot.Pt() << endl;
 
