@@ -16,7 +16,7 @@ cat = cms.PSet(
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/"),
-    directory = cms.string("Apr02_2014"),
+    directory = cms.string("Apr07_2014"),
     cut       = cms.string(""),
     category  = cms.string(""),
     doMEM     = cms.int32(3),
@@ -209,6 +209,6 @@ cat6_sb_L =  cat6_bj.clone(
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     fact1     = cms.double(2.0),
-    splitFirstBin = cms.int32(1),
+    splitFirstBin = cms.int32(0),
     nBins     = cms.int32(6),
     )
