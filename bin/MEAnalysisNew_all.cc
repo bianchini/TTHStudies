@@ -164,6 +164,16 @@ int main(int argc, const char* argv[])
   int   recoverTopBTagBin( in.getUntrackedParameter<int>    ("recoverTopBTagBin",0));
   int   useRegression    ( in.getUntrackedParameter<int>    ("useRegression",    0));
 
+  int   triggerErrors      ( in.getUntrackedParameter<int>    ("triggerErrors",    0));
+
+  string pathTo_f_Vtype1_id  ( in.getParameter<std::string>     ("pathTo_f_Vtype1_id") );
+  string pathTo_f_Vtype1L1_tr( in.getParameter<std::string>     ("pathTo_f_Vtype1L1_tr") );
+  string pathTo_f_Vtype1L2_tr( in.getParameter<std::string>     ("pathTo_f_Vtype1L2_tr") );
+  string pathTo_f_Vtype2_id  ( in.getParameter<std::string>     ("pathTo_f_Vtype2_id") );
+  string pathTo_f_Vtype2_tr  ( in.getParameter<std::string>     ("pathTo_f_Vtype2_tr") );
+  string pathTo_f_Vtype3_id  ( in.getParameter<std::string>     ("pathTo_f_Vtype3_id") );
+  string pathTo_f_Vtype3_tr  ( in.getParameter<std::string>     ("pathTo_f_Vtype3_tr") );
+
   int   testSLw1jType3    ( in.getUntrackedParameter<int>("testSLw1jType3",    0));
   int   nMaxJetsSLw1jType3( in.getUntrackedParameter<int>("nMaxJetsSLw1jType3",4));
 
@@ -383,6 +393,46 @@ int main(int argc, const char* argv[])
     cout << "Cound not find " << pathToCP << " or " << pathToCP_smear << ": exit" << endl;
     return 0;
   }
+
+
+  // for trigger/ID errors
+  TFile* f_Vtype1_id = 0;
+  TFile* f_Vtype1L1_tr = 0;
+  TFile* f_Vtype1L2_tr = 0;
+  TFile* f_Vtype2_id = 0;
+  TFile* f_Vtype2_tr = 0;
+  TFile* f_Vtype3_id = 0;
+  TFile* f_Vtype3_tr = 0;
+
+  TTree* t_Vtype1_id = 0;
+  TTree* t_Vtype1L1_tr = 0;
+  TTree* t_Vtype1L2_tr = 0;
+  TTree* t_Vtype2_id = 0;
+  TTree* t_Vtype2_tr = 0;
+  TTree* t_Vtype3_id = 0;
+  TTree* t_Vtype3_tr = 0;
+ 
+  if( triggerErrors ){
+
+    cout << "Reading trigger/ID/iso errors from root files..." << endl;
+    f_Vtype1_id   = TFile::Open(pathTo_f_Vtype1_id.c_str(),  "READ");
+    f_Vtype1L1_tr = TFile::Open(pathTo_f_Vtype1L1_tr.c_str(),"READ");
+    f_Vtype1L2_tr = TFile::Open(pathTo_f_Vtype1L2_tr.c_str(),"READ");
+    f_Vtype2_id   = TFile::Open(pathTo_f_Vtype2_id.c_str(),  "READ");
+    f_Vtype2_tr   = TFile::Open(pathTo_f_Vtype2_tr.c_str(),  "READ");
+    f_Vtype3_id   = TFile::Open(pathTo_f_Vtype3_id.c_str(),  "READ");
+    f_Vtype3_tr   = TFile::Open(pathTo_f_Vtype3_tr.c_str(),  "READ");
+
+    t_Vtype1_id   = (TTree*)f_Vtype1_id->Get("tree");
+    t_Vtype1L1_tr = (TTree*)f_Vtype1L1_tr->Get("tree");
+    t_Vtype1L2_tr = (TTree*)f_Vtype1L2_tr->Get("tree");
+    t_Vtype2_id   = (TTree*)f_Vtype2_id->Get("tree");
+    t_Vtype2_tr   = (TTree*)f_Vtype2_tr->Get("tree");
+    t_Vtype3_id   = (TTree*)f_Vtype3_id->Get("tree");
+    t_Vtype3_tr   = (TTree*)f_Vtype3_tr->Get("tree");
+ 
+  }
+
 
 
   // Higgs mass values for scan
@@ -634,6 +684,7 @@ int main(int argc, const char* argv[])
   float PUweight_, PUweightP_, PUweightM_;
   // trigger turn-on
   float trigger_;
+  float triggerErr_;
   // trigger bits (data)
   bool triggerFlags_[70];
   // number of gen jets
@@ -745,6 +796,7 @@ int main(int argc, const char* argv[])
   tree->Branch("n_l",          &n_l_,           "n_l/I");
   tree->Branch("n_g",          &n_g_,           "n_g/I");
   tree->Branch("trigger",      &trigger_,       "trigger/F");
+  tree->Branch("triggerErr",   &triggerErr_,    "triggerErr/F");
   tree->Branch("triggerFlags", triggerFlags_,   "triggerFlags[70]/b");
   tree->Branch("p4H",          p4H_,            "p4H[4]/F");
   tree->Branch("p4T",          p4T_,            "p4T[4]/F");
@@ -1183,6 +1235,7 @@ int main(int argc, const char* argv[])
       n_g_                = SCALEsyst[6];
 
       trigger_     = weightTrig2012;
+      triggerErr_  = 0.;
       sf_ele_      = -99;
 
       for(int k = 0; k < 70 ; k++){
@@ -1703,8 +1756,8 @@ int main(int argc, const char* argv[])
 	  int trigVtype2 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
 	  
 	  // OR of two trigger paths:   "HLT_Ele27_CaloIdVT_CaloIsoT_TrkIdT_TrkIsoT_v.*", "HLT_Ele27_WP80_v.*"
-	  int trigVtype3 =  (Vtype==3 &&  triggerFlags[44]>0 );
-	  
+	  int trigVtype3 =  (Vtype==3 &&  triggerFlags[44]>0 );	 
+
 	  // for the moment, don't cut on trigger bit (save and cut offline)
 	  trigVtype2 = 1; 
 	  trigVtype3 = 1;
@@ -1712,6 +1765,45 @@ int main(int argc, const char* argv[])
 	  // ID && trigger
 	  properEventSL = (lepSelVtype2 && (isMC ? 1 : trigVtype2)) || (lepSelVtype3 && (isMC ? 1 : trigVtype3));	 
 	  
+	  // trigger error
+	  if( isMC && triggerErrors && (lepSelVtype2 && (isMC ? 1 : trigVtype2)) ){
+	    if( t_Vtype2_id && t_Vtype2_tr){
+	      float scale_id = 1.;
+	      float id    = weightError( t_Vtype2_id, leptonLV.Pt(), leptonLV.Eta(), scale_id );
+	      float scale_tr = 1.;
+	      float tr    = weightError( t_Vtype2_tr, leptonLV.Pt(), leptonLV.Eta(), scale_tr );
+
+	      float comb  = TMath::Sqrt( id*id + tr*tr )*(scale_id*scale_tr);
+	      triggerErr_ = comb;
+
+	      if( debug>=2 ){
+		cout << "Vtype2: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << ")" << endl;
+		cout << " - scale_id = " << scale_id << " +/- " << scale_id*id << endl;
+		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
+		cout << " - comb = " << comb << endl;
+	      }
+
+	    }
+	  }
+	  if( isMC && triggerErrors && (lepSelVtype3 && (isMC ? 1 : trigVtype3)) ){
+	    if( t_Vtype3_id && t_Vtype3_tr){
+	      float scale_id = 1.;
+	      float id    = weightError( t_Vtype3_id, leptonLV.Pt(), leptonLV.Eta(), scale_id );
+	      float scale_tr = 1.;
+	      float tr    = weightError( t_Vtype3_tr, leptonLV.Pt(), leptonLV.Eta(), scale_tr );
+
+	      float comb  = TMath::Sqrt( id*id + tr*tr )*(scale_id*scale_tr);
+	      triggerErr_ = comb;
+
+	      if( debug>=2 ){
+		cout << "Vtype3: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << ")" << endl;
+		cout << " - scale_id = " << scale_id << " +/- " << scale_id*id << endl;
+		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
+		cout << " - comb = " << comb << endl;
+	      }
+	    }
+	  }
+
 	  if( debug>=2 ){
 	    cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
 	    cout << "Lep sel. Vtype2 = " << lepSelVtype2 << ", lep sel. Vtype3 = " << lepSelVtype3 << endl;
@@ -1774,8 +1866,8 @@ int main(int argc, const char* argv[])
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[1]==11 && 
-			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0) ||
-				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp80[1]>0) )
+			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp95[0]>0.5) ||
+				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp95[1]>0.5) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
@@ -1791,6 +1883,78 @@ int main(int argc, const char* argv[])
 	  // ID && trigger
 	  properEventDL = (lepSelVtype0 && (isMC ? 1 : trigVtype0)) || (lepSelVtype1 && (isMC ? 1 : trigVtype1));
 	  
+	  // trigger error
+	  if( isMC && triggerErrors && (lepSelVtype0 && (isMC ? 1 : trigVtype0)) ){
+	    if( t_Vtype2_id && t_Vtype2_tr){
+	      float scale_id1 = 1.;
+	      float id1       = weightError( t_Vtype2_id, leptonLV.Pt(),  leptonLV.Eta(),  scale_id1 );
+	      float scale_tr1 = 1.;
+	      float tr1       = weightError( t_Vtype2_tr, leptonLV.Pt(),  leptonLV.Eta(),  scale_tr1 );
+	      float scale_id2 = 1.;
+	      float id2       = weightError( t_Vtype2_id, leptonLV2.Pt(), leptonLV2.Eta(), scale_id2 );
+	      float scale_tr2 = 1.0;
+	      float tr2       = weightError( t_Vtype2_tr, leptonLV2.Pt(), leptonLV2.Eta(), scale_tr2 ); 
+
+	      float scale_tr   =  scale_tr1 + scale_tr2 - scale_tr1*scale_tr2;
+
+	      float scale_trUp   =  scale_tr1*(1+tr1) + scale_tr2*(1+tr2) - scale_tr1*(1+tr1)*scale_tr2*(1+tr2);
+	      float scale_trDown =  scale_tr1*(1-tr1) + scale_tr2*(1-tr2) - scale_tr1*(1-tr1)*scale_tr2*(1-tr2);
+
+	      float tr = scale_tr>0 ? TMath::Max( TMath::Abs(scale_tr-scale_trUp), TMath::Abs(scale_tr-scale_trDown) ) : 0.;
+
+	      float comb  = TMath::Sqrt( tr*tr + id1*id1 + id2*id2 )*(scale_id1*scale_id2*scale_tr);
+	      triggerErr_ = comb;
+
+	      if( debug>=2 ){
+		cout << "Vtype0: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << " ; " << leptonLV2.Pt() << "," << leptonLV2.Eta() << ")" << endl;
+		cout << " - scale_id1 = " << scale_id1 << " +/- " << scale_id1*id1 << endl;
+		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
+		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
+		cout << " - comb = " << comb << endl;
+	      }
+
+	    }
+	  }
+	  if( isMC && triggerErrors && (lepSelVtype1 && (isMC ? 1 : trigVtype1)) ){
+	    if( t_Vtype1_id && t_Vtype1L1_tr && t_Vtype1L2_tr){
+
+	      // L1 means Ele17, L2 means Ele8
+	      float scale_tr1L1 = 1.;
+	      float tr1L1       = weightError( t_Vtype1L1_tr, leptonLV.Pt(),  leptonLV.Eta(),  scale_tr1L1 );
+	      float scale_tr1L2 = 1.;
+	      float tr1L2       = weightError( t_Vtype1L2_tr, leptonLV.Pt(),  leptonLV.Eta(),  scale_tr1L2 );
+	      float scale_tr2L1 = 1.;
+	      float tr2L1       = weightError( t_Vtype1L1_tr, leptonLV2.Pt(),  leptonLV2.Eta(),  scale_tr2L1 );
+	      float scale_tr2L2 = 1.;
+	      float tr2L2       = weightError( t_Vtype1L2_tr, leptonLV2.Pt(),  leptonLV2.Eta(),  scale_tr2L2 );
+
+	      // the scale factor
+	      float scale_tr    =  scale_tr1L2*scale_tr2L1 + scale_tr2L2*scale_tr1L1 - scale_tr1L1*scale_tr2L1; 
+	      
+	      // scale_tr Up
+	      float scale_trL1Up   = scale_tr1L2*(1+tr1L2)*scale_tr2L1*(1+tr2L1) + scale_tr2L2*(1+tr2L2)*scale_tr1L1*(1+tr1L1) - scale_tr1L1*(1+tr1L1)*scale_tr2L1*(1+tr2L1);
+	      float scale_trL1Down = scale_tr1L2*(1-tr1L2)*scale_tr2L1*(1-tr2L1) + scale_tr2L2*(1-tr2L2)*scale_tr1L1*(1-tr1L1) - scale_tr1L1*(1-tr1L1)*scale_tr2L1*(1-tr2L1);
+	      float tr = scale_tr>0 ? TMath::Max( TMath::Abs( scale_tr-scale_trL1Up ) , TMath::Abs( scale_tr-scale_trL1Down ) )/scale_tr : 0.;
+
+	      float scale_id1 = 1.;
+	      float id1       = weightError( t_Vtype1_id, leptonLV.Pt(),   leptonLV.Eta(),  scale_id1 );
+	      float scale_id2 = 1.;
+	      float id2       = weightError( t_Vtype1_id, leptonLV2.Pt(),  leptonLV2.Eta(),  scale_id2 );	     
+
+	      float comb = TMath::Sqrt( tr*tr + id1*id1 + id2*id2)* scale_tr * scale_id1 * scale_id2;
+	      triggerErr_ = comb;
+
+	      if( debug>=2 ){
+		cout << "Vtype1: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << " ; " << leptonLV2.Pt() << "," << leptonLV2.Eta() << ")" << endl;
+		cout << " - scale_id1 = " << scale_id1 << " +/- " << scale_id1*id1 << endl;
+		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
+		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
+		cout << " - comb = " << comb << endl;
+	      }
+
+	    }
+	  }
+
 	  if( debug>=2 ){
 	    cout << "nvlep=" << nvlep << ", Vtype=" << Vtype << endl;
 	    cout << "Lep sel. Vtype2 = " << lepSelVtype0 << ", lep sel. Vtype3 = " << lepSelVtype1 << endl;
@@ -1877,6 +2041,33 @@ int main(int argc, const char* argv[])
 
 	  // ID && trigger
 	  properEventDL = lepSelVtype4 && (isMC ? 1 : trigVtype4) ;
+
+	  // trigger error
+	  if( isMC && triggerErrors && (lepSelVtype4 && (isMC ? 1 : trigVtype4)) ){
+	    if( t_Vtype2_id && t_Vtype2_tr && t_Vtype1_id){
+
+	      float scale_id1 = 1.;
+	      float id1    = weightError( t_Vtype2_id, leptonLV.Pt(), leptonLV.Eta(), scale_id1 );
+	      float scale_tr1 = 1.;
+	      float tr1    = weightError( t_Vtype2_tr, leptonLV.Pt(), leptonLV.Eta(), scale_tr1 );
+	      float scale_id2 = 1.;
+	      float id2    = weightError( t_Vtype1_id, leptonLV2.Pt(), leptonLV2.Eta(), scale_id2 );
+	      float scale_tr2 = 1.0;
+	      float tr2       = 0.0;
+
+	      float comb  = TMath::Sqrt( id1*id1 + tr1*tr1 + id2*id2 + tr2*tr2 )*(scale_id1*scale_tr1*scale_id2*scale_tr2);
+	      triggerErr_ = comb;
+
+	      if( debug>=2 ){
+		cout << "Vtype4: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << " ; " << leptonLV2.Pt() << "," << leptonLV2.Eta() << ")" << endl;
+		cout << " - scale_id1 = " << scale_id1 << " +/- " << scale_id1*id1 << endl;
+		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
+		cout << " - scale_tr = " << scale_tr1 << " +/- " << scale_tr1*tr1 << endl;
+		cout << " - comb = " << comb << endl;
+	      }
+
+	    }
+	  }
 
 	  if( debug>=2 ){
 	    cout << "nvlep=" << nvlep << ", nalep=" << nalep  << ", Vtype=" << Vtype << endl;
@@ -4192,6 +4383,17 @@ int main(int argc, const char* argv[])
   }
   if( f_CSVwgt_LF!=0 ){
     f_CSVwgt_LF->Close();
+  }
+
+  // close the trigger erro files (if any)
+  if( triggerErrors ){
+    if(f_Vtype1_id)   f_Vtype1_id->Close();
+    if(f_Vtype1L1_tr) f_Vtype1L1_tr->Close();
+    if(f_Vtype1L2_tr) f_Vtype1L2_tr->Close();
+    if(f_Vtype2_id)   f_Vtype2_id->Close();
+    if(f_Vtype2_tr)   f_Vtype2_tr->Close();
+    if(f_Vtype3_id)   f_Vtype3_id->Close();
+    if(f_Vtype3_tr)   f_Vtype3_tr->Close();
   }
 
   // save the tree and the counting histo in the ROOT file

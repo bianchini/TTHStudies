@@ -876,4 +876,30 @@ float eleSF(float pt, float eta){
   return 1.;
 }
 
+
+float weightError( TTree* tree, float pt, float eta, float& scale_){
+
+  float err = 0.;
+
+  float  ptMin, ptMax, etaMin, etaMax, scale, error;
+  tree->SetBranchAddress("ptMin",  &ptMin);
+  tree->SetBranchAddress("ptMax",  &ptMax);
+  tree->SetBranchAddress("etaMin", &etaMin);
+  tree->SetBranchAddress("etaMax", &etaMax);
+  tree->SetBranchAddress("scale",  &scale);
+  tree->SetBranchAddress("error",  &error);
+
+  Long64_t nentries = tree->GetEntries();
+  for( Long64_t i = 0; i < nentries ; i++ ){
+    tree->GetEntry(i);
+    if( pt>=ptMin && pt<ptMax && eta>=etaMin && eta<etaMax ) {
+      err    = scale>0 ? error/scale : 0.; 
+      scale_ = scale;
+    }
+  }
+
+  return err;
+
+}
+
 #endif

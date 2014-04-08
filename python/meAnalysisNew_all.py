@@ -99,7 +99,7 @@ process.fwliteInput = cms.PSet(
     switchoffOL   = cms.untracked.int32(0), ###### CHECK HERE
 
     # skip VEGAS call
-    speedup       = cms.untracked.int32(0), ###### CHECK HERE
+    speedup       = cms.untracked.int32(1), ###### CHECK HERE
 
     # select which analysis to run
     doTypeBTag6   = cms.untracked.int32(0),  #SL 6 jets
@@ -162,6 +162,16 @@ process.fwliteInput = cms.PSet(
     # apply energy regression on jets
     useRegression    = cms.untracked.int32(0),
 
+    # evaluate trigger errors
+    triggerErrors        = cms.untracked.int32(1),
+    pathTo_f_Vtype1_id   = cms.string("root/EleRecoId.ScaleFactor.wp95.2012ABCD.root"),
+    pathTo_f_Vtype1L1_tr = cms.string("root/DoubleEle17.TrigEff.wp95.2012ABCD.root"),
+    pathTo_f_Vtype1L2_tr = cms.string("root/DoubleEle8.TrigEff.wp95.2012ABCD.root"),
+    pathTo_f_Vtype2_id   = cms.string("root/MuRecoId.ScaleFactor.2012ABCD.root"),
+    pathTo_f_Vtype2_tr   = cms.string("root/SingleMu24OR40.TrigEff.2012ABCD.root"),
+    pathTo_f_Vtype3_id   = cms.string("root/EleRecoId.ScaleFactor.wp80.2012ABCD.root"),
+    pathTo_f_Vtype3_tr   = cms.string("root/SingleEle.TrigEff.wp80.2012ABCD.root"),
+
     # print out the integral at run-time
     printout     = cms.untracked.int32(0),
 
@@ -213,7 +223,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, -1),
+    evLimits       = cms.vint32(0, 100000),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -237,7 +247,7 @@ process.fwliteInput = cms.PSet(
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(0),
+    ntuplizeAll         = cms.untracked.int32(1),
     
     )
 
