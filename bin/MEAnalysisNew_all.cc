@@ -2056,7 +2056,9 @@ int main(int argc, const char* argv[])
 	      float tr2       = 0.0;
 
 	      float comb  = TMath::Sqrt( id1*id1 + tr1*tr1 + id2*id2 + tr2*tr2 )*(scale_id1*scale_tr1*scale_id2*scale_tr2);
+
 	      triggerErr_ = comb;
+	      trigger_   *= (scale_id2*scale_tr2);
 
 	      if( debug>=2 ){
 		cout << "Vtype4: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << " ; " << leptonLV2.Pt() << "," << leptonLV2.Eta() << ")" << endl;
