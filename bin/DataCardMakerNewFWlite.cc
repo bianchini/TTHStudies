@@ -76,7 +76,7 @@ typedef TMatrixT<double> TMatrixD;
 #define NCSVSYS          16
 
 // number of extra systematics
-#define NTHSYS            4 // used to be 16
+#define NTHSYS           14 // used to be 4
 
 // test effect of matching MEt phi distribution to data
 #define RESHAPEMETPHI     0
@@ -106,23 +106,23 @@ const string csv_sys_names[16] = {
    "CSVLFStats2Down"
 };
 
-const string th_sys_names[4] = {
-  "Q2ScaleUp",     
-  "Q2ScaleDown",   
+const string th_sys_names[14] = {
+  //"Q2ScaleUp",     
+  //"Q2ScaleDown",   
   "TopPtUp",
-  "TopPtDown"
-  //"Q2Scale1pUp",
-  //"Q2Scale1pDown",
-  //"Q2Scale2pUp",
-  //"Q2Scale2pDown",
-  //"Q2ScaleHFbbUp",
-  //"Q2ScaleHFbbDown",
-  //"Q2ScaleHFbUp",
-  //"Q2ScaleHFbDown",
-  //"Q2ScaleLFUp",
-  //"Q2ScaleLFDown",
-  //"Q2Scale3pUp",
-  //"Q2Scale3pDown",
+  "TopPtDown",
+  "Q2Scale1pUp",
+  "Q2Scale1pDown",
+  "Q2Scale2pUp",
+  "Q2Scale2pDown",
+  "Q2ScaleHFbbUp",
+  "Q2ScaleHFbbDown",
+  "Q2ScaleHFbUp",
+  "Q2ScaleHFbDown",
+  "Q2ScaleLFUp",
+  "Q2ScaleLFDown",
+  "Q2Scale3pUp",
+  "Q2Scale3pDown"
 };
 
 typedef struct 
