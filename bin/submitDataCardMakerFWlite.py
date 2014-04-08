@@ -5,6 +5,7 @@ import commands
 import re
 import os
 import ROOT
+import subprocess
 
 import sys
 sys.path.append('./')
@@ -12,6 +13,8 @@ sys.path.append('./')
 import FWCore.ParameterSet.Config as cms
 
 from Bianchi.TTHStudies.mem_categories_cff import *
+
+
 
 
 ###########################################
@@ -31,7 +34,7 @@ else:
     
 def addZllVeto   ( process ):
     old_cut     = process.cut.value()
-    process.cut =  cms.string("("+old_cut+") && (Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8.))")
+    process.cut =  cms.string("("+old_cut+") && (Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8. && Mll>15.))")
 
 def addPixelVeto ( process ):
     old_cut     = process.cut.value()
@@ -48,6 +51,10 @@ def addDiJetPtCut( process ):
 
 def submitDataCardMakerFWlite_Limits(category):
 
+    if len(sys.argv)<2:
+        print "Specify how to run the job: [batch,local]"
+        return
+    
     print "Overload datacardMakerFWlite.py..."
     os.system('cp ../python/datacardMakerFWlite.py ./')
 
@@ -109,13 +116,16 @@ def submitDataCardMakerFWlite_Limits(category):
     if ADDDIJETPTCUT:
         addDiJetPtCut( process.fwliteInput )
 
-    print "Creating the shell file for the batch..."
+
     scriptName = 'job_'+category+'.sh'
     jobName    = 'job_'+category
 
+
     out = open(jobName+'.py','w')
     out.write(process.dumpPython())
-   
+    out.close()
+    
+    print "Creating the shell file for the batch..."
     f = open(scriptName,'w')
     f.write('#!/bin/bash\n\n')
     f.write('cd ${CMSSW_BASE}/src/Bianchi/TTHStudies/bin/\n')
@@ -128,10 +138,17 @@ def submitDataCardMakerFWlite_Limits(category):
     f.write('rm /scratch/bianchi/dummy*.root\n')
     f.close()
     os.system('chmod +x '+scriptName)
-
+    
     submitToQueue = qsub+' -N job'+category+' '+scriptName 
-    print submitToQueue
-    #os.system(submitToQueue)
+
+    if sys.argv[1]== "batch":
+        print submitToQueue
+        os.system(submitToQueue)
+    elif sys.argv[1]== "local":
+        subprocess.call( ['DataCardMakerNewFWlite', jobName+'.py', category] )
+    else:
+        print "Unsupported job type"
+        return
     
     print "\n@@@@@ END JOB @@@@@@@@@@@@@@@"
 
@@ -338,10 +355,11 @@ binvec = cms.vdouble(30., 40, 50., 60., 70., 80., 90., 100., 110., 120., 130., 1
 #submitDataCardMakerFWlite_Limits("cat1_sb_L")
 #submitDataCardMakerFWlite_Limits("cat2_sb_L")
 #submitDataCardMakerFWlite_Limits("cat3_sb_L")
+submitDataCardMakerFWlite_Limits("cat6_sb_L")
 #submitDataCardMakerFWlite_Limits("cat1_sb_H")
 #submitDataCardMakerFWlite_Limits("cat2_sb_H")
 #submitDataCardMakerFWlite_Limits("cat3_sb_H")
-#submitDataCardMakerFWlite_Limits("cat6_sb_H")
+submitDataCardMakerFWlite_Limits("cat6_sb_H")
 
 #submitDataCardMakerFWlite_Limits("cat1_sb")
 #submitDataCardMakerFWlite_Limits("cat2_sb")
@@ -413,7 +431,7 @@ for cut in cuts:
     #submitDataCardMakerFWlite_Limits_Optimization("cat1_sb_L",  ("btag_LR>=%f" % 0.), "cat1_"+str(trial), cut )
     #submitDataCardMakerFWlite_Limits_Optimization("cat2_sb_L",  ("btag_LR>=%f" % 0.), "cat2_"+str(trial), cut )
     #submitDataCardMakerFWlite_Limits_Optimization("cat3_sb_L",  ("btag_LR>=%f" % 0.), "cat3_"+str(trial), cut )
-    submitDataCardMakerFWlite_Limits_Optimization("cat6_sb_L",  ("btag_LR<%f" % 0.925), "cat6_"+str(trial), cut )
+    #submitDataCardMakerFWlite_Limits_Optimization("cat6_sb_L",  ("btag_LR<%f" % 0.925), "cat6_"+str(trial), cut )
     trial += 1
 
 
