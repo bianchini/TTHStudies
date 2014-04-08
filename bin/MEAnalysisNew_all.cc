@@ -1694,7 +1694,7 @@ int main(int argc, const char* argv[])
              
 	     // electrons [FIX ME ]
 	     (lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
-	      lep_iso < lepIsoLoose && vLepton_wp95[k] > 0 /*&& lep_dxy < 0.02 && lep_dz<1*/ )
+	      lep_iso < lepIsoLoose && vLepton_wp95[k] > 0 && lep_dxy < 0.04 && lep_dz<1.0 )
 
 	     ) 
             numLooseLep++;
@@ -1710,12 +1710,12 @@ int main(int argc, const char* argv[])
           float lep_eta  = aLepton_eta[k];
           float lep_type = aLepton_type[k];
           float lep_iso  = aLepton_pfCorrIso[k];
-	  //float lep_dxy  = TMath::Abs(aLepton_dxy[k]);
-	  //float lep_dz   = TMath::Abs(aLepton_dz[k]);
+	  float lep_dxy  = TMath::Abs(aLepton_dxy[k]);
+	  float lep_dz   = TMath::Abs(aLepton_dz[k]);
 	  //float lep_2012tight = aLepton_id2012tight[k];
 	  
           if(  lep_type == 11 && lep_pt > lepPtLoose && TMath::Abs(lep_eta)<elEta && !(TMath::Abs(lep_eta) >1.442 && TMath::Abs(lep_eta)<1.566) &&
-               lep_iso < lepIsoLoose && aLepton_wp95[k] > 0.5 ){
+               lep_iso < lepIsoLoose && aLepton_wp95[k] > 0.5 && lep_dxy < 0.04 && lep_dz<1.0){
             numLooseAElec++;
 	    aEle_index  = k;
 	  }
@@ -1750,7 +1750,7 @@ int main(int argc, const char* argv[])
 	  int lepSelVtype2 =  (Vtype==2 && vLepton_type[0]==13 && leptonLV.Pt()>lepPtTight && 
 			       TMath::Abs(leptonLV.Eta())<muEtaTight && vLepton_pfCorrIso[0]<lepIsoTight);
 	  int lepSelVtype3 =  (Vtype==3 && vLepton_type[0]==11 && leptonLV.Pt()>lepPtTight && 
-			       vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0);
+			       vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp80[0]>0 && TMath::Abs(vLepton_dxy[0])<0.02 );
 	  
 	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
 	  int trigVtype2 =  (Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[14]>0 ||triggerFlags[21]>0 ));
@@ -1866,8 +1866,8 @@ int main(int argc, const char* argv[])
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  int lepSelVtype1 = ( Vtype==1 && vLepton_type[0]==11 && vLepton_type[1]==11 && 
-			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp95[0]>0.5) ||
-				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp95[1]>0.5) )
+			       ( (leptonLV.Pt() >20 && vLepton_pfCorrIso[0]<lepIsoTight && vLepton_wp95[0]>0.5 && TMath::Abs(vLepton_dxy[0])<0.02) ||
+				 (leptonLV2.Pt()>20 && vLepton_pfCorrIso[1]<lepIsoTight && vLepton_wp95[1]>0.5 && TMath::Abs(vLepton_dxy[1])<0.02) )
 			       ) && vLepton_charge[0]*vLepton_charge[1]<0;
 	  
 	  // OR of four trigger paths:  "HLT_Mu40_eta2p1_v.*", "HLT_IsoMu24_eta2p1_v.*", "HLT_Mu40_v.*",  "HLT_IsoMu24_v.*"
@@ -1975,8 +1975,8 @@ int main(int argc, const char* argv[])
 	  lepton_type_   [0] = vLepton_type[0];	
 	  lepton_dxy_    [0] = vLepton_dxy[0];
           lepton_dz_     [0] = vLepton_dz[0];
-          lepton_wp80_   [1] = vLepton_wp80[0];
-	  lepton_wp95_   [1] = vLepton_wp95[0];
+          lepton_wp80_   [0] = vLepton_wp80[0];
+	  lepton_wp95_   [0] = vLepton_wp95[0];
   
 	  // lep 2...
 	  lepton_pt_     [1] = leptonLV2.Pt();
@@ -2095,14 +2095,13 @@ int main(int argc, const char* argv[])
           lepton_eta_    [1] = leptonLV2.Eta();
           lepton_phi_    [1] = leptonLV2.Phi();
           lepton_m_      [1] = leptonLV2.M();
-          lepton_charge_ [1] = aLepton_charge   [0];
-          lepton_rIso_   [1] = aLepton_pfCorrIso[0];
-          lepton_type_   [1] = aLepton_type[0];
-          lepton_dxy_    [1] = aLepton_dxy[0];
-          lepton_dz_     [1] = aLepton_dz[0];
-
-          lepton_wp80_[1] = aLepton_wp80[0];
-          lepton_wp95_[1] = aLepton_wp95[0];
+          lepton_charge_ [1] = aLepton_charge   [aEle_index];
+          lepton_rIso_   [1] = aLepton_pfCorrIso[aEle_index];
+          lepton_type_   [1] = aLepton_type[aEle_index];
+          lepton_dxy_    [1] = aLepton_dxy[aEle_index];
+          lepton_dz_     [1] = aLepton_dz[aEle_index];
+          lepton_wp80_   [1] = aLepton_wp80[aEle_index];
+          lepton_wp95_   [1] = aLepton_wp95[aEle_index];
 
 	  if ( isMC && Vtype==4 ) // if EM events with triggered muon
             sf_ele_ = eleSF( lepton_pt_[1], lepton_eta_[1]);
