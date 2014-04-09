@@ -34,7 +34,7 @@ else:
     
 def addZllVeto   ( process ):
     old_cut     = process.cut.value()
-    process.cut =  cms.string("("+old_cut+") && (Vtype==4 || (Vtype!=4 && TMath::Abs(Mll-91.2)>8. && Mll>15.))")
+    process.cut =  cms.string("("+old_cut+") && (Vtype==2 || Vtype==3 || Vtype==4 || (Vtype<=1 && TMath::Abs(Mll-91.2)>8. && Mll>15.))")
 
 def addPixelVeto ( process ):
     old_cut     = process.cut.value()
@@ -107,7 +107,7 @@ def submitDataCardMakerFWlite_Limits(category):
         print "Cannot find this category... exit"
         return
 
-    if ADDZLLVETO and re.search("cat6", category)!=None:
+    if ADDZLLVETO:
         addZllVeto( process.fwliteInput )
 
     if ADDPIXELVETO:
@@ -219,7 +219,7 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
     if fact1>=0:
          process.fwliteInput.fact1 = cms.double(fact1)
 
-    if ADDZLLVETO and re.search("cat6", category)!=None:
+    if ADDZLLVETO:
         addZllVeto( process.fwliteInput )
 
     if ADDPIXELVETO:
@@ -275,7 +275,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     process.fwliteInput.binvec    = cms.vdouble(binvec)
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
 
-    if ADDZLLVETO and re.search("cat6", category)!=None:
+    if ADDZLLVETO:
         addZllVeto( process.fwliteInput )
 
     if ADDPIXELVETO:
@@ -319,16 +319,16 @@ def submitDataCardMakerFWlite_all( category , cut, selection, binvec):
 
 
 
-    sampless = [ #[["TTV"],     1],
-                 #[["SingleT"], 1],
-                 #[["DiBoson"], 1],
-                 [["TTJetsBB"], 20],
-                 #[["TTJetsBJ"],22],
-                 #[["TTJetsJJ"],50],
-                 #[["TTH125"],  1],
-                 #[["EWK"],     1],
-                 #[["Run2012_SingleMu", "Run2012_SingleElectron"],1 ]
-                 #[["Run2012_SingleElectron"],1 ]
+    sampless = [ [["TTV"],     5],
+                 [["SingleT"], 1],
+                 [["DiBoson"], 5],
+                 [["TTJetsBB"],20],
+                 [["TTJetsBJ"],20],
+                 [["TTJetsJJ"],20],
+                 [["TTH125"],   5],
+                 [["EWK"],     10],
+                 [["Run2012_SingleMu", "Run2012_SingleElectron"],10 ],
+                 [["Run2012_SingleElectron"],10 ]
                  ]
 
     counter = 0
@@ -348,18 +348,19 @@ def submitDataCardMakerFWlite_all( category , cut, selection, binvec):
       
 ###########################################
 ###########################################
-binvec = cms.vdouble(30., 40, 50., 60., 70., 80., 90., 100., 110., 120., 130., 140., 150., 160., 170., 180.)
-#submitDataCardMakerFWlite_all( "lepton_pt", "(numJets>=6 && numBTagM==3)", "test" , binvec)
+
+binvec = cms.vdouble(0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+submitDataCardMakerFWlite_all( "btag_LR", "(Vtype<=1 || Vtype==4)", "test" , binvec)
 
 
 #submitDataCardMakerFWlite_Limits("cat1_sb_L")
 #submitDataCardMakerFWlite_Limits("cat2_sb_L")
 #submitDataCardMakerFWlite_Limits("cat3_sb_L")
-submitDataCardMakerFWlite_Limits("cat6_sb_L")
+#submitDataCardMakerFWlite_Limits("cat6_sb_L")
 #submitDataCardMakerFWlite_Limits("cat1_sb_H")
 #submitDataCardMakerFWlite_Limits("cat2_sb_H")
 #submitDataCardMakerFWlite_Limits("cat3_sb_H")
-submitDataCardMakerFWlite_Limits("cat6_sb_H")
+#submitDataCardMakerFWlite_Limits("cat6_sb_H")
 
 #submitDataCardMakerFWlite_Limits("cat1_sb")
 #submitDataCardMakerFWlite_Limits("cat2_sb")

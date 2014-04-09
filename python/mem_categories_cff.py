@@ -3,27 +3,27 @@ import FWCore.ParameterSet.Config as cms
 
 ADDZLLVETO    = 1
 
-ADDPIXELVETO  = 0
+ADDPIXELVETO  = 1
 
-ADDDIJETPTCUT = 0
+ADDDIJETPTCUT = 1
 
 
 # baseline
 cat = cms.PSet(
     
     name      = cms.string("New"),
-    version   = cms.string("_rec_std"),
+    version   = cms.string("_ntuplizeAll_rec_std"),
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/"),
     directory = cms.string("Apr07_2014"),
     cut       = cms.string(""),
     category  = cms.string(""),
-    doMEM     = cms.int32(3),
+    doMEM     = cms.int32(4),
     fact1     = cms.double(0),
     fact2     = cms.double(0),
     factbb    = cms.double(0),
-    lumiScale = cms.double(19.6/12.1),
+    lumiScale = cms.double(19.04/12.1),
     nBins     = cms.int32(6),
     splitFirstBin = cms.int32(0),
     binvec        = cms.vdouble(),
