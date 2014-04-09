@@ -1781,6 +1781,7 @@ int main(int argc, const char* argv[])
 		cout << " - scale_id = " << scale_id << " +/- " << scale_id*id << endl;
 		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
 		cout << " - comb = " << comb << endl;
+		cout << " - triggerWeight = " << trigger_ << ", from files: " << (scale_id*scale_tr) << endl;
 	      }
 
 	    }
@@ -1800,6 +1801,7 @@ int main(int argc, const char* argv[])
 		cout << " - scale_id = " << scale_id << " +/- " << scale_id*id << endl;
 		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
 		cout << " - comb = " << comb << endl;
+		cout << " - triggerWeight = " << trigger_ << ", from files: " << (scale_id*scale_tr) << endl;
 	      }
 	    }
 	  }
@@ -1911,6 +1913,7 @@ int main(int argc, const char* argv[])
 		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
 		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
 		cout << " - comb = " << comb << endl;
+		cout << " - triggerWeight = " << trigger_ << ", from files: " << (scale_id1*scale_id2*scale_tr) << endl;
 	      }
 
 	    }
@@ -1941,7 +1944,7 @@ int main(int argc, const char* argv[])
 	      float scale_id2 = 1.;
 	      float id2       = weightError( t_Vtype1_id, leptonLV2.Pt(),  leptonLV2.Eta(),  scale_id2 );	     
 
-	      float comb = TMath::Sqrt( tr*tr + id1*id1 + id2*id2)* scale_tr * scale_id1 * scale_id2;
+	      float comb = TMath::Sqrt( tr*tr + id1*id1 + id2*id2)*(scale_tr*scale_id1*scale_id2);
 	      triggerErr_ = comb;
 
 	      if( debug>=2 ){
@@ -1950,6 +1953,7 @@ int main(int argc, const char* argv[])
 		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
 		cout << " - scale_tr = " << scale_tr << " +/- " << scale_tr*tr << endl;
 		cout << " - comb = " << comb << endl;
+		cout << " - triggerWeight = " << trigger_ << ", from files: " << (scale_id1*scale_id2*scale_tr) << endl;
 	      }
 
 	    }
@@ -2058,7 +2062,6 @@ int main(int argc, const char* argv[])
 	      float comb  = TMath::Sqrt( id1*id1 + tr1*tr1 + id2*id2 + tr2*tr2 )*(scale_id1*scale_tr1*scale_id2*scale_tr2);
 
 	      triggerErr_ = comb;
-	      trigger_   *= (scale_id2*scale_tr2);
 
 	      if( debug>=2 ){
 		cout << "Vtype4: Trigger error: (" << leptonLV.Pt() << "," << leptonLV.Eta() << " ; " << leptonLV2.Pt() << "," << leptonLV2.Eta() << ")" << endl;
@@ -2066,7 +2069,11 @@ int main(int argc, const char* argv[])
 		cout << " - scale_id2 = " << scale_id2 << " +/- " << scale_id2*id2 << endl;
 		cout << " - scale_tr = " << scale_tr1 << " +/- " << scale_tr1*tr1 << endl;
 		cout << " - comb = " << comb << endl;
+		cout << " - triggerWeight = " << trigger_ << ", from files: " << (scale_id1*scale_tr1) << endl;
 	      }
+
+	      // because events are selected from a subset of Vtype2
+	      trigger_   *= (scale_id2*scale_tr2);
 
 	    }
 	  }

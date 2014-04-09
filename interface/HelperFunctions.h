@@ -892,7 +892,8 @@ float weightError( TTree* tree, float pt, float eta, float& scale_){
   Long64_t nentries = tree->GetEntries();
   for( Long64_t i = 0; i < nentries ; i++ ){
     tree->GetEntry(i);
-    if( pt>=ptMin && pt<ptMax && eta>=etaMin && eta<etaMax ) {
+    float pt_eq = TMath::Min( pt, float(199.9) );
+    if( pt_eq>=ptMin && pt_eq<ptMax && eta>=etaMin && eta<etaMax ) {
       err    = scale>0 ? error/scale : 0.; 
       scale_ = scale;
     }
