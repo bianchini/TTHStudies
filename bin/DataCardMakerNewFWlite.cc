@@ -115,14 +115,14 @@ const string th_sys_names[14] = {
   "Q2Scale1pDown",
   "Q2Scale2pUp",
   "Q2Scale2pDown",
+  "Q2Scale3pUp",
+  "Q2Scale3pDown",
   "Q2ScaleHFbbUp",
   "Q2ScaleHFbbDown",
   "Q2ScaleHFbUp",
   "Q2ScaleHFbDown",
   "Q2ScaleLFUp",
-  "Q2ScaleLFDown",
-  "Q2Scale3pUp",
-  "Q2Scale3pDown"
+  "Q2ScaleLFDown"
 };
 
 typedef struct 
@@ -492,15 +492,17 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   int n_b,n_c,n_l,n_g;
   int nSimBs, nMatchSimBs;
 
-  t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
-  t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
-  t->SetBranchAddress("p_tt_bb",      p_tt_bb);
-  t->SetBranchAddress("p_tt_jj",      p_tt_jj);
-  t->SetBranchAddress("nPermut_s",    &nPermut_s);
-  t->SetBranchAddress("nPermut_b",    &nPermut_b);
-  t->SetBranchAddress("nMassPoints",  &nMassPoints);
-  t->SetBranchAddress("mH_scan",      mH_scan);
-  t->SetBranchAddress("mT_scan",      mT_scan);
+  if( analysis!=4 ){
+    t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
+    t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
+    t->SetBranchAddress("p_tt_bb",      p_tt_bb);
+    t->SetBranchAddress("p_tt_jj",      p_tt_jj);
+    t->SetBranchAddress("nPermut_s",    &nPermut_s);
+    t->SetBranchAddress("nPermut_b",    &nPermut_b);
+    t->SetBranchAddress("nMassPoints",  &nMassPoints);
+    t->SetBranchAddress("mH_scan",      mH_scan);
+    t->SetBranchAddress("mT_scan",      mT_scan);
+  }
   t->SetBranchAddress("weight",       &weight);
   t->SetBranchAddress("PUweight",     &PUweight);
   t->SetBranchAddress("trigger",      &trigger);
@@ -628,6 +630,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       cout << endl;
     }
 
+    /*
     if( analysis==4 ){
       t->SetBranchStatus("*",          0);
       if(isMC>0){
@@ -649,6 +652,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       }
       t->SetBranchStatus(category,       1);
     }
+    */
 
     t->LoadTree(i);
     if( treeformula-> EvalInstance() == 0){
@@ -1014,6 +1018,7 @@ int main(int argc, const char* argv[])
   }
 
   bool useHistos = false;
+  int isDL      = (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos);
 
   // selection cut
   string basecut = cut;
@@ -1385,8 +1390,6 @@ int main(int argc, const char* argv[])
       TCut triggerVtype2 = TCut("(Vtype==2 && ( triggerFlags[22]>0 || triggerFlags[23]>0 || triggerFlags[47]>0 ))");   // m
       TCut triggerVtype3 = TCut("(Vtype==3 && ( triggerFlags[44]>0 ) )");                                              // e
       TCut triggerVtype4 = TCut("(Vtype==4 && ( triggerFlags[22]>0 || triggerFlags[23]>0  ))");                        // em
-
-      bool isDL = (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos);
 
       if( sample.find("SingleMu")!=string::npos       &&  isDL)
 	sample_cut = sample_cut && (triggerVtype0 || triggerVtype4);
@@ -1871,7 +1874,7 @@ int main(int argc, const char* argv[])
   bool isTTJetsLFthere   = aMap.find("TTJetsLF")!=aMap.end()   ? aMap["TTJetsLF"]->Integral()>0   : false;
   bool isTTVthere        = aMap.find("TTV")!=aMap.end()        ? aMap["TTV"]->Integral()>0        : false;
   bool isSingleTthere    = aMap.find("SingleT")!=aMap.end()    ? aMap["SingleT"]->Integral()>0    : false;
-  bool isEWKthere        = aMap.find("EWK")!=aMap.end()        ? aMap["EWK"]->Integral()>0    : false;
+  bool isEWKthere        = aMap.find("EWK")!=aMap.end()        ? aMap["EWK"]->Integral()>0        : false;
 
   //////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////////
@@ -1937,6 +1940,18 @@ int main(int argc, const char* argv[])
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "lumi", 0.026, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "lumi", 0.026, line);
   if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "lumi", 0.026, line);
+  out<<line;
+  out<<endl;
+
+  // TRIGGER/RECO
+  line="";
+  if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "lepton_id", 0.02*(1+isDL), line);
   out<<line;
   out<<endl;
 
@@ -2042,7 +2057,7 @@ int main(int argc, const char* argv[])
     if( isTTJetsLFthere )   line += "1.0        ";
     if( isTTVthere )        line += "1.0        ";
     if( isSingleTthere )    line += "1.0        ";
-    if( isEWKthere )        line += "1.0        ";
+    if( isEWKthere )        line += " -         ";
     out<<line;
     out<<endl;
 
@@ -2054,7 +2069,7 @@ int main(int argc, const char* argv[])
     if( isTTJetsLFthere )   line += "1.0        ";
     if( isTTVthere )        line += "1.0        ";
     if( isSingleTthere )    line += "1.0        ";
-    if( isEWKthere )        line += "1.0        ";
+    if( isEWKthere )        line += " -         ";
     out<<line;
     out<<endl;
 
