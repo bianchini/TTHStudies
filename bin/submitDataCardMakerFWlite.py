@@ -278,9 +278,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
     if inputpath:
         process.fwliteInput.inputpath = cms.string(inputpath) #otherwise default
-
     process.fwliteInput.analysis  = cms.untracked.int32(analysis)
-    process.fwliteInput.analysis
 
     if ADDZLLVETO:
         addZllVeto( process.fwliteInput )
