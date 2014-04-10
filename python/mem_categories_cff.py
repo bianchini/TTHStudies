@@ -33,6 +33,9 @@ cat = cms.PSet(
     nparts= cms.int32(1),
     part  = cms.int32(0),
 
+    # 0 = SL, 1 = DL
+    analysis = cms.untracked.int32(-1)
+
     )
 
 

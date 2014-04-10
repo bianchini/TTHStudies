@@ -259,13 +259,15 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 ###########################################
  
 
-def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts, part, binvec):
+def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts, part, binvec, analysis):
 
     print "Overload datacardMakerFWlite.py..."
     os.system('cp ../python/datacardMakerFWlite.py ./')
 
     from datacardMakerFWlite import process
 
+    process.fwliteInput = cat
+    
     process.fwliteInput.samples   = samples    
     process.fwliteInput.category  = cms.string( category )
     process.fwliteInput.cut       = cms.string( cut )
@@ -274,6 +276,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     process.fwliteInput.part      = cms.int32(part)
     process.fwliteInput.binvec    = cms.vdouble(binvec)
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
+    process.fwliteInput.analysis  = cms.untracked.int32(analysis)
 
     if ADDZLLVETO:
         addZllVeto( process.fwliteInput )
@@ -315,20 +318,20 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
 
 
 
-def submitDataCardMakerFWlite_all( category , cut, selection, binvec):
+def submitDataCardMakerFWlite_all( category , cut, selection, binvec, analysis):
 
 
 
-    sampless = [ [["TTV"],     5],
-                 [["SingleT"], 1],
-                 [["DiBoson"], 5],
-                 [["TTJetsBB"],20],
-                 [["TTJetsBJ"],20],
-                 [["TTJetsJJ"],20],
-                 [["TTH125"],   5],
-                 [["EWK"],     10],
-                 [["Run2012_SingleMu", "Run2012_SingleElectron"],10 ],
-                 [["Run2012_SingleElectron"],10 ]
+    sampless = [ #[["TTV"],     5],
+                 #[["SingleT"], 1],
+                 #[["DiBoson"], 5],
+                 #[["TTJetsBB"],20],
+                 #[["TTJetsBJ"],20],
+                 #[["TTJetsJJ"],20],
+                 #[["TTH125"],   5],
+                 #[["EWK"],     10],
+                 #[["Run2012_SingleMu", "Run2012_SingleElectron"],10 ],
+                 [["Run2012_SingleMu", "Run2012_DoubleElectron"],10 ]
                  ]
 
     counter = 0
@@ -343,14 +346,14 @@ def submitDataCardMakerFWlite_all( category , cut, selection, binvec):
         for split in range( samples[1] ):
             counter += 1
             script  = category+"_p"+str(counter)
-            submitDataCardMakerFWlite( category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec)
+            submitDataCardMakerFWlite( category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis)
       
       
 ###########################################
 ###########################################
 
 binvec = cms.vdouble(0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
-submitDataCardMakerFWlite_all( "btag_LR", "(Vtype<=1 || Vtype==4)", "test" , binvec)
+submitDataCardMakerFWlite_all( "btag_LR", "(Vtype<=1 || Vtype==4) && numJets>=4", "test" , binvec, +1)
 
 
 #submitDataCardMakerFWlite_Limits("cat1_sb_L")

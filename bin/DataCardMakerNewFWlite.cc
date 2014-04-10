@@ -994,6 +994,7 @@ int main(int argc, const char* argv[])
   vector<string> samples  =  ( in.getParameter<vector<string> >  ("samples" ) );
   int nparts              =  ( in.getParameter<int>    ("nparts" ) );
   int part                =  ( in.getParameter<int>    ("part" ) );
+  int analysis            =  ( in.getUntrackedParameter<int>    ("analysis", -1 ) );
 
   string nJob = "";
   if( argc==3 )
@@ -1018,7 +1019,16 @@ int main(int argc, const char* argv[])
   }
 
   bool useHistos = false;
-  int isDL      = (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos);
+
+  // decide if it is a SL or DL analysis (important because of data)
+  int isDL       = false;
+  if(analysis>=0){
+    if(analysis==0) isDL = false;
+    else            isDL = true;
+  }
+  else{
+    isDL = (string(category.Data()).find("cat6")!=string::npos || string(category.Data()).find("cat7")!=string::npos);
+  }
 
   // selection cut
   string basecut = cut;
