@@ -1010,6 +1010,7 @@ int main(int argc, const char* argv[])
     Float_t hJet_e            [999];
     Float_t hJet_flavour      [999];
     Float_t hJet_puJetIdL     [999];
+    Bool_t  hJet_id           [999];
     Float_t hJet_csv          [999];
     Float_t hJet_cmva         [999];
     Float_t hJet_csv_nominal  [999];
@@ -1027,6 +1028,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_e            [999];
     Float_t aJet_flavour      [999];
     Float_t aJet_puJetIdL     [999];
+    Bool_t  aJet_id           [999];
     Float_t aJet_csv          [999];    
     Float_t aJet_cmva         [999];
     Float_t aJet_csv_nominal  [999];
@@ -1105,6 +1107,7 @@ int main(int argc, const char* argv[])
       currentTree->SetBranchAddress("hJet_e",           hJet_e); 
       currentTree->SetBranchAddress("hJet_flavour",     hJet_flavour);    
       currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
+      currentTree->SetBranchAddress("hJet_id",          hJet_id);
       currentTree->SetBranchAddress("hJet_csv",         hJet_csv);
       currentTree->SetBranchAddress("hJet_cmva",        hJet_cmva);
       currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
@@ -1123,6 +1126,7 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_e",           aJet_e);    
     currentTree->SetBranchAddress("aJet_flavour",     aJet_flavour);    
     currentTree->SetBranchAddress("aJet_puJetIdL",    aJet_puJetIdL);
+    currentTree->SetBranchAddress("aJet_id",          aJet_id);
     currentTree->SetBranchAddress("aJet_csv",         aJet_csv);
     if( currentTree->GetBranch("aJet_cmva") )
       currentTree->SetBranchAddress("aJet_cmva",      aJet_cmva);
@@ -2174,7 +2178,8 @@ int main(int argc, const char* argv[])
 	      if(m2<0) m2 = 0.; 
 	      float m      = TMath::Sqrt( m2 ); 
 	      
-	      int id       = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
+	      int pu_id    = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
+	      int id       = (coll==0) ? hJet_id      [hj] : aJet_id      [hj];
 	      float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
 	      
 	      // subtract the nominal JEC corrected jet (px,py)
@@ -2204,7 +2209,10 @@ int main(int argc, const char* argv[])
 	      // only jets in acceptance...
 	      if( TMath::Abs(eta)> 2.5 ) continue;
 	      
-	      // only jets passing ID...
+	      // only jets passing pu ID...
+	      if( pu_id < 0.5 ) continue;
+
+	      // only jets passing id ID...
 	      if( id < 0.5 ) continue;	
 	      
 	      // only jets above pt cut...
@@ -2264,7 +2272,7 @@ int main(int argc, const char* argv[])
 		hjet_map.push_back ( myJet );
 
 	      if( debug>=3 ){
-		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << endl;
+		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << ", PU-ID=" << pu_id <<endl;
 	      }
 	      
 	    }
