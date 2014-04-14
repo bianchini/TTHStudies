@@ -35,7 +35,7 @@ process.fwliteInput = cms.PSet(
     samples  =   cms.VPSet(
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -43,13 +43,20 @@ process.fwliteInput = cms.PSet(
     ),
     
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
     xSec     = cms.double(107.66),
     ),
 
+    cms.PSet(
+    skip     = cms.bool(True),  
+    name     = cms.string('T_t-channel_TuneZ2star_8TeV-powheg-tauola'),
+    nickName = cms.string('Tt'),
+    color    = cms.int32(6),
+    xSec     = cms.double(56.4)
+    ),
 
     ),
 
@@ -112,7 +119,7 @@ process.fwliteInput = cms.PSet(
     doType4       = cms.untracked.int32(0),  #SL(3,2)
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
-    doType0ByBTagShape = cms.untracked.int32(0),
+    doType0ByBTagShape = cms.untracked.int32(1),
     doType1ByBTagShape = cms.untracked.int32(0),
     doType2ByBTagShape = cms.untracked.int32(0),
     doType3ByBTagShape = cms.untracked.int32(0),
@@ -155,7 +162,8 @@ process.fwliteInput = cms.PSet(
     csv_WP_T         = cms.untracked.double( 0.898 ),
 
     # if selectByBTagShape, choose cut-value
-    btag_prob_cut_6jets = cms.untracked.double( 0.96675 ),
+    #btag_prob_cut_6jets = cms.untracked.double( 0.96675 ),
+    btag_prob_cut_6jets = cms.untracked.double( 0.960   ),
     btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
     btag_prob_cut_4jets = cms.untracked.double( 0.95295 ), 
 
@@ -196,7 +204,7 @@ process.fwliteInput = cms.PSet(
     muEtaLoose   = cms.untracked.double(2.4),
 
     # jet preselection
-    jetMultLoose   = cms.untracked.int32(4),
+    jetMultLoose   = cms.untracked.int32(0),
     jetPtLoose     = cms.untracked.double(40.),
     jetPtThreshold = cms.untracked.double(30.),
     
@@ -223,7 +231,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, 100000),
+    evLimits       = cms.vint32(0, 15000),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -245,9 +253,15 @@ process.fwliteInput = cms.PSet(
     # if 1 and doGenLevelAnalysis, jet energy gets smeared by TF_smear
     smearJets           = cms.untracked.int32(0),
 
+    # toss csv values untill the event passes the cut
+    enhanceMC           = cms.untracked.int32(1),
+
+    # maximum number of trials (if enhanceMC)
+    max_n_trials        = cms.untracked.int32(50000),
+
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(1),
+    ntuplizeAll         = cms.untracked.int32(0),
     
     )
 

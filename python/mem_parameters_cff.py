@@ -37,8 +37,8 @@ printout    = 1
 debug       = 0
 
 # systematics
-systematics = cms.vint32(0,3,4,5,6)
-#systematics = cms.vint32(0)
+#systematics = cms.vint32(0,3,4,5,6)
+systematics = cms.vint32(0)
 
 
 ############################################### Object definition
@@ -65,6 +65,12 @@ useCMVA            = 0
 
 # use the csv calibration from BDT
 useCSVcalibration  = 1
+
+# toss csv values untill the event passes the cut
+enhanceMC          = 1
+
+# maximum number of trials (if enhanceMC)
+max_n_trials       = 200000
 
 ############################################### Event selection
 ###############################################

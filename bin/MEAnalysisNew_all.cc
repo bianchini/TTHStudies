@@ -70,6 +70,9 @@
 // max number of jets for which the SLw1j hypothesis will be tested in type3 events
 #define NMAXJETSSLW1JTYPE3 5
 
+// max number of trial (if enhance MC stat)
+#define NMAXEVENTRIALS 999999
+
 // a global flag to select RECO or GEN+SMEAR analysis
 //#define DOGENLEVELANALYSIS 0
 
@@ -225,6 +228,8 @@ int main(int argc, const char* argv[])
   // RECO or GEN ?
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
   int smearJets          ( in.getUntrackedParameter<int>    ("smearJets",  doGenLevelAnalysis));
+  int enhanceMC          ( in.getUntrackedParameter<int>    ("enhanceMC",   0));
+  int max_n_trials       ( in.getUntrackedParameter<int>    ("max_n_trials",1));
 
   int   print            ( in.getUntrackedParameter<int>    ("printout", 0));
   int   debug            ( in.getUntrackedParameter<int>    ("debug",    0));
@@ -738,6 +743,9 @@ int main(int argc, const char* argv[])
   int hJetAmong_;
   int jetsAboveCut_;
 
+  // number of trials
+  int num_of_trials_;
+
   // number of selected jets passing CSV L,M,T
   int numBTagL_, numBTagM_, numBTagT_;
   // nummber of selected jets
@@ -873,6 +881,8 @@ int main(int argc, const char* argv[])
   tree->Branch("jet_csv",                 jet_csv_,      "jet_csv[nJet]/F");
   tree->Branch("hJetAmong",               &hJetAmong_,   "hJetAmong/I");
   tree->Branch("jetsAboveCut",            &jetsAboveCut_,"jetsAboveCut/I");
+  tree->Branch("num_of_trials",           &num_of_trials_,"num_of_trials/I");
+  
 
   // Jet multiplicity
   tree->Branch("numBTagL",                &numBTagL_,    "numBTagL/I");
@@ -1010,7 +1020,7 @@ int main(int argc, const char* argv[])
     Float_t hJet_e            [999];
     Float_t hJet_flavour      [999];
     Float_t hJet_puJetIdL     [999];
-    Bool_t  hJet_id           [999];
+    UChar_t hJet_id           [999];
     Float_t hJet_csv          [999];
     Float_t hJet_cmva         [999];
     Float_t hJet_csv_nominal  [999];
@@ -1028,7 +1038,7 @@ int main(int argc, const char* argv[])
     Float_t aJet_e            [999];
     Float_t aJet_flavour      [999];
     Float_t aJet_puJetIdL     [999];
-    Bool_t  aJet_id           [999];
+    UChar_t aJet_id           [999];
     Float_t aJet_csv          [999];    
     Float_t aJet_cmva         [999];
     Float_t aJet_csv_nominal  [999];
@@ -1153,6 +1163,8 @@ int main(int argc, const char* argv[])
     cout << "Total number of entries: " << nentries << endl;
     cout << " -> This job will process events in the range [ " << evLow << ", " << evHigh << " ]" << endl;
 
+    int event_trials  = 0;
+
     if( evHigh<0 ) evHigh = nentries;
     for (Long64_t i = 0; i < nentries ; i++){
       
@@ -1216,6 +1228,8 @@ int main(int argc, const char* argv[])
       nSimBs_             = nSimBs;
       nMatchSimBs_        = -99;
       time_               = 0.;
+
+      num_of_trials_      = 0;
 
       counter_            = counter;
       weight_             = scaleFactor;
@@ -1640,11 +1654,19 @@ int main(int argc, const char* argv[])
 
       if(debug>=2) cout << "@H" << endl;
 
+      int lock          = 0;
+      int trial_success = 0;
+
       // loop over systematics
       for( unsigned int syst = 0; syst < systematics.size() ; syst++){
 
 	// which systematic is considered
 	syst_ = systematics[ syst ];
+
+	if( lock ){
+	  if(debug>=2) cout << "Skip systematics " << syst_ << " because the event is locked" << endl;
+	  continue;
+	}
 
 	if(debug>=2) cout << "Dealing with systematics " << syst_  << endl;
 
@@ -2178,6 +2200,7 @@ int main(int argc, const char* argv[])
 	      if(m2<0) m2 = 0.; 
 	      float m      = TMath::Sqrt( m2 ); 
 	      
+	      int flavour  = (coll==0) ? hJet_flavour [hj] : aJet_flavour [hj];
 	      int pu_id    = (coll==0) ? hJet_puJetIdL[hj] : aJet_puJetIdL[hj];
 	      int id       = (coll==0) ? hJet_id      [hj] : aJet_id      [hj];
 	      float JECUnc = (coll==0) ? hJet_JECUnc  [hj] : aJet_JECUnc  [hj];
@@ -2253,10 +2276,34 @@ int main(int argc, const char* argv[])
 		  csv = 0.;
 	      }
 
-	      // FIX the b-tagger output 
-	      //  ==> Min needed because in csvUp, csv can exceed 1..., 
-	      //      Max needed because we crunch  [-inf,0[ -> {0.}
-	      csv         =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
+
+	      if( enhanceMC && trial_success==0){
+
+		string bin = "";
+		if( TMath::Abs( eta ) <= 1.0 ) 
+		  bin = "Bin0";
+		if( TMath::Abs( eta ) >  1.0 ) 
+		  bin = "Bin1";
+		
+		string fl = "";
+		if(abs(flavour)==5)
+		  fl = "b";
+		if(abs(flavour)==4)
+		  fl = "c";
+		else
+		  fl = "l";
+
+		csv     =  btagger[fl+"_"+bin]->GetRandom();
+
+		if(coll==0){
+		  hJet_csv        [hj] = csv;
+		  hJet_csv_nominal[hj] = csv;
+		}
+		if(coll==1){
+		  aJet_csv        [hj] = csv;
+		  aJet_csv_nominal[hj] = csv;
+		}
+	      }	   
       
 	      // the jet observables (p4 and csv)
 	      JetObservable myJet;
@@ -2264,7 +2311,7 @@ int main(int argc, const char* argv[])
 	      myJet.csv    = csv; 
 	      myJet.index  = (coll==0 ? hj : -hj-1);
 	      myJet.shift  = shift;
-	      myJet.flavour= (coll==0) ? hJet_flavour  [hj]  : aJet_flavour  [hj];
+	      myJet.flavour= flavour;
 
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
@@ -2272,7 +2319,7 @@ int main(int argc, const char* argv[])
 		hjet_map.push_back ( myJet );
 
 	      if( debug>=3 ){
-		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << ", PU-ID=" << pu_id <<endl;
+		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << ", PU-ID=" << pu_id << ", csv = " << csv << ", flavour=" << flavour << endl;
 	      }
 	      
 	    }
@@ -2519,6 +2566,11 @@ int main(int argc, const char* argv[])
 	
 	// the csv value
 	float csv = jet_map[jj].csv;
+
+	// FIX the b-tagger output 
+	//  ==> Min needed because in csvUp, csv can exceed 1..., 
+	//      Max needed because we crunch  [-inf,0[ -> {0.}
+	csv       =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
 
 	// the index
 	int index = jet_map[jj].index;
@@ -2872,12 +2924,12 @@ int main(int argc, const char* argv[])
 
 
       // categories defined by jet and btagged jet multiplicity (Nj,Nb)
-      bool analyze_type0       = properEventSL && numJets30BtagM==4 && numJets30UntagM==2  && doType0;
-      bool analyze_type1       = properEventSL && numJets30BtagM==4 && numJets30UntagM==2  && doType1;
-      bool analyze_type2       = properEventSL && numJets30BtagM==4 && numJets30UntagM==1  && doType2;
-      bool analyze_type3       = properEventSL && numJets30BtagM==4 && numJets30UntagM >2  && doType3;
-      bool analyze_type6       = properEventDL && numJets30BtagM==4                        && doType6;
-      bool analyze_type7       = properEventDL && numJets30BtagM==3 && numJets30BtagL==4   && doType7;
+      bool analyze_type0       = properEventSL  && numJets30UntagM==2  && doType0;
+      bool analyze_type1       = properEventSL  && numJets30UntagM==2  && doType1;
+      bool analyze_type2       = properEventSL  && numJets30UntagM==1  && doType2;
+      bool analyze_type3       = properEventSL  && numJets30UntagM >2  && doType3;
+      bool analyze_type6       = properEventDL                         && doType6;
+      bool analyze_type7       = properEventDL  && numJets30BtagL==4   && doType7;
 
       // categories defined by jet multiplicity (Nj)
       bool analyze_typeBTag6   = properEventSL && (numJets_==6)                            && doTypeBTag6;
@@ -2885,11 +2937,11 @@ int main(int argc, const char* argv[])
       bool analyze_typeBTag4   = properEventDL && (numJets_==4)                            && doTypeBTag4;
 
       // categories defined by jet multiplicity (Nj), but passing a minimum cut on the btag likelihood
-      bool analyze_type0_BTag  = properEventSL && (numJets_==6)                            && doType0ByBTagShape && passes_btagshape;
-      bool analyze_type1_BTag  = properEventSL && (numJets_==6)                            && doType1ByBTagShape && passes_btagshape;
-      bool analyze_type2_BTag  = properEventSL && (numJets_==5)                            && doType2ByBTagShape && passes_btagshape;
-      bool analyze_type3_BTag  = properEventSL && (numJets_ >6)                            && doType3ByBTagShape && passes_btagshape;
-      bool analyze_type6_BTag  = properEventDL && (numJets_>=4)                            && doType6ByBTagShape && passes_btagshape;
+      bool analyze_type0_BTag  = properEventSL && (numJets_==6)                            && doType0ByBTagShape;
+      bool analyze_type1_BTag  = properEventSL && (numJets_==6)                            && doType1ByBTagShape;
+      bool analyze_type2_BTag  = properEventSL && (numJets_==5)                            && doType2ByBTagShape;
+      bool analyze_type3_BTag  = properEventSL && (numJets_ >6)                            && doType3ByBTagShape;
+      bool analyze_type6_BTag  = properEventDL && (numJets_>=4)                            && doType6ByBTagShape;
 
 
       /* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -3011,11 +3063,22 @@ int main(int argc, const char* argv[])
       // internal map: [ position in "jets" ] -> [ position in "jets_p4" ]
       std::map< unsigned int, unsigned int> pos_to_index;
 
+      // condition to trigger the ME calculation
+      bool calcME = 
+	(analyze_typeBTag6  || analyze_typeBTag5  || analyze_typeBTag4)  || 
+	((analyze_type0      || analyze_type1      || analyze_type2      || analyze_type3      || analyze_type6 ) && numJets30BtagM==4 )  || 
+	(analyze_type7 && numJets30BtagM==3) ||
+	((analyze_type0_BTag || analyze_type1_BTag || analyze_type2_BTag || analyze_type3_BTag || analyze_type6_BTag) && passes_btagshape);
+
       // consider th event only if of the desired type
-      if( analyze_typeBTag6  || analyze_typeBTag5  || analyze_typeBTag4  || 
-	  analyze_type0      || analyze_type1      || analyze_type2      || analyze_type3      || analyze_type6       || analyze_type7 ||
-	  analyze_type0_BTag || analyze_type1_BTag || analyze_type2_BTag || analyze_type3_BTag || analyze_type6_BTag){	
-	
+      if( calcME ){	       
+
+	if( enhanceMC ){
+	  trial_success = 1;
+	  cout << "Success after " << event_trials << " attempts!" << endl;
+	  num_of_trials_ = event_trials;
+	  event_trials   = 0;
+	}
 
 	// if the event has been accepted, then compute the regressed energy per jet
 	// (if not done before)
@@ -4295,6 +4358,31 @@ int main(int argc, const char* argv[])
       ///////////////////////////////////////////////////
 
       else{
+
+	if( enhanceMC ){
+
+	  bool retry = 
+	    ((analyze_type0      || analyze_type1      || analyze_type2      || analyze_type3      || analyze_type6 ) && numJets30BtagM<4 )  || 
+	    (analyze_type7 && numJets30BtagM<3) ||
+	    ((analyze_type0_BTag || analyze_type1_BTag || analyze_type2_BTag || analyze_type3_BTag || analyze_type6_BTag) && !passes_btagshape);
+
+	  if(syst_ == 0 && retry && event_trials < max_n_trials && event_trials<NMAXEVENTRIALS){
+	    i--;
+	    lock = 1;
+	    event_trials++;
+	    if( event_trials%10000==0 ) cout << "   >>> : " << event_trials << "th trial ---> btag_LR = " <<  btag_LR_  << ", numBtagM = " << numJets30BtagM << endl;
+	    if(debug>=2){	      
+	      cout << "Enhance MC: stay with event " << i+1 << endl;
+	      cout << "  - lock for systematics, # of trials = " <<  event_trials << "; btagLR = " << btag_LR_ << endl;
+	    }
+	    continue;
+	  }
+	  if( event_trials>=NMAXEVENTRIALS || event_trials>=max_n_trials){
+	    cout << "Failure after " << event_trials << " attempts... try with the next event :-(" << endl;
+	    num_of_trials_ = event_trials;
+	    event_trials   = 0;
+	  }
+	}
 
 	// if save all events, fill the tree...
 	if(ntuplizeAll){

@@ -148,6 +148,9 @@ def submitMEAnalysisNew_all(script,
     process.fwliteInput.selectByBTagShape  = cms.untracked.int32(selectByBTagShape)
     process.fwliteInput.useCSVcalibration  = cms.untracked.int32(useCSVcalibration)
 
+    process.fwliteInput.enhanceMC          = cms.untracked.int32(enhanceMC)
+    process.fwliteInput.max_n_trials       = cms.untracked.int32(max_n_trials)  
+    
     process.fwliteInput.recoverTopBTagBin  = cms.untracked.int32(recoverTopBTagBin)
 
     process.fwliteInput.testSLw1jType3     = cms.untracked.int32(testSLw1jType3)
@@ -165,10 +168,10 @@ def submitMEAnalysisNew_all(script,
         process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
         process.fwliteInput.doType7            = cms.untracked.int32(0)        
         process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
+        #process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        #process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
         process.fwliteInput.doTypeBTag6        = cms.untracked.int32(0)
         process.fwliteInput.doTypeBTag5        = cms.untracked.int32(0)
         process.fwliteInput.doTypeBTag4        = cms.untracked.int32(0)
@@ -274,9 +277,9 @@ def submitFullMEAnalysisNew_all( analysis ):
 
     if PSI:
         toBeRun = [
-            ['TTH125',         50,'_V4/'], 
+            #['TTH125',         50,'_V4/'], 
             ['TTJetsSemiLept', 50,'_V4/'],
-            ['TTJetsFullLept', 50,'_V4/'],
+            #['TTJetsFullLept', 50,'_V4/'],
             #['TTJetsFullHad',   5,'_V4/'],
             #['DYJets10to50',    1,'_V4/'],
             #['DYJets50',        1,'_V4/'],
@@ -384,7 +387,7 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 
 
-analyses = ['all']
+analyses = ['test_enhance_1']
 
 for analysis in analyses:
     if doGenLevelAnalysis:
