@@ -28,6 +28,8 @@ process.fwliteInput = cms.PSet(
     samples= cms.vstring("SingleT"),
     nparts= cms.int32(2),
     part  = cms.int32(1),
+    analysis = cms.untracked.int32(-1),
+    doSystematics  = cms.untracked.int32(1),
     )
 
 
