@@ -4,7 +4,7 @@ from numpy import arange
 
 inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
 
-samples_mc = [
+samples = [
     [["TTV"],      5],
     [["SingleT"],  1],
     [["DiBoson"],  5],
@@ -13,9 +13,6 @@ samples_mc = [
     [["TTJetsJJ"], 20],
     [["TTH125"],   5],
     [["EWK"],      10],
-    ]
-
-samples_data_SL = [
     [["Run2012_SingleMu"],10 ],
     [["Run2012_SingleElectron"],10 ]
     ]
@@ -67,13 +64,11 @@ for var in variables:
     for cut in cuts_SL:
         print "Submit jobs for var: " + var + ", cut = " + cut
         print "-----------------------------------------------"
-        submitDataCardMakerFWlite_all( "mc_" + var + "_" + cut, cuts_SL[cut], var + "_" + cut , binvec, 0, samples_mc, inputpath=inpath)
-        submitDataCardMakerFWlite_all( "data_" + var + "_" + cut, cuts_SL[cut], var + "_" + cut , binvec, 0, samples_data_SL, inputpath=inpath)
+        submitDataCardMakerFWlite_all( var, cuts_SL[cut], var + "_" + cut , binvec, 0, samples, inputpath=inpath)
 
     print "Submitting DL jobs... "
     for cut in cuts_DL:
         print "Submit jobs for var: " + var + ", cut = " + cut
         print "-----------------------------------------------"
-        submitDataCardMakerFWlite_all( "mc_" + var + "_" + cut , cuts_DL[cut], var + "_" + cut , binvec, 1, samples_mc, inputpath=inpath)
-        submitDataCardMakerFWlite_all( "data_" + var + "_" + cut, cuts_DL[cut], var + "_" + cut , binvec, 1, samples_data_DL, inputpath=inpath)
+        submitDataCardMakerFWlite_all( var, cuts_DL[cut], var + "_" + cut , binvec, 1, samples, inputpath=inpath)
     print " ...done"

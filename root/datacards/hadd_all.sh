@@ -30,10 +30,14 @@ PROCESSES=(
 
 CUTS=(
 "SL_g6j2t"
-"SL_g6jg4t"
+"SL_4j3t"
+"SL_5j3t"
+"SL_g6j3t"
 "SL_4j4t"
-"DL_4j2t"
-"DL_4j4t"
+"SL_5jg4t"
+"SL_g6jg4t"
+#"DL_4j2t"
+#"DL_4j4t"
 )
 
 for PROC in ${PROCESSES[@]} 

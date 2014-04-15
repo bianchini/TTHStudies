@@ -7,12 +7,13 @@ ADDPIXELVETO  = 1
 
 ADDDIJETPTCUT = 1
 
+ADDJETPT40CUT = 0
 
 # baseline
 cat = cms.PSet(
     
     name      = cms.string("New"),
-    version   = cms.string("_ntuplizeAll_rec_std"),
+    version   = cms.string("_ntuplizeAll_v2_rec_std"),
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/"),
