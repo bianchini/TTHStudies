@@ -29,6 +29,7 @@
 #include "TMatrixTBase.h"
 #include "TFile.h"
 #include "TTree.h"
+#include "TLeaf.h"
 #include "TTreeFormula.h"
 #include "TString.h"
 #include "TSystem.h"
@@ -486,7 +487,8 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   EventInfo EVENT;
 
   // the observable (if doMEM==4)
-  float observable;
+  float observableF;
+  int   observableI;
   
   // number of extra partons in ME  
   int n_b,n_c,n_l,n_g;
@@ -536,10 +538,26 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   }
 
   if( analysis==4 ){
-    if( t->GetBranch( category ) )
-      t->SetBranchAddress( category ,   &observable   );
-    else
-      observable = -99.;
+    if( t->GetBranch( category ) ){
+      TLeaf* leaf = t->GetBranch( category )->GetLeaf( category );
+      string leanType = string( leaf->GetTypeName());
+      if( leanType.find("Float")!=string::npos ){
+	t->SetBranchAddress( category ,   &observableF   );
+	observableI = -998;
+      }
+      else if( leanType.find("Int")!=string::npos ){
+	t->SetBranchAddress( category ,   &observableI   );
+	observableF = -998;
+      }
+      else {
+	observableF = -998.;	
+	observableI = -998 ;	
+      }
+    }
+    else{
+      observableF = -99.;
+      observableI = -99;
+    }
   }
 
   if( t->GetBranch("n_b") ){
@@ -630,29 +648,6 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       cout << endl;
     }
 
-    /*
-    if( analysis==4 ){
-      t->SetBranchStatus("*",          0);
-      if(isMC>0){
-	t->SetBranchStatus("weight",     1);
-	t->SetBranchStatus("weightEle",  1);
-	t->SetBranchStatus("PUweight",   1);
-	t->SetBranchStatus("trigger",    1);
-	t->SetBranchStatus("weightTopPt",1);
-	t->SetBranchStatus("weightCSV",  1);
-	t->SetBranchStatus("SCALEsyst",  1);      
-	if( corrector )
-	  t->SetBranchStatus("MET_phi",  1);
-	t->SetBranchStatus("n_b",        1);   
-	t->SetBranchStatus("n_c",        1);   
-	t->SetBranchStatus("n_l",        1);   
-	t->SetBranchStatus("n_g",        1);   
-	t->SetBranchStatus("nSimBs",     1);  
-	t->SetBranchStatus("nMatchSimBs",1);
-      }
-      t->SetBranchStatus(category,       1);
-    }
-    */
 
     t->LoadTree(i);
     if( treeformula-> EvalInstance() == 0){
@@ -726,7 +721,9 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
 
     if( analysis==4 ){
-      h->Fill( observable, fill_weight);
+      if     (observableF!=-998)  h->Fill( observableF, fill_weight);
+      else if(observableI!=-998)  h->Fill( observableI, fill_weight);
+      else{}
       continue;
     }
 
@@ -995,6 +992,7 @@ int main(int argc, const char* argv[])
   int nparts              =  ( in.getParameter<int>    ("nparts" ) );
   int part                =  ( in.getParameter<int>    ("part" ) );
   int analysis            =  ( in.getUntrackedParameter<int>    ("analysis", -1 ) );
+  int doSystematics       =  ( in.getUntrackedParameter<int>    ("doSystematics", 1 ) );
 
   string nJob = "";
   if( argc==3 )
@@ -1427,8 +1425,8 @@ int main(int argc, const char* argv[])
     if(USEALLSAMPLES){
 
       systematics.push_back("all");  // nominal
-
-      if(sample.find("Run2012")==string::npos){
+      
+      if(sample.find("Run2012")==string::npos && doSystematics){
 	if( !USECSVCALIBRATION ){
 	  systematics.push_back("all");// cvsUp
 	  systematics.push_back("all");// csvDown
@@ -1445,6 +1443,7 @@ int main(int argc, const char* argv[])
 	systematics.push_back("all");// JERUp
 	systematics.push_back("all");// JERDown
       }
+
     }
     
     else if( !USEALLSAMPLES && USESHIFTEDSAMPLES ){
