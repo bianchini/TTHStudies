@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-
 import commands
 import re
 import os
 import ROOT
 import subprocess
+from time import sleep
 
 import sys
 sys.path.append('./')
@@ -44,6 +44,9 @@ def addDiJetPtCut( process ):
     old_cut     = process.cut.value()
     process.cut =  cms.string("("+old_cut+") && hJetAmong>=2")
         
+def addJetPt40Cut ( process ) :
+    old_cut = process.cut.value()
+    process.cut = cms.string( "(" + old_cut + ") && jetsAboveCut >= 4") 
 
 ###########################################
 ###########################################
@@ -115,7 +118,6 @@ def submitDataCardMakerFWlite_Limits(category):
 
     if ADDDIJETPTCUT:
         addDiJetPtCut( process.fwliteInput )
-
 
     scriptName = 'job_'+category+'.sh'
     jobName    = 'job_'+category
@@ -227,7 +229,8 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 
     if ADDDIJETPTCUT:
         addDiJetPtCut( process.fwliteInput )
-        
+
+    
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+category+'_'+trial+'.sh'
     jobName    = 'job_'+category+'_'+trial
@@ -288,6 +291,9 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
 
     if ADDDIJETPTCUT:
         addDiJetPtCut( process.fwliteInput )
+
+    if ADDJETPT40CUT:
+        addJetPt40Cut( process.fwliteInput )
         
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
@@ -309,7 +315,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = qsub+' -N job_'+category+' '+scriptName 
+    submitToQueue = qsub+' -N job_'+script+' '+scriptName 
     print submitToQueue
     os.system(submitToQueue)
     
@@ -344,9 +350,9 @@ def submitDataCardMakerFWlite_all( category, cut, selection, binvec, analysis, s
                 outfile += (sample)
         for split in range( samples[1] ):
             counter += 1
-            script  = category+"_p"+str(counter)
+            script  = selection + "_" + category + "_p"+str(counter)
             submitDataCardMakerFWlite( category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath)
-      
+#            sleep(1)
       
 ###########################################
 ###########################################
