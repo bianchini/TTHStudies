@@ -38,7 +38,7 @@ def addZllVeto   ( process ):
 
 def addPixelVeto ( process ):
     old_cut     = process.cut.value()
-    process.cut =  cms.string("("+old_cut+") && !(EVENT.run>207883 && EVENT.run<208307)")
+    process.cut =  cms.string("("+old_cut+") && (EVENT.run < 207883 || EVENT.run > 208307)")
     
 def addDiJetPtCut( process ):
     old_cut     = process.cut.value()
@@ -262,17 +262,23 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 ###########################################
  
 
-def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts, part, binvec, analysis, inputpath=""):
+def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname, nparts, part, binvec, analysis, inputpath=""):
 
+    if len(sys.argv)<2:
+        print "Specify how to run the job: [batch,local]"
+        return
+    
     print "Overload datacardMakerFWlite.py..."
     os.system('cp ../python/datacardMakerFWlite.py ./')
 
     from datacardMakerFWlite import process
 
-    process.fwliteInput = cat
-    
+    process.fwliteInput = cat.clone()
+
+    process.fwliteInput.directory = cms.string( process.fwliteInput.directory.value()+"/controlPlots")
     process.fwliteInput.samples   = samples    
     process.fwliteInput.category  = cms.string( category )
+    process.fwliteInput.varname   = cms.string( varname )
     process.fwliteInput.cut       = cms.string( cut )
     process.fwliteInput.extraname = cms.string( extraname )
     process.fwliteInput.nparts    = cms.int32(nparts)
@@ -301,6 +307,7 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
 
     out = open(jobName+'.py','w')
     out.write(process.dumpPython())
+    out.close()
    
     f = open(scriptName,'w')
     f.write('#!/bin/bash\n\n')
@@ -310,36 +317,62 @@ def submitDataCardMakerFWlite(category, cut, script, samples, extraname, nparts,
     f.write('eval `scramv1 runtime -sh`\n')
     f.write('\n\n')
     f.write('\n\n')
-    f.write('DataCardMakerNewFWlite ./'+jobName+'.py\n')
+    f.write('DataCardMakerNewFWlite ./'+jobName+'.py '+category+'\n')
     f.write('rm /scratch/bianchi/dummy*.root\n')
     f.close()
     os.system('chmod +x '+scriptName)
 
-    submitToQueue = qsub+' -N job_'+script+' '+scriptName 
-    print submitToQueue
-    os.system(submitToQueue)
+    submitToQueue = qsub+' -N job_'+script+' '+scriptName
+
+    if sys.argv[1]== "batch":
+        print submitToQueue
+        os.system(submitToQueue)
+    elif sys.argv[1]== "local":
+        subprocess.call( ['DataCardMakerNewFWlite', jobName+'.py', category] )
+    else:
+        print "Unsupported job type"
+        return
     
     print "\n@@@@@ END JOB @@@@@@@@@@@@@@@"
         
 ###########################################
 ###########################################
 
-
-sampless = [
-    #[["TTV"],     5],
+sampless_ALL = [
+    [["TTV"],     1],
     [["SingleT"], 1],
-    #[["DiBoson"], 5],
-    #[["TTJetsBB"],20],
-    #[["TTJetsBJ"],20],
-    #[["TTJetsJJ"],20],
-    #[["TTH125"],   5],
-    #[["EWK"],     10],
-    #[["Run2012_SingleMu", "Run2012_SingleElectron"],10 ],
-    #[["Run2012_SingleMu", "Run2012_DoubleElectron"],10 ]
+    [["DiBoson"], 1],
+    [["TTJetsBB"],1],
+    [["TTJetsBJ"],1],
+    [["TTJetsJJ"],1],
+    [["TTH125"],  1],
+    [["EWK"],     1],
+    [["Run2012_SingleMu", "Run2012_SingleElectron"],1 ],
     ]
 
-def submitDataCardMakerFWlite_all( category, cut, selection, binvec, analysis, sampless, inputpath=""):
+sampless_SL = [
+    [["TTV", "SingleT", "DiBoson","EWK" ],          1],
+    [["TTJetsBB", "TTJetsBJ", "TTJetsJJ"],          1],
+    [["TTH125"],                                    1],
+    [["Run2012_SingleMu", "Run2012_SingleElectron"],1],
+    ]
+
+sampless_DL = [
+    [["TTV", "SingleT", "DiBoson","EWK" ],          1],
+    [["TTJetsBB", "TTJetsBJ", "TTJetsJJ"],          1],
+    [["TTH125"],                                    1],
+    [["Run2012_SingleMu", "Run2012_DoubleElectron"],1],
+    ]
+
+def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, analysis, inputpath=""):
     counter = 0
+
+    sampless = []
+    if analysis==0:
+        sampless = sampless_SL
+    else:
+        sampless = sampless_DL
+
     for samples in sampless:
         toBeRun = cms.vstring( samples[0] )
         outfile = ""
@@ -351,95 +384,152 @@ def submitDataCardMakerFWlite_all( category, cut, selection, binvec, analysis, s
         for split in range( samples[1] ):
             counter += 1
             script  = selection + "_" + category + "_p"+str(counter)
-            submitDataCardMakerFWlite( category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath)
-#            sleep(1)
+            submitDataCardMakerFWlite( varname, category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath)
+            #sleep(1)
       
 ###########################################
 ###########################################
 if __name__ == "__main__":
-    binvec = cms.vdouble(0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
-    submitDataCardMakerFWlite_all( "btag_LR", "(Vtype<=1 || Vtype==4) && numJets>=4", "test" , binvec, +1, sampless)
-        
-#    submitDataCardMakerFWlite_Limits("cat1_sb_L")
-#    submitDataCardMakerFWlite_Limits("cat2_sb_L")
-#    submitDataCardMakerFWlite_Limits("cat3_sb_L")
-#    submitDataCardMakerFWlite_Limits("cat6_sb_L")
-#    submitDataCardMakerFWlite_Limits("cat1_sb_H")
-#    submitDataCardMakerFWlite_Limits("cat2_sb_H")
-#    submitDataCardMakerFWlite_Limits("cat3_sb_H")
-#    submitDataCardMakerFWlite_Limits("cat6_sb_H")
-    
-#    submitDataCardMakerFWlite_Limits("cat1_sb")
-#    submitDataCardMakerFWlite_Limits("cat2_sb")
-#    submitDataCardMakerFWlite_Limits("cat3_sb")
-#    submitDataCardMakerFWlite_Limits("cat6_sb")
-#    
-#    submitDataCardMakerFWlite_Limits("cat1_sb_nb")
-#    submitDataCardMakerFWlite_Limits("cat2_sb_nb")
-#    submitDataCardMakerFWlite_Limits("cat3_sb_nb")
-#    submitDataCardMakerFWlite_Limits("cat6_sb_nb")
 
-#    submitDataCardMakerFWlite_Limits("cat1_bj")
-#    submitDataCardMakerFWlite_Limits("cat2_bj")
-#    submitDataCardMakerFWlite_Limits("cat3_bj")
-#    submitDataCardMakerFWlite_Limits("cat6_bj")
+    #binvec = cms.vdouble(0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0)
+    #submitDataCardMakerFWlite_all( "btag_LR/2.", "(Vtype<=1 || Vtype==4) && numJets>=4", "test" , binvec, +1)
+
+    binvec = cms.vdouble()
+    for b in range(11):
+        binvec.append(10. + 3*b)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat1_H , "cat1_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat1_L , "cat1_L" , binvec, 0)
+
+
+    binvec = cms.vdouble()
+    for b in range(11):
+        binvec.append(20. + 3*b)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat2_H , "cat2_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat3_H , "cat3_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat6_H , "cat6_H" , binvec, 1)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat2_L , "cat2_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat3_L , "cat3_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b)", "logPb", cut_cat6_L , "cat6_L" , binvec, 1)
+
+    binvec = cms.vdouble()
+    for b in range(12):
+        binvec.append(0. + 4*b)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat1_H , "cat1_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat2_H , "cat2_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat3_H , "cat3_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat6_H , "cat6_H" , binvec, 1)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat1_L , "cat1_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat2_L , "cat2_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat3_L , "cat3_L" , binvec, 0)    
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_s)", "logPs", cut_cat6_L , "cat6_L" , binvec, 1)
+
+    
+
+    binvec = cms.vdouble()
+    for b in range(13):
+        binvec.append(-4. + 2*b)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat1_H , "cat1_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat2_H , "cat2_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat3_H , "cat3_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat6_H , "cat6_H" , binvec, 1)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat1_L , "cat1_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat2_L , "cat2_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat3_L , "cat3_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttbb/p_125_all_b)", "logPbb", cut_cat6_L , "cat6_L" , binvec, 1)
+
+    binvec = cms.vdouble()
+    for b in range(11):
+        binvec.append(-10. + 2*b)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat1_H , "cat1_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat2_H , "cat2_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat3_H , "cat3_H" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat6_H , "cat6_H" , binvec, 1)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat1_L , "cat1_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat2_L , "cat2_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat3_L , "cat3_L" , binvec, 0)
+    submitDataCardMakerFWlite_all( "TMath::Log(p_125_all_b_ttjj/p_125_all_b)", "logPjj", cut_cat6_L , "cat6_L" , binvec, 1)
+
+    
+
+#submitDataCardMakerFWlite_Limits("cat1_sb_L")
+#submitDataCardMakerFWlite_Limits("cat2_sb_L")
+#submitDataCardMakerFWlite_Limits("cat3_sb_L")
+#submitDataCardMakerFWlite_Limits("cat6_sb_L")
+#submitDataCardMakerFWlite_Limits("cat1_sb_H")
+#submitDataCardMakerFWlite_Limits("cat2_sb_H")
+#submitDataCardMakerFWlite_Limits("cat3_sb_H")
+#submitDataCardMakerFWlite_Limits("cat6_sb_H")
+
+#submitDataCardMakerFWlite_Limits("cat1_sb")
+#submitDataCardMakerFWlite_Limits("cat2_sb")
+#submitDataCardMakerFWlite_Limits("cat3_sb")
+#submitDataCardMakerFWlite_Limits("cat6_sb")
+    
+#submitDataCardMakerFWlite_Limits("cat1_sb_nb")
+#submitDataCardMakerFWlite_Limits("cat2_sb_nb")
+#submitDataCardMakerFWlite_Limits("cat3_sb_nb")
+#submitDataCardMakerFWlite_Limits("cat6_sb_nb")
+#submitDataCardMakerFWlite_Limits("cat1_bj")
+#submitDataCardMakerFWlite_Limits("cat2_bj")
+#submitDataCardMakerFWlite_Limits("cat3_bj")
+#submitDataCardMakerFWlite_Limits("cat6_bj")
     
 ########################################### optimize btagLR lower cut
 
-    cuts = [0.85, 0.875, 0.90, 0.925 , 0.950, 0.975, 0.980, 0.990 ]
+cuts = [0.85, 0.875, 0.90, 0.925 , 0.950, 0.975, 0.980, 0.990 ]
 
-    trial = 0
-    for cut in cuts:
+trial = 0
+for cut in cuts:
      #   submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR>=%f" % cut), "cat1_"+str(trial) )
      #   submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR>=%f" % cut), "cat2_"+str(trial) )
      #   submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR>=%f" % cut), "cat3_"+str(trial) )
      #   submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR>=%f" % cut), "cat6_"+str(trial) )
-        trial += 1
+     trial += 1
 
 
 ########################################### optimize btagLR splitting
 
 
-    cuts =  [0.80, 0.825, 0.850, 0.875, 0.900]
+cuts =  [0.80, 0.825, 0.850, 0.875, 0.900]
 
-    trial = 0
-    for cut in range(len(cuts)):
-        for trial in range(2):
-            if trial==0:
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat1-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat2-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat3-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat6-"+str(cut)+"_"+str(trial) )
-                
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR>=%f" % 0.995 ), "cat1-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR>=%f" % 0.9925), "cat2-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR>=%f" % 0.995),  "cat3-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR>=%f" % 0.925),  "cat6-"+str(cut)+"_"+str(trial) )
-                trial += 0
-            else:
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat1-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat2-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat3-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat6-"+str(cut)+"_"+str(trial) )
-                
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.995, cuts[cut])  ), "cat1-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.9925,cuts[cut])  ), "cat2-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.995, cuts[cut])  ), "cat3-"+str(cut)+"_"+str(trial) )
-              #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.925, cuts[cut])  ), "cat6-"+str(cut)+"_"+str(trial) )
-                trial += 0
-
-
+trial = 0
+for cut in range(len(cuts)):
+    for trial in range(2):
+        if trial==0:
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat1-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat2-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat3-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR>=%f" % cuts[cut] ), "cat6-"+str(cut)+"_"+str(trial) )
+            
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR>=%f" % 0.995 ), "cat1-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR>=%f" % 0.9925), "cat2-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR>=%f" % 0.995),  "cat3-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR>=%f" % 0.925),  "cat6-"+str(cut)+"_"+str(trial) )
+            trial += 0
+        else:
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat1-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat2-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat3-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR<%f"  % cuts[cut] ), "cat6-"+str(cut)+"_"+str(trial) )
+            
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat1_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.995, cuts[cut])  ), "cat1-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat2_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.9925,cuts[cut])  ), "cat2-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat3_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.995, cuts[cut])  ), "cat3-"+str(cut)+"_"+str(trial) )
+            #  submitDataCardMakerFWlite_Limits_Optimization("cat6_sb",  ("btag_LR<%f && btag_LR>=%f" % (0.925, cuts[cut])  ), "cat6-"+str(cut)+"_"+str(trial) )
+            trial += 0
+            
+            
 ########################################### optimize S/B normalization
 
-    cuts =  [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8]
-
-    trial = 0
-    for cut in cuts:
-        #submitDataCardMakerFWlite_Limits_Optimization("cat1_sb_L",  ("btag_LR>=%f" % 0.), "cat1_"+str(trial), cut )
-        #submitDataCardMakerFWlite_Limits_Optimization("cat2_sb_L",  ("btag_LR>=%f" % 0.), "cat2_"+str(trial), cut )
-        #submitDataCardMakerFWlite_Limits_Optimization("cat3_sb_L",  ("btag_LR>=%f" % 0.), "cat3_"+str(trial), cut )
-        #submitDataCardMakerFWlite_Limits_Optimization("cat6_sb_L",  ("btag_LR<%f" % 0.925), "cat6_"+str(trial), cut )
-        trial += 1
-
+cuts =  [1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8]
+    
+trial = 0
+for cut in cuts:
+    #submitDataCardMakerFWlite_Limits_Optimization("cat1_sb_L",  ("btag_LR>=%f" % 0.), "cat1_"+str(trial), cut )
+    #submitDataCardMakerFWlite_Limits_Optimization("cat2_sb_L",  ("btag_LR>=%f" % 0.), "cat2_"+str(trial), cut )
+    #submitDataCardMakerFWlite_Limits_Optimization("cat3_sb_L",  ("btag_LR>=%f" % 0.), "cat3_"+str(trial), cut )
+    #submitDataCardMakerFWlite_Limits_Optimization("cat6_sb_L",  ("btag_LR<%f" % 0.925), "cat6_"+str(trial), cut )
+    trial += 1
+    
 
 
