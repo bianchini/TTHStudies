@@ -1640,7 +1640,7 @@ void plot_param(TString header = "Light jet TF",
     c1->SaveAs("Plots/PAS/Plot_"+hname+"_tf_"+extraLabel+".pdf");
   }
 
-  delete c1;
+  //delete c1;
   return;
 }
 
@@ -1679,6 +1679,7 @@ void plot_paramAll(){
 
 
   for(int k = 0 ; k < hnames.size(); k++){
+    continue;
     cout << hnames[k] << endl;
     if( hnames[k].find("resp")!=string::npos )
       plot_param( TString(titles[k].c_str()) ,"quark energy (GeV)","GeV",TString(hnames[k]),  50 , 200, 50, 200, "parametrization", ""); 
@@ -1688,6 +1689,7 @@ void plot_paramAll(){
     cout << endl;
   }
 
+  plot_param("E_{x,y}^{miss}, #sigma_{E_{T}}", "#sum E_{T} (GeV)", "GeV", "hWidthsPxResol", 500, 3000, 0, 70, "parametrization", "");
 
 }
 
