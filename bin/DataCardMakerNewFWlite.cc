@@ -82,6 +82,8 @@ typedef TMatrixT<double> TMatrixD;
 // test effect of matching MEt phi distribution to data
 #define RESHAPEMETPHI     0
 
+// if doing ttbb/ttjj measurement, fit for ttbb as signal
+#define FITTTBB           0
 
 string DUMMY;
 
@@ -450,6 +452,12 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
   TTreeFormula* treeformula = new TTreeFormula("cat_selection", cut , t );
 
+  
+  TTreeFormula* treeobservable = 0;
+  if(analysis==4) 
+    treeobservable = new TTreeFormula("cat_observable", category , t );
+
+
   if(VERBOSE) cout << " > cut: " << string(cut.GetTitle()) << endl;
 
   // ME probability  
@@ -487,8 +495,8 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   EventInfo EVENT;
 
   // the observable (if doMEM==4)
-  float observableF;
-  int   observableI;
+  //float observableF;
+  //int   observableI;
   
   // number of extra partons in ME  
   int n_b,n_c,n_l,n_g;
@@ -537,6 +545,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     }
   }
 
+  /*
   if( analysis==4 ){
     if( t->GetBranch( category ) ){
       TLeaf* leaf = t->GetBranch( category )->GetLeaf( category );
@@ -555,10 +564,11 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       }
     }
     else{
-      observableF = -99.;
-      observableI = -99;
+      observableF = -998.;
+      observableI = -998.;
     }
   }
+  */
 
   if( t->GetBranch("n_b") ){
     t->SetBranchAddress("n_b",    &n_b);   
@@ -721,9 +731,11 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
 
     if( analysis==4 ){
-      if     (observableF!=-998)  h->Fill( observableF, fill_weight);
-      else if(observableI!=-998)  h->Fill( observableI, fill_weight);
-      else{}
+      //if     (observableF!=-998)  h->Fill( observableF, fill_weight);
+      //else if(observableI!=-998)  h->Fill( observableI, fill_weight);
+      //else{      //}
+      double eval  = treeobservable->EvalInstance();
+      h->Fill( eval, fill_weight);
       continue;
     }
 
@@ -980,6 +992,7 @@ int main(int argc, const char* argv[])
   TString  directory      =  TString( (in.getParameter<string>  ("directory")).c_str() );
   string cut              =  ( in.getParameter<string>  ("cut" ) );
   TString category        =  TString( ( in.getParameter<string>  ("category" ) ).c_str() );
+  TString varname         =  TString( ( in.getParameter<string>  ("varname" ) ).c_str() );
   int doMEM               =  ( in.getParameter<int>     ("doMEM" ) );
   float fact1             =  ( in.getParameter<double>  ("fact1" ) );
   float fact2             =  ( in.getParameter<double>  ("fact2" ) );
@@ -1257,8 +1270,11 @@ int main(int argc, const char* argv[])
   TFile* fout = TFile::Open("../root/datacards/"+directory+"/"+fname+"_"+name+version+extraname+nJob+".root","UPDATE");
 
   // directory for this particular category
-  TDirectory* dir =  fout->GetDirectory( fname+"_"+category); 
-  if( !dir) dir = fout->mkdir( fname+"_"+category ) ;
+  TString dirName = fname+"_"+category ;
+  TDirectory* dir =  fout->GetDirectory( dirName ); 
+  if( !dir) dir = fout->mkdir( dirName ) ;
+
+  
 
   // fix the binning
   TArrayF bins (nBins+1);
@@ -1324,7 +1340,8 @@ int main(int argc, const char* argv[])
     if(VERBOSE) cout << "Variable = " << string(var2.Data()) << endl;
   }
   else if(doMEM==4){
-    var3 = category;
+    var3 = varname;
+    if(VERBOSE) cout << "Variable = " << string(var3.Data()) << endl;
   }
   else{}
 
@@ -1648,7 +1665,7 @@ int main(int argc, const char* argv[])
 
 
       // fill the histogram
-      fill( tree, nparts, part, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight1 , pos_weight2, category, sample+"_"+extraname );
+      fill( tree, nparts, part, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight1 , pos_weight2, varname, sample+"_"+extraname );
       
       // add underflow bin to the first bin...
       int firstBin              =  1;
@@ -1889,9 +1906,12 @@ int main(int argc, const char* argv[])
   //////////////////////////////////////////////////////////////////////////////////
   // add processes only if yield is non null
 
+  int proc_num_offset = 0;
+
   // if do ttbb/ttjj analysis, signal is tt+bb
-  if(isTTH125there && abs(doMEM)==3){
-    isTTH125there = false;
+  if(isTTH125there && abs(doMEM)==3 && FITTTBB){
+    isTTH125there   = false;
+    proc_num_offset = 2;
   }
 
   string line("bin                         ");
@@ -1916,12 +1936,12 @@ int main(int argc, const char* argv[])
   out<<endl;
   line = "process                       ";
   if( isTTH125there )     line += string(Form("%d          ", 0));
-  if( isTTJetsHFbbthere ) line += string(Form("%d          ", 1 - (abs(doMEM)==3 ? 2 : 0)));
-  if( isTTJetsHFbthere )  line += string(Form("%d          ", 2 - (abs(doMEM)==3 ? 2 : 0)));
-  if( isTTJetsLFthere )   line += string(Form("%d          ", 3 - (abs(doMEM)==3 ? 2 : 0)));
-  if( isTTVthere )        line += string(Form("%d          ", 4 - (abs(doMEM)==3 ? 2 : 0)));
-  if( isSingleTthere )    line += string(Form("%d          ", 5 - (abs(doMEM)==3 ? 2 : 0)));
-  if( isEWKthere )        line += string(Form("%d          ", 6 - (abs(doMEM)==3 ? 2 : 0)));
+  if( isTTJetsHFbbthere ) line += string(Form("%d          ", 1 - proc_num_offset));
+  if( isTTJetsHFbthere )  line += string(Form("%d          ", 2 - proc_num_offset));
+  if( isTTJetsLFthere )   line += string(Form("%d          ", 3 - proc_num_offset));
+  if( isTTVthere )        line += string(Form("%d          ", 4 - proc_num_offset));
+  if( isSingleTthere )    line += string(Form("%d          ", 5 - proc_num_offset));
+  if( isEWKthere )        line += string(Form("%d          ", 6 - proc_num_offset));
   out<<line;
   out<<endl;
   line = "rate                        ";

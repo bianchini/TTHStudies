@@ -14,6 +14,7 @@ process.fwliteInput = cms.PSet(
     directory= cms.string("Mar25_2014"),
     cut= cms.string("(numJets>=6 && numBTagM==3)"),
     category= cms.string("lepton_pt"),
+    varname = cms.string("lepton_pt"),
     doMEM= cms.int32(4),
     fact1= cms.double(-99),
     fact2= cms.double(-99),

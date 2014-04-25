@@ -5,7 +5,7 @@ ADDZLLVETO    = 1
 
 ADDPIXELVETO  = 1
 
-ADDDIJETPTCUT = 1
+ADDDIJETPTCUT = 0
 
 ADDJETPT40CUT = 0
 
@@ -13,13 +13,14 @@ ADDJETPT40CUT = 0
 cat = cms.PSet(
     
     name      = cms.string("New"),
-    version   = cms.string("_ntuplizeAll_v2_rec_std"),
+    version   = cms.string("_rec_std"),
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
-    inputpath = cms.string("../root/"),
-    directory = cms.string("Apr07_2014"),
+    inputpath = cms.string("../root/files/byLLR/Apr23_2014/"),
+    directory = cms.string("Apr23_2014"),
     cut       = cms.string(""),
     category  = cms.string(""),
+    varname   = cms.string(""),
     doMEM     = cms.int32(4),
     fact1     = cms.double(0),
     fact2     = cms.double(0),
@@ -41,12 +42,32 @@ cat = cms.PSet(
 
     )
 
+################### category cut
+
+
+cut_cat1   = "( type==0 || (type==3 && flag_type3>0))   && btag_LR>=0."
+cut_cat2   = "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0."
+cut_cat3   = "type==2 && flag_type2<=999 && btag_LR>=0."
+cut_cat6   = "type==6 && btag_LR>=0."
+
+cut_cat1_H = "( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.995"
+cut_cat1_L = "( type==0 || (type==3 && flag_type3>0)) && btag_LR<0.995 && btag_LR>=0.960"
+
+cut_cat2_H = "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925"
+cut_cat2_L = "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR<0.9925 && btag_LR>=0.960"
+
+cut_cat3_H = "type==2 && flag_type2<=999 && btag_LR>=0.995"
+cut_cat3_L = "type==2 && flag_type2<=999 && btag_LR<0.995 && btag_LR>=0.970"
+
+cut_cat6_H = "type==6 && btag_LR>=0.925"
+cut_cat6_L = "type==6 && btag_LR<0.925 && btag_LR>=0.850"
+
 
 #################### ttbb vs ttjj discrimination
 
 cat1_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0."), #0.975
+    cut       = cms.string(cut_cat1), #0.975
     category  = cms.string("cat1"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.15)
@@ -54,7 +75,7 @@ cat1_bj = cat.clone(
 
 cat2_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0."),#0.975
+    cut       = cms.string(cut_cat2),#0.975
     category  = cms.string("cat2"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.20)
@@ -62,7 +83,7 @@ cat2_bj = cat.clone(
 
 cat3_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0."), #0.990
+    cut       = cms.string(cut_cat3), #0.990
     category  = cms.string("cat3"),
     doMEM     = cms.int32(3),
     factbb    = cms.double(0.50)
@@ -70,7 +91,7 @@ cat3_bj = cat.clone(
 
 cat6_bj = cat.clone(
     extraname = cms.string("_bj"),
-    cut       = cms.string("type==6 && btag_LR>=0."),#0.980
+    cut       = cms.string(cut_cat6),#0.980
     category  = cms.string("cat6"),
     factbb    = cms.double(0.15),
     doMEM     = cms.int32(3),
@@ -82,7 +103,7 @@ cat6_bj = cat.clone(
 #################### ttbb vs ttH separation (no bias)
 
 cat1_sb_nb =  cat1_bj.clone(
-    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.975"),
+    cut       = cms.string(cut_cat1_H),
     extraname     = cms.string("_sb_nb"),
     doMEM         = cms.int32(-2),
     fact1         = cms.double(1.2),
@@ -90,7 +111,7 @@ cat1_sb_nb =  cat1_bj.clone(
     )
 
 cat2_sb_nb =  cat2_bj.clone(
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.975"),
+    cut       = cms.string(cut_cat2_H),
     extraname = cms.string("_sb_nb"),
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
@@ -98,7 +119,7 @@ cat2_sb_nb =  cat2_bj.clone(
     )
 
 cat3_sb_nb =  cat3_bj.clone(
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0.990"),
+    cut       = cms.string(cut_cat3_H),
     extraname = cms.string("_sb_nb"),   
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
@@ -106,7 +127,7 @@ cat3_sb_nb =  cat3_bj.clone(
     )
 
 cat6_sb_nb =  cat6_bj.clone(
-    cut       = cms.string("type==6 && btag_LR>=0.925"),
+    cut       = cms.string(cut_cat6_H),
     extraname = cms.string("_sb_nb"),
     doMEM     = cms.int32(-2),
     fact1     = cms.double(0.6),
@@ -117,25 +138,25 @@ cat6_sb_nb =  cat6_bj.clone(
 #################### ttbb vs ttH separation
 
 cat1_sb =  cat1_sb_nb.clone(
-    cut       = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.0"),
+    cut       = cms.string( cut_cat1 ),
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     )
 
 cat2_sb =  cat2_sb_nb.clone(
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.0"),
+    cut       = cms.string( cut_cat2 ),
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     )
 
 cat3_sb =  cat3_sb_nb.clone(
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0.0"),
+    cut       = cms.string( cut_cat3 ),
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     )
 
 cat6_sb =  cat6_sb_nb.clone(
-    cut       = cms.string("type==6 && btag_LR>=0.0"),
+    cut       = cms.string( cut_cat6 ), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
     )
@@ -143,7 +164,7 @@ cat6_sb =  cat6_sb_nb.clone(
 #################### ttbb vs ttH separation (no bias) !!! new !!!
 
 cat1_sb_H =  cat1_bj.clone(
-    cut           = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.995"),
+    cut           = cms.string(cut_cat1_H),
     category      = cms.string("cat1_H"),
     extraname     = cms.string("_sb"),
     doMEM         = cms.int32(2),
@@ -153,7 +174,7 @@ cat1_sb_H =  cat1_bj.clone(
 
 
 cat1_sb_L =  cat1_bj.clone(
-    cut           = cms.string("( type==0 || (type==3 && flag_type3>0)) && btag_LR<0.995 && btag_LR>=0.960"),
+    cut           = cms.string(cut_cat1_L),
     category      = cms.string("cat1_L"),
     extraname     = cms.string("_sb"),
     doMEM         = cms.int32(2),
@@ -163,7 +184,7 @@ cat1_sb_L =  cat1_bj.clone(
 
 
 cat2_sb_H =  cat2_bj.clone(
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925"),
+    cut       = cms.string(cut_cat2_H),
     category  = cms.string("cat2_H"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
@@ -172,7 +193,7 @@ cat2_sb_H =  cat2_bj.clone(
     )
 
 cat2_sb_L =  cat2_bj.clone(
-    cut       = cms.string("( type==1 || (type==3 && flag_type3<=0) ) && btag_LR<0.9925 && btag_LR>=0.960"),
+    cut       = cms.string(cut_cat2_L),
     category  = cms.string("cat2_L"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
@@ -182,7 +203,7 @@ cat2_sb_L =  cat2_bj.clone(
 
 
 cat3_sb_H =  cat3_bj.clone(
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR>=0.995"), 
+    cut       = cms.string(cut_cat3_H), 
     category  = cms.string("cat3_H"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
@@ -191,7 +212,7 @@ cat3_sb_H =  cat3_bj.clone(
     )
 
 cat3_sb_L =  cat3_bj.clone(
-    cut       = cms.string("type==2 && flag_type2<=999 && btag_LR<0.995 && btag_LR>=0.970"), 
+    cut       = cms.string(cut_cat3_L), 
     category  = cms.string("cat3_L"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
@@ -200,7 +221,7 @@ cat3_sb_L =  cat3_bj.clone(
     )
 
 cat6_sb_H =  cat6_bj.clone(
-    cut       = cms.string("type==6 && btag_LR>=0.925"),
+    cut       = cms.string(cut_cat6_H),
     category  = cms.string("cat6_H"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
@@ -210,7 +231,7 @@ cat6_sb_H =  cat6_bj.clone(
     )
 
 cat6_sb_L =  cat6_bj.clone(
-    cut       = cms.string("type==6 && btag_LR<0.925 && btag_LR>=0.850"),
+    cut       = cms.string(cut_cat6_L),
     category  = cms.string("cat6_L"), 
     extraname = cms.string("_sb"),
     doMEM     = cms.int32(2),
