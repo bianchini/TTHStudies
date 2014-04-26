@@ -69,7 +69,7 @@ typedef TMatrixT<double> TMatrixD;
 #define USESHIFTEDSAMPLES 1
 #define USEALLSAMPLES     1
 
-#define RUNONDATA         1
+#define RUNONDATA         0
 #define VERBOSE           1
 
 // use csv calibration from BDT
@@ -1804,6 +1804,8 @@ int main(int argc, const char* argv[])
       errFlag++;
       continue;
     }
+
+    // if TTH, add to signal
     if( string(all_datacard_samples[s].Data()).find("TTH")!=string::npos ){
       totSgn +=  h_tmp->Integral();
       if( !h_totSgn )
@@ -1811,6 +1813,8 @@ int main(int argc, const char* argv[])
       else
 	h_totSgn->Add( h_tmp, 1.0);
     }
+
+    // if not signal and not data, add to bkg
     else if( string(all_datacard_samples[s].Data()).find("data_obs")==string::npos ){
       totBkg +=  h_tmp->Integral();
       if( !h_totBkg )
@@ -1824,14 +1828,19 @@ int main(int argc, const char* argv[])
     // add the histogram to the map
     aMap[all_datacard_samples[s]] = h_tmp;
 
-    if(RUNONDATA==0){
+    if(RUNONDATA==0 && 
+       string(all_datacard_samples[s].Data()).find("data_obs")==string::npos && 
+       string(all_datacard_samples[s].Data()).find("TTH")==string::npos){
+
       // add the histogram to the asymov dataset
       h_data->Add( h_tmp );
 
       // add the histogram yield to the asymov dataset
       observation +=  h_tmp->Integral();
+
+      cout << "   ( h_data++ : " << h_data->Integral()  << " )" << endl; 
     }
-    else{
+    else if(RUNONDATA){
       if(string(all_datacard_samples[s].Data()).find("data_obs")!=string::npos){
 	h_data->Add( h_tmp );
 	observation +=  h_tmp->Integral();
