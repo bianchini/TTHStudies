@@ -1209,13 +1209,170 @@ void plot_BTagAll(){
 
 
 
-void plot_category(string dir  = "Apr07_2014",
+
+void plot_param(TString header = "Light jet TF",	      
+		TString unitsX = "jet E (GeV)",
+		TString unitsY = "Acceptance",
+		TString hname  = "accLightBin0",
+		float xLow  = 20,
+		float xHigh = 100,
+		float yLow  = -999,
+		float yHigh = -999,
+		TString param = "",
+		TString extraLabel = ""
+		){
+
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.1);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
+
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TFile *f = TFile::Open("../bin/root/ControlPlotsTEST.root","READ");
+  TH1F* hBestMass = (TH1F*)f->Get(hname);
+
+
+  if( !hBestMass ){
+    cout << "No such histogram" << endl;
+    return;
+  }
+
+
+  TString fname;
+  TIter iter( hBestMass->GetListOfFunctions() );
+  TObject* obj = iter();
+  while ( obj!=0 ){
+    TF1* func = dynamic_cast<TF1*>(obj);
+    fname = func->GetName();
+    obj = iter();
+  }
+  TF1 *func = hBestMass->GetFunction(fname);
+  if(func) func->SetRange(xLow,xHigh);
+
+  hBestMass->SetMarkerStyle(kFullCircle);
+  hBestMass->SetMarkerColor(kBlue);
+  hBestMass->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
+  hBestMass->SetXTitle( unitsX );
+  hBestMass->SetYTitle( unitsY );
+  hBestMass->SetTitleSize(0.05,"X");
+  hBestMass->SetTitleSize(0.05,"Y");
+
+  hBestMass->SetTitleOffset(0.90,"X");
+  hBestMass->SetTitleOffset(0.83,"Y");
+
+  hBestMass->GetXaxis()->SetRangeUser(xLow,xHigh);
+  if(func) func->GetXaxis()->SetRangeUser(xLow,xHigh);
+  if(yLow!=-999 && yHigh!=-999){
+    hBestMass->GetYaxis()->SetRangeUser(yLow,yHigh);
+    if(func) func->GetYaxis()->SetRangeUser(yLow,yHigh);
+  }
+
+  TLegend* leg = new TLegend(0.15,0.65,0.55,0.85,NULL,"brNDC");
+  leg->SetHeader( header );
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.06); 
+  leg->AddEntry(hBestMass, "from fit", "P");
+  if(func) leg->AddEntry(func, param, "L");
+
+
+  if(func){
+    hBestMass->Draw("PE");
+    func->Draw("SAME");
+  }
+  else{
+    hBestMass->SetFillColor(kRed);
+    hBestMass->SetFillStyle(3004);
+    hBestMass->Draw("HIST");
+  }
+
+  leg->Draw();
+
+  if(func) cout << "f(50,100,150)=" << string(Form("(%.1f, %.1f, %.1f)",func->Eval(50), func->Eval(100), func->Eval(150))) << endl;
+
+  if(1){
+    c1->SaveAs("Plots/PAS/Plot_"+hname+"_tf_"+extraLabel+".pdf");
+  }
+
+  //delete c1;
+  return;
+}
+
+
+void plot_paramAll(){
+
+  vector<string> hnames;
+  hnames.push_back("resolLightBin0");
+  hnames.push_back("respLightBin0");
+  hnames.push_back("resolLightBin1");
+  hnames.push_back("respLightBin1");
+  hnames.push_back("respG1HeavyBin0");
+  hnames.push_back("respG2HeavyBin0");
+  hnames.push_back("resolG1HeavyBin0");
+  hnames.push_back("resolG2HeavyBin0");
+  hnames.push_back("respG1HeavyBin1");
+  hnames.push_back("respG2HeavyBin1");
+  hnames.push_back("resolG1HeavyBin1");
+  hnames.push_back("resolG2HeavyBin1");
+
+
+  vector<string> titles;
+  titles.push_back("u-jet, #sigma(E), |#eta|<1.0");
+  titles.push_back("u-jet, #mu(E),  |#eta|<1.0");
+  titles.push_back("u-jet, #sigma(E), |#eta|>1.0");
+  titles.push_back("u-jet, #mu(E),  |#eta|>1.0");
+  titles.push_back("b-jet, #mu(E), |#eta|<1.0");
+  titles.push_back("b-jet, #mu'(E), |#eta|<1.0");
+  titles.push_back("b-jet, #sigma(E), |#eta|<1.0");
+  titles.push_back("b-jet, #sigma'(E), |#eta|<1.0");
+  titles.push_back("b-jet, #mu(E), |#eta|>1.0");
+  titles.push_back("b-jet, #mu'(E), |#eta|>1.0");
+  titles.push_back("b-jet, #sigma(E), |#eta|>1.0");
+  titles.push_back("b-jet, #sigma'(E), |#eta|>1.0");
+
+
+
+  for(int k = 0 ; k < hnames.size(); k++){
+    continue;
+    cout << hnames[k] << endl;
+    if( hnames[k].find("resp")!=string::npos )
+      plot_param( TString(titles[k].c_str()) ,"quark energy (GeV)","GeV",TString(hnames[k]),  50 , 200, 50, 200, "parametrization", ""); 
+    if( hnames[k].find("resol")!=string::npos )
+      plot_param( TString(titles[k].c_str()) ,"quark energy (GeV)","GeV",TString(hnames[k]),  50 , 200, 0, 100, "parametrization", ""); 
+
+    cout << endl;
+  }
+
+  plot_param("E_{x,y}^{miss}, #sigma_{E_{T}}", "#sum E_{T} (GeV)", "GeV", "hWidthsPxResol", 500, 3000, 0, 70, "parametrization", "");
+
+}
+
+
+void plot_category(string dir  = "Mar25_2014",
 		   string type = "MEM", 
 		   string cat  = "cat1",
-		   string tag = "New_rec_std_sb",
+		   string tag = "New_rec_std_byLLR_bj",
 		   string header = "Cat 1",
 		   string fname  = "",
+		   TString title = "S/(S+B)",
 		   int    drawseparation = 1,
+		   float xMax = -1,
 		   float  rescaleTTbb = 1.,
 		   float  rescaleTTb  = 1.,
 		   float  rescaleTTjj = 1.
@@ -1234,14 +1391,33 @@ void plot_category(string dir  = "Apr07_2014",
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleOffset(1.3,"y");
 
-  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  TFile* f = TFile::Open(("datacards/"+dir+"/"+type+"_"+tag+".root").c_str());
+  if(f==0 || f->IsZombie() ) return;
+
+
+  TH1F* hS    = 0;
+  TH1F* hData = 0;
+  TH1F* hErr  = 0;
+  TH1F* h1    = 0;
+
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600/0.85);
   c1->SetGrid(0,0);
   c1->SetFillStyle(4000);
   c1->SetFillColor(10);
   c1->SetTicky();
   c1->SetObjectStat(0);
 
-  TLegend* leg = new TLegend(0.52,0.50,0.77,0.88,NULL,"brNDC");
+  TPad *p1 = new TPad("p1","",0,0.155,1,1);
+  p1->SetGrid(0,0);
+  p1->SetFillStyle(4000);
+  p1->SetFillColor(10);
+  p1->SetTicky();
+  p1->SetObjectStat(0);
+  p1->Draw();
+  p1->cd();
+
+  TLegend* leg = new TLegend(0.62,0.51,0.88,0.89,NULL,"brNDC");
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetFillColor(10);
@@ -1253,42 +1429,23 @@ void plot_category(string dir  = "Apr07_2014",
   samples.push_back("SingleT");
   samples.push_back("TTV");
   samples.push_back("EWK");
-  samples.push_back("DiBoson");
   samples.push_back("TTJetsHFbb");
   samples.push_back("TTJetsHFb");
   samples.push_back("TTJetsLF");
   samples.push_back("TTH125");
+  samples.push_back("DiBoson");
   if(RUNONDATA)  samples.push_back("data_obs");
-
-
-  TH1F* hS    = 0;
-  TH1F* hData = 0;
-  TH1F* hErr  = 0;
-
-  TFile* f = TFile::Open(("datacards/"+dir+"/"+type+"_"+tag+".root").c_str());
-  if(f==0 || f->IsZombie() ) return;
 
 
   ////////////////////////////////////////////////////////////////////////
 
-  TH1F* h_csvUp                 = 0;
-  TH1F* h_JECUp                 = 0;
-  TH1F* h_JERUp                 = 0;
-  TH1F* h_lumiUp                = 0;
-  TH1F* h_pdf_ggUp              = 0;
-  TH1F* h_Norm_TTVUp            = 0;
-  TH1F* h_Norm_SingleTUp        = 0;
-  TH1F* h_QCDscale_TTHUp        = 0;
-  TH1F* h_QCDscale_TTbbUp       = 0;
-  TH1F* h_QCDscale_TTbUp        = 0;
-  TH1F* h_QCDscale_TTJetsHFUp   = 0;
-  TH1F* h_QCDscale_TTJetsLFUp   = 0;
-
   map<string,TH1F*> h_Ups;
-
 
   f->cd( (type+"_"+cat).c_str());
  
+  h1 = (TH1F*)((TH1F*)f->Get( (type+"_"+cat+"/TTH125").c_str() ))->Clone("h1");
+  h1->Reset();
+
   TIter iter( gDirectory->GetListOfKeys()  );
   TKey *key;
   
@@ -1460,14 +1617,18 @@ void plot_category(string dir  = "Apr07_2014",
     hErr->GetXaxis()->SetTitle("P_{b/j}");
 
   if(RUNONDATA==0)
-    hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
+    hErr->SetTitle("Simulation #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
   else
-    hErr->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.6 fb^{-1}");
+    hErr->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
   hErr->SetTitleSize  (0.04,"X");
   hErr->SetTitleOffset(0.95,"X");
-  float max =  TMath::Max(float(hErr->GetMaximum()*1.55),(hData!=0 ? hData->GetMaximum()*1.55 : -1.));
+  float max =  TMath::Max(float(hErr->GetMaximum()*1.45),(hData!=0 ? hData->GetMaximum()*1.45 : -1.));
   hErr->GetYaxis()->SetRangeUser(0., max );
+  hErr->GetXaxis()->SetRangeUser( hErr->GetXaxis()->GetXmin(), xMax>0 ? xMax : hErr->GetXaxis()->GetXmax());
   hErr->SetLineColor(kBlack);
+
+
+  hErr->GetXaxis()->SetTitle( title );
 
   hErr->Draw("HIST");
   TH1D* hErr_clone = (TH1D*)hErr->Clone("hErr_clone");
@@ -1513,8 +1674,122 @@ void plot_category(string dir  = "Apr07_2014",
 
   cout << "Signal = " << hS->Integral()/5. << endl;
 
+
+  c1->cd();
+  TPad *p2 = new TPad("p1","",0,0,1,0.175);
+  p2->SetGrid(0,0);
+  p2->SetFillStyle(4000);
+  p2->SetFillColor(10);
+  p2->SetTicky();
+  p2->SetObjectStat(0);
+  p2->Draw();
+  p2->cd();
+  
+  THStack* rStack = new THStack("rStack","");
+  
+  TF1* one = new TF1("one","1", h1->GetXaxis()->GetXmin(),h1->GetXaxis()->GetXmax());
+  
+  TH1F* one_low = 0;
+  one_low = (TH1F*)h1->Clone("one_low");
+  
+  TH1F* one_up = 0;
+  one_up = (TH1F*)h1->Clone("one_up");
+  
+  TH1F* one_error = 0;
+  one_error = (TH1F*)h1->Clone("one_error");
+  
+  TH1F* h_ratio = 0;
+  h_ratio = (TH1F*)h1->Clone("h_ratio");
+  
+  for(int b=1; b<= h_ratio->GetNbinsX() ; b++){
+
+    float ndata    = 0.;
+    float ndataErr = 0.;
+
+    if(RUNONDATA){
+      ndata = hData->GetBinContent(b);
+      ndataErr = hData->GetBinError(b);
+    }      
+    else{
+      ndata = hErr->GetBinContent(b);  //should be hData
+      ndataErr = hErr->GetBinError(b); //should be hData
+    }
+    
+    float nbkg = hErr->GetBinContent(b);
+    float nbkgErr = 0;
+    if(hErr!=0){
+      nbkgErr = hErr->GetBinError(b);
+    }
+    
+    float nbkg_up  = hErr->GetBinContent(b) + hErr->GetBinError(b);
+    float nbkg_low = hErr->GetBinContent(b) - hErr->GetBinError(b);
+    
+    cout << ndata << ", " << nbkg << endl;
+  
+    float r = nbkg >0 ? ndata/nbkg : 0; 
+    //float rErr = (nbkg>0 && ndata>0) ? r * sqrt( nbkgErr*nbkgErr/(nbkg*nbkg) + ndataErr*ndataErr/(ndata*ndata) ) : 0; 
+    float rErr = nbkg>0 >0 ? ndataErr/nbkg  : 0;
+
+    float r_up  = nbkg_low >0 && ndata>0 ? nbkg/nbkg_low : 0;
+    float r_low = nbkg_up  >0 && ndata>0 ? nbkg/nbkg_up  : 0;
+    
+    h_ratio->SetBinContent(b, r);
+    h_ratio->SetBinError(b,rErr);
+    
+    one_low->SetBinContent(b, r_low);
+    one_up->SetBinContent(b, r_up - r_low);
+    
+    one_error->SetBinContent(b, 1.0);
+    one_error->SetBinError(b, (r_up-r_low)/2 );
+  }
+   
+  h_ratio->SetMarkerStyle(kFullCircle);
+  h_ratio->SetMarkerSize(1.5);
+  h_ratio->SetMarkerColor(kBlack);
+  h_ratio->SetTitle(0);
+  h_ratio->GetYaxis()->SetRangeUser(0.0,2.0);
+  h_ratio->GetXaxis()->SetTitle(0);
+  h_ratio->GetXaxis()->SetLabelSize(0);
+  h_ratio->GetXaxis()->SetNdivisions(0);
+  h_ratio->GetXaxis()->SetTickLength(0.1);
+  
+  h_ratio->GetYaxis()->SetTitleSize(0.16);
+  h_ratio->GetYaxis()->SetTitleOffset(0.28);
+  h_ratio->GetYaxis()->SetTitle("Data/Bkg  ");
+  h_ratio->GetYaxis()->SetNdivisions(202);
+  h_ratio->GetYaxis()->SetLabelSize(0.16);
+  
+  h_ratio->Draw("EP");
+  
+  one->SetLineColor(kRed);
+  one->SetLineWidth(2);
+  
+  //one_error->SetLineColor(18);
+  //one_error->SetFillColor(18);  
+  one_error->SetFillStyle(3004);
+  one_error->SetFillColor(kBlack);
+
+  one_low->SetFillStyle(0);
+  one_low->SetFillColor(18);
+  one_low->SetLineColor(18);
+  one_up->SetFillColor(18);
+  one_up->SetLineColor(18);
+  
+  rStack->Add( one_low );
+  rStack->Add( one_up );
+  
+  //rStack->Draw("HISTSAME");
+  one_error->Draw("E2SAME");
+  one->Draw("SAME");
+  h_ratio->Draw("EPSAME");
+
+  h_ratio->Print("all");
+ 
+  //c1->Update();
+
   if(1){
-    c1->SaveAs(  ("Plots/PAS/Plot_"+cat+"_"+fname+"_"+tag+".pdf").c_str() );
+    c1->SaveAs(  ("datacards/"+dir+"/Plot_"+cat+"_"+fname+"_"+tag+".pdf").c_str() );
+    //delete c1; delete leg; delete p1; delete p2;
   }
 
   cout << "REMOVE: " << endl;
@@ -1525,33 +1800,63 @@ void plot_category(string dir  = "Apr07_2014",
 }
 
 
-void plotAll(){
+void plot_categoryAll(){
 
-  plot_category("Apr07_2014","MEM", "cat1_H", "New_rec_std_sb", "SL Cat-1 (H)", "",   1);
-  plot_category("Apr07_2014","MEM", "cat2_H", "New_rec_std_sb", "SL Cat-2 (H)", "",   1);
-  plot_category("Apr07_2014","MEM", "cat3_H", "New_rec_std_sb", "SL Cat-3 (H)", "",   1);
-  plot_category("Apr07_2014","MEM", "cat6_H", "New_rec_std_sb", "DL (H)", "", 1);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat1_L", "SL-Cat 1 (L)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat1_H", "SL-Cat 1 (H)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat2_L", "SL-Cat 2 (L)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat2_H", "SL-Cat 2 (H)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat3_L", "SL-Cat 3 (L)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat3_H", "SL-Cat 3 (H)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat6_L", "DL (L)", "", "log(w_{0})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPs", "New_rec_std_cat6_H", "DL (H)", "", "log(w_{0})", 0, 50.);
 
-  plot_category("Apr07_2014","MEM", "cat1_L", "New_rec_std_sb", "SL Cat-1 (L)", "",   0);
-  plot_category("Apr07_2014","MEM", "cat2_L", "New_rec_std_sb", "SL Cat-2 (L)", "",   0);
-  plot_category("Apr07_2014","MEM", "cat3_L", "New_rec_std_sb", "SL Cat-3 (L)", "",   0);
-  plot_category("Apr07_2014","MEM", "cat6_L", "New_rec_std_sb", "DL (L)", "", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat1_L", "SL-Cat 1 (L)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat1_H", "SL-Cat 1 (H)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat2_L", "SL-Cat 2 (L)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat2_H", "SL-Cat 2 (H)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat3_L", "SL-Cat 3 (L)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat3_H", "SL-Cat 3 (H)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat6_L", "DL (L)", "", "log(w_{1})", 0, 50.);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPb", "New_rec_std_cat6_H", "DL (H)", "", "log(w_{1})", 0, 50.);
+
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat1_L", "SL-Cat 1 (L)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat1_H", "SL-Cat 1 (H)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat2_L", "SL-Cat 2 (L)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat2_H", "SL-Cat 2 (H)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat3_L", "SL-Cat 3 (L)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat3_H", "SL-Cat 3 (H)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat6_L", "DL (L)", "", "log(L_{S}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPbb", "New_rec_std_cat6_H", "DL (H)", "", "log(L_{S}^{b-tag})", 0);
+
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat1_L", "SL-Cat 1 (L)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat1_H", "SL-Cat 1 (H)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat2_L", "SL-Cat 2 (L)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat2_H", "SL-Cat 2 (H)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat3_L", "SL-Cat 3 (L)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat3_H", "SL-Cat 3 (H)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat6_L", "DL (L)", "", "log(L_{B}^{b-tag})", 0);
+  plot_category("Apr23_2014/controlPlots", "MEM", "logPjj", "New_rec_std_cat6_H", "DL (H)", "", "log(L_{B}^{b-tag})", 0);
 
 }
 
 
-void plot_param(TString header = "Light jet TF",	      
-		TString unitsX = "jet E (GeV)",
-		TString unitsY = "Acceptance",
-		TString hname  = "accLightBin0",
-		float xLow  = 20,
-		float xHigh = 100,
-		float yLow  = -999,
-		float yHigh = -999,
-		TString param = "",
-		TString extraLabel = ""
-		){
 
+void plot_comp(TString file_1 = "",
+	       TString file_2 = "",
+	       TString cat_1  = "cat1",
+	       TString cat_2  = "cat1",
+	       TString proc_1 = "TTH125",
+	       TString proc_2 = "TTH125",
+	       TString syst_1 = "nominal",
+	       TString syst_2 = "nominal",
+	       TString header_1 = "",
+	       TString header_2 = "",
+	       TString header = "",
+	       TString fname  = "",
+	       TString titleX = "P_{s/b}"
+	       ){
+  
   gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
   gStyle->SetCanvasBorderMode(0);
@@ -1565,7 +1870,6 @@ void plot_param(TString header = "Light jet TF",
   gStyle->SetTitleStyle(0);
   gStyle->SetTitleOffset(1.3,"y");
 
-
   TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
   c1->SetGrid(0,0);
   c1->SetFillStyle(4000);
@@ -1573,124 +1877,436 @@ void plot_param(TString header = "Light jet TF",
   c1->SetTicky();
   c1->SetObjectStat(0);
 
-  TFile *f = TFile::Open("../bin/root/ControlPlotsTEST.root","READ");
-  TH1F* hBestMass = (TH1F*)f->Get(hname);
-
-
-  if( !hBestMass ){
-    cout << "No such histogram" << endl;
-    return;
-  }
-
-
-  TString fname;
-  TIter iter( hBestMass->GetListOfFunctions() );
-  TObject* obj = iter();
-  while ( obj!=0 ){
-    TF1* func = dynamic_cast<TF1*>(obj);
-    fname = func->GetName();
-    obj = iter();
-  }
-  TF1 *func = hBestMass->GetFunction(fname);
-  if(func) func->SetRange(xLow,xHigh);
-
-  hBestMass->SetMarkerStyle(kFullCircle);
-  hBestMass->SetMarkerColor(kBlue);
-  hBestMass->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
-  hBestMass->SetXTitle( unitsX );
-  hBestMass->SetYTitle( unitsY );
-  hBestMass->SetTitleSize(0.05,"X");
-  hBestMass->SetTitleSize(0.05,"Y");
-
-  hBestMass->SetTitleOffset(0.90,"X");
-  hBestMass->SetTitleOffset(0.83,"Y");
-
-  hBestMass->GetXaxis()->SetRangeUser(xLow,xHigh);
-  if(func) func->GetXaxis()->SetRangeUser(xLow,xHigh);
-  if(yLow!=-999 && yHigh!=-999){
-    hBestMass->GetYaxis()->SetRangeUser(yLow,yHigh);
-    if(func) func->GetYaxis()->SetRangeUser(yLow,yHigh);
-  }
-
-  TLegend* leg = new TLegend(0.15,0.65,0.55,0.85,NULL,"brNDC");
-  leg->SetHeader( header );
+  TLegend* leg = new TLegend(0.35913,0.695804,0.609907,0.884615,NULL,"brNDC");
   leg->SetFillStyle(0);
   leg->SetBorderSize(0);
   leg->SetFillColor(10);
-  leg->SetTextSize(0.06); 
-  leg->AddEntry(hBestMass, "from fit", "P");
-  if(func) leg->AddEntry(func, param, "L");
+  leg->SetTextSize(0.04); 
 
 
-  if(func){
-    hBestMass->Draw("PE");
-    func->Draw("SAME");
+  TH1F* h_1 = 0;
+  TFile* f_1 = TFile::Open(file_1);
+  if(f_1==0 || f_1->IsZombie() ){
+    cout << "Could not open file1=" << string(file_1.Data()) << endl;
+    return;
   }
-  else{
-    hBestMass->SetFillColor(kRed);
-    hBestMass->SetFillStyle(3004);
-    hBestMass->Draw("HIST");
+  TString syst_1_nickname = string(syst_1.Data()).find("nominal")!=string::npos ? "" : "_"+syst_1;
+  cout << string((cat_1+"/"+proc_1+syst_1_nickname).Data()) << endl;
+  h_1 = (TH1F*)f_1->Get(cat_1+"/"+proc_1+syst_1_nickname);
+
+  if(h_1==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
+  h_1->SetLineWidth(3);
+  h_1->SetLineStyle(kSolid);
+  h_1->SetLineColor(kBlack);
+  leg->AddEntry( h_1, header_1 , "L");
+
+
+  TH1F* h_2 = 0;
+  TFile* f_2 = TFile::Open(file_2);
+  if(f_2==0 || f_2->IsZombie() ){
+    cout << "Could not open file1=" << string(file_2.Data()) << endl;
+    return;
+  }
+  TString syst_2_nickname = string(syst_2.Data()).find("nominal")!=string::npos ? "" : "_"+syst_2;
+  cout << string((cat_2+"/"+proc_2+syst_2_nickname).Data()) << endl;
+  h_2 = (TH1F*)f_2->Get(cat_2+"/"+proc_2+syst_2_nickname);
+  if(h_2==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
+  h_2->SetLineWidth(3);
+  h_2->SetLineColor(kRed);
+  leg->AddEntry( h_2, header_2 , "F");
+
+  h_2->SetFillStyle(3004);
+  h_2->SetFillColor(kRed);
+
+  h_1->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
+  h_1->SetTitleSize(0.05,"X");
+  h_1->SetTitleSize(0.05,"Y");
+  h_1->SetXTitle( titleX );
+  h_1->GetXaxis()->SetTitleOffset(0.85);;
+  h_1->SetYTitle("units");
+
+
+  h_1->Scale( 1./h_1->Integral() );
+  h_2->Scale( 1./h_2->Integral() );
+
+  h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.4 );
+  h_1->SetMinimum(0);
+  h_1->Draw("HISTE");
+  h_2->Draw("HISTESAME");
+
+  cout << "*********" << endl;
+  cout << "h_1 := " << h_1->Integral() << ", mu = " << h_1->GetMean() << endl;
+  cout << "h_2 := " << h_2->Integral() << ", mu = " << h_2->GetMean() << endl;
+  cout << "*********" << endl;
+
+  leg->SetHeader( header );
+  leg->Draw();
+
+  if(1){
+    c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+".pdf");
+    delete c1;
+  }
+
+}
+
+
+
+void plot_compAll(){
+
+
+  for(int cat = 1; cat<7 ; cat++){
+    
+    cout << "Doing............." << cat << endl;
+
+    if( cat>3 && cat<6 ) continue;
+    
+    string catNameL = "";
+    string catNameH = "";
+    if( cat<=3 ){
+      catNameL = string(Form("SL-Cat. %d (L)", cat)) ;
+      catNameH = string(Form("SL-Cat. %d (H)", cat)) ;
+    }
+    else{
+      catNameL = "DL (L)" ;
+      catNameH = "DL (H)" ;
+    }
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+bb", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_TTJetsHFbb", cat));
+
+ 
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+bb", "t#bar{t}H",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTH125_vs_TTJetsHFbb", cat));
+
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTJetsLF", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+jj", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_TTJetsLF", cat));
+
+ 
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTJetsLF", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+jj", "t#bar{t}H",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTH125_vs_TTJetsLF", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTJetsLF", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+jj", "t#bar{t}+bb",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTJetsHFbb_vs_TTJetsLF", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTJetsLF", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+jj", "t#bar{t}+bb",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTJetsHFbb_vs_TTJetsLF", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb_nb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb_nb.root" , 
+	      Form("MEM_cat%d",cat),    Form("MEM_cat%d",cat), 
+	      "TTJetsHFbb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+bb", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_TTJetsHFbb_nb", cat),
+	      "P_{s/b}^{1 perm}");
+ 
+
+  }
+
+
+}
+
+
+
+void plot_limit(string version = "_New", 
+		int doExpOnly = 1, int doMLFit = 0,
+		float minY = 0.8, float maxY=40, 
+		int compare = 1){
+
+  gStyle->SetPaintTextFormat("g");
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+  c1->SetLogy(!doMLFit);
+  
+  TLegend* leg = new TLegend(0.121,0.154,0.32, 0.29, NULL,"brNDC");
+  leg->SetBorderSize(0);
+  leg->SetTextSize(0.04);
+  leg->SetFillColor(0);
+
+
+  float X[]        = {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5 };
+  float expY[]     = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float obsY[]     = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float expY1sL[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float expY1sH[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float expY2sL[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+  float expY2sH[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+
+  float expXs[]  = {0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5};
+  float expYs[]  = {0.,0.,0.,0.,0.,0.,0.,0.,0.,0.};
+
+
+  vector<string> categories;        vector<string> names;
+  
+  /*
+  categories.push_back("MEM_cat1_H"+version);  names.push_back("SL Cat-1 Tight");
+  categories.push_back("MEM_cat2_H"+version);  names.push_back("SL Cat-2 Tight");
+  categories.push_back("MEM_cat3_H"+version);  names.push_back("SL Cat-3 Tight");
+  categories.push_back("MEM_cat6_H"+version);  names.push_back("DL"); 
+  categories.push_back("MEM_cat1_L"+version);  names.push_back("SL Cat-1 Loose");
+  categories.push_back("MEM_cat2_L"+version);  names.push_back("SL Cat-2 Loose");
+  categories.push_back("MEM_cat3_L"+version);  names.push_back("SL Cat-3 Loose");
+  categories.push_back("MEM_SL"+version);       names.push_back("SL comb.");
+  categories.push_back("MEM_DL"+version);       names.push_back("DL comb."); 
+  categories.push_back("MEM_COMB"+version);     names.push_back("All comb.");
+  */
+  
+  
+  categories.push_back("MEM_cat1"+version);  names.push_back("SL Cat-1");
+  categories.push_back("MEM_cat2"+version);  names.push_back("SL Cat-2");
+  categories.push_back("MEM_cat3"+version);  names.push_back("SL Cat-3");
+  categories.push_back("MEM_cat6"+version);  names.push_back("DL"); 
+  categories.push_back("MEM_SL"+version);    names.push_back("SL comb.");
+  categories.push_back("MEM_DL"+version);    names.push_back("DL comb."); 
+  categories.push_back("MEM_COMB"+version);  names.push_back("All comb.");
+  
+
+  int nBins = categories.size();
+
+  for( int b = 0; b < nBins; b++){
+
+    TFile* f = doMLFit ? 
+      TFile::Open(("datacards/Apr23_2014//higgsCombine"+categories[b]+".MaxLikelihoodFit.mH120.root").c_str()) :
+      TFile::Open(("datacards/Apr23_2014//higgsCombine"+categories[b]+".Asymptotic.mH120.root").c_str());
+    if( f==0 ) continue;
+    
+    Double_t r;
+    TTree* limit = (TTree*)f->Get("limit");
+    limit->SetBranchAddress("limit",&r);
+
+    for(int k = 0 ; k< limit->GetEntries() ; k++){
+      limit->GetEntry(k);
+      if(!doMLFit){
+	if(k==0) expY2sL[b] = r;
+	if(k==1) expY1sL[b] = r;
+	if(k==2) expY[b]    = r;
+	if(k==3) expY1sH[b] = r;
+	if(k==4) expY2sH[b] = r;
+	if(k==5) obsY[b]    = r;
+      }
+      else{
+	if(k==0) expY[b]    = r;
+	if(k==1) expY1sL[b] = r;
+	if(k==2) expY1sH[b] = r;	
+      }
+    }
+
+
+    cout << categories[b] << ": r<" <<  expY[b] << " @ 95% CL" << endl;
+
+    expY1sH[b] = TMath::Abs(expY1sH[b]-expY[b]);
+    expY1sL[b] = TMath::Abs(expY1sL[b]-expY[b]);
+    expY2sH[b] = TMath::Abs(expY2sH[b]-expY[b]);
+    expY2sL[b] = TMath::Abs(expY2sL[b]-expY[b]);
+
+
+  }
+
+
+  TMultiGraph *mg = new TMultiGraph();
+  mg->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.04 fb^{-1}");
+
+  TGraphAsymmErrors* observed = new TGraphAsymmErrors(10, X, obsY, expXs ,expXs,  expYs,   expYs);
+  TGraphAsymmErrors* expected = new TGraphAsymmErrors(10, X, expY, expXs ,expXs,  expYs,   expYs);
+  TGraphAsymmErrors* oneSigma = new TGraphAsymmErrors(10, X, expY, expXs, expXs,  expY1sL, expY1sH);
+  TGraphAsymmErrors* twoSigma = new TGraphAsymmErrors(10, X, expY, expXs, expXs,  expY2sL, expY2sH);
+
+
+  oneSigma->SetMarkerColor(kBlack);
+  oneSigma->SetMarkerStyle(kOpenCircle);
+  oneSigma->SetFillColor(kGreen);
+  oneSigma->SetFillStyle(1001);
+
+  twoSigma->SetMarkerColor(kBlack);
+  twoSigma->SetMarkerStyle(kOpenCircle);
+  twoSigma->SetFillColor(kYellow);
+  twoSigma->SetFillStyle(1001);
+
+  expected->SetMarkerColor(kBlack);
+  expected->SetMarkerStyle(kOpenCircle);
+  expected->SetMarkerSize(1.0);
+  expected->SetLineColor(kBlack);
+  expected->SetLineWidth(2);
+
+  observed->SetMarkerColor(kBlack);
+  observed->SetMarkerStyle(kFullCircle);
+  observed->SetMarkerSize(1.0);
+  observed->SetLineColor(kBlack);
+  observed->SetLineWidth(2);
+ 
+  if(!doMLFit)
+    mg->Add(twoSigma);
+  mg->Add(oneSigma);
+  mg->Add(expected);
+  if( doExpOnly==0 && !doMLFit  )
+    mg->Add(observed);
+
+  mg->Draw("a2");  
+  expected->Draw("pSAME");
+  if( doExpOnly==0  && !doMLFit )
+    observed->Draw("pSAME");
+  
+
+  TH1F* hT = new TH1F("hT", "", nBins, 0, nBins);
+  for(int k = 1; k <= hT->GetNbinsX(); k++){
+    int approx = int(expY[k-1]*10);
+    hT->SetBinContent(k, approx/10.   );
+  }
+  hT->SetMarkerSize(2.);
+  hT->Draw("TEXT0SAME");
+
+  TF1 *line = new TF1("line","1",0,nBins);
+  line->SetLineColor(kRed);
+  line->SetLineWidth(2);
+
+  line->Draw("SAME");
+
+  TF1 *lineML = new TF1("lineML","2.4",0,nBins);
+  lineML->SetLineColor(kBlue);
+  lineML->SetLineStyle(kDashed);
+  lineML->SetLineWidth(3);
+
+  if(compare) lineML->Draw("SAME");
+
+  TF1 *lineTTH = new TF1("lineTTH","4.1",0,nBins);
+  lineTTH->SetLineColor(kMagenta);
+  lineTTH->SetLineStyle(kDashed);
+  lineTTH->SetLineWidth(3);
+
+  if(compare) lineTTH->Draw("SAME");
+
+  c1->cd();
+  gPad->Modified();
+  mg->GetXaxis()->Set(nBins,0,nBins);
+
+  //mg->GetXaxis()->SetRange(-1,11);
+
+  for( int b = 0; b < nBins; b++){
+    mg->GetXaxis()->SetBinLabel(b+1, names[b].c_str() );
+  }
+
+  mg->GetXaxis()->SetTitleSize(0.05);
+  mg->GetYaxis()->SetTitleSize(0.05);
+  mg->GetYaxis()->SetTitleOffset(0.80);
+  mg->SetMinimum( minY);
+  mg->SetMaximum( maxY );
+  mg->GetXaxis()->SetTitle("");
+  if(!doMLFit) 
+    mg->GetYaxis()->SetTitle("95% CL upper limit on #mu = #sigma/#sigma_{SM}");
+  else
+    mg->GetYaxis()->SetTitle("ML fit of #mu = #sigma/#sigma_{SM}");
+
+  if( doExpOnly==0 && !doMLFit ){
+    leg->AddEntry( observed, "MEM observed", "P");
+    leg->AddEntry( expected, "MEM expected (post-fit)", "P");
+  }
+  else if(!doMLFit)
+    leg->AddEntry( expected, "Expected (pre-fit)", "P");
+  else 
+    leg->AddEntry( expected, "observed", "P");
+
+  if(compare){
+    leg->AddEntry( lineTTH, "HIG-13-019 (post-fit)", "L");
+    leg->AddEntry( lineML,  "HIG-13-020 (post-fit)", "L");
   }
 
   leg->Draw();
 
-  if(func) cout << "f(50,100,150)=" << string(Form("(%.1f, %.1f, %.1f)",func->Eval(50), func->Eval(100), func->Eval(150))) << endl;
+  TPaveText *pt = new TPaveText(0.106811,0.155594,0.407121,0.286713,"brNDC");
+  pt->SetFillStyle(0);
+  pt->SetBorderSize(0);
+  pt->SetFillColor(10);
+  pt->SetTextSize(0.04);
+  pt->SetTextAlign(11);
+  if(!doMLFit){
+    pt->AddText(Form("Comb: #mu < %.1f at 95%% CL", expY[categories.size()-1]))->SetTextColor(kRed);
+    pt->AddText(Form("(SL: #mu < %.1f)", expY[categories.size()-3]))->SetTextColor(kBlack);
+    pt->AddText(Form("(DL: #mu < %.1f)", expY[categories.size()-2]))->SetTextColor(kBlack);
+  }
+
+  //pt->Draw();
+
+  //c1->Modified();
+  //c1->Draw();
+
+  TLine* del = new TLine( categories.size()-3, maxY, categories.size()-3, 0. );
+  del->SetLineWidth(3);
+  del->SetLineStyle(kSolid);
+  del->SetLineColor(kBlack);
+  del->Draw("SAME");
+
+  TLine* del_ = new TLine(5., maxY, 5., 0. );
+  del_->SetLineWidth(2);
+  del_->SetLineStyle(kDotted);
+  del_->SetLineColor(kBlack);
+  //del_->Draw("SAME");
+
+  TLine* del2 = new TLine(categories.size()-1, maxY, categories.size()-1, 0. );
+  del2->SetLineWidth(3);
+  del2->SetLineStyle(kSolid);
+  del2->SetLineColor(kBlack);
+  del2->Draw("SAME");
+
+  TLine* del2_ = new TLine(7., maxY, 7., 0. );
+  del2_->SetLineWidth(2);
+  del2_->SetLineStyle(kDotted);
+  del2_->SetLineColor(kBlack);
+  //del2_->Draw("SAME");
 
   if(1){
-    c1->SaveAs("Plots/PAS/Plot_"+hname+"_tf_"+extraLabel+".pdf");
+    c1->SaveAs("datacards/Apr23_2014/Limits"+TString(version.c_str())+".pdf");
   }
 
-  //delete c1;
-  return;
 }
 
 
-void plot_paramAll(){
+void plot_limitAll(){
 
-  vector<string> hnames;
-  hnames.push_back("resolLightBin0");
-  hnames.push_back("respLightBin0");
-  hnames.push_back("resolLightBin1");
-  hnames.push_back("respLightBin1");
-  hnames.push_back("respG1HeavyBin0");
-  hnames.push_back("respG2HeavyBin0");
-  hnames.push_back("resolG1HeavyBin0");
-  hnames.push_back("resolG2HeavyBin0");
-  hnames.push_back("respG1HeavyBin1");
-  hnames.push_back("respG2HeavyBin1");
-  hnames.push_back("resolG1HeavyBin1");
-  hnames.push_back("resolG2HeavyBin1");
+  // exp limits
+  plot_limit("_New_rec_std_sb",    1  , 0  , 0.8  , 25  , 0);
 
-
-  vector<string> titles;
-  titles.push_back("u-jet, #sigma(E), |#eta|<1.0");
-  titles.push_back("u-jet, #mu(E),  |#eta|<1.0");
-  titles.push_back("u-jet, #sigma(E), |#eta|>1.0");
-  titles.push_back("u-jet, #mu(E),  |#eta|>1.0");
-  titles.push_back("b-jet, #mu(E), |#eta|<1.0");
-  titles.push_back("b-jet, #mu'(E), |#eta|<1.0");
-  titles.push_back("b-jet, #sigma(E), |#eta|<1.0");
-  titles.push_back("b-jet, #sigma'(E), |#eta|<1.0");
-  titles.push_back("b-jet, #mu(E), |#eta|>1.0");
-  titles.push_back("b-jet, #mu'(E), |#eta|>1.0");
-  titles.push_back("b-jet, #sigma(E), |#eta|>1.0");
-  titles.push_back("b-jet, #sigma'(E), |#eta|>1.0");
-
-
-
-  for(int k = 0 ; k < hnames.size(); k++){
-    continue;
-    cout << hnames[k] << endl;
-    if( hnames[k].find("resp")!=string::npos )
-      plot_param( TString(titles[k].c_str()) ,"quark energy (GeV)","GeV",TString(hnames[k]),  50 , 200, 50, 200, "parametrization", ""); 
-    if( hnames[k].find("resol")!=string::npos )
-      plot_param( TString(titles[k].c_str()) ,"quark energy (GeV)","GeV",TString(hnames[k]),  50 , 200, 0, 100, "parametrization", ""); 
-
-    cout << endl;
-  }
-
-  plot_param("E_{x,y}^{miss}, #sigma_{E_{T}}", "#sum E_{T} (GeV)", "GeV", "hWidthsPxResol", 500, 3000, 0, 70, "parametrization", "");
 
 }
-
 
