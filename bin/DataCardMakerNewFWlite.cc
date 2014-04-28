@@ -40,6 +40,7 @@
 #include "TF1.h"
 #include "TF2.h"
 
+#include "TLorentzVector.h"
 
 #include "TPaveText.h"
 #include "TCanvas.h"
@@ -69,7 +70,7 @@ typedef TMatrixT<double> TMatrixD;
 #define USESHIFTEDSAMPLES 1
 #define USEALLSAMPLES     1
 
-#define RUNONDATA         0
+#define RUNONDATA         1
 #define VERBOSE           1
 
 // use csv calibration from BDT
@@ -84,6 +85,9 @@ typedef TMatrixT<double> TMatrixD;
 
 // if doing ttbb/ttjj measurement, fit for ttbb as signal
 #define FITTTBB           0
+
+// needed to choose MH
+#define HIGGSMASS        125
 
 string DUMMY;
 
@@ -479,6 +483,14 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   float mH_scan[999];
   float mT_scan[999];
 
+  // jet kinematics
+  float jet_pt [8];
+  float jet_eta[8];
+  float jet_phi[8];
+  float jet_m  [8];
+  int   perm_to_jet_s[99];
+  int   perm_to_jet_b[99];
+
   // the event-dependent weight
   float weight;
   float PUweight;
@@ -512,6 +524,23 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     t->SetBranchAddress("nMassPoints",  &nMassPoints);
     t->SetBranchAddress("mH_scan",      mH_scan);
     t->SetBranchAddress("mT_scan",      mT_scan);
+  }
+  if( analysis==4 && string(category.Data()).find("best_mass")!=string::npos ){
+    t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
+    t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
+    t->SetBranchAddress("p_tt_bb",      p_tt_bb);
+    t->SetBranchAddress("p_tt_jj",      p_tt_jj);
+    t->SetBranchAddress("nPermut_s",    &nPermut_s);
+    t->SetBranchAddress("nPermut_b",    &nPermut_b);
+    t->SetBranchAddress("nMassPoints",  &nMassPoints);
+    t->SetBranchAddress("mH_scan",      mH_scan);
+    t->SetBranchAddress("mT_scan",      mT_scan);
+    t->SetBranchAddress("jet_pt",       jet_pt);
+    t->SetBranchAddress("jet_eta",      jet_eta);
+    t->SetBranchAddress("jet_phi",      jet_phi);
+    t->SetBranchAddress("jet_m",        jet_m);
+    t->SetBranchAddress("perm_to_jet_s",perm_to_jet_s);
+    t->SetBranchAddress("perm_to_jet_b",perm_to_jet_b);
   }
   t->SetBranchAddress("weight",       &weight);
   t->SetBranchAddress("PUweight",     &PUweight);
@@ -731,9 +760,72 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
 
     if( analysis==4 ){
-      //if     (observableF!=-998)  h->Fill( observableF, fill_weight);
-      //else if(observableI!=-998)  h->Fill( observableI, fill_weight);
-      //else{      //}
+
+      if( string(category.Data()).find("best_mass")!=string::npos ){
+
+	int ttbbORttH    = string(category.Data()).find("Had")!=string::npos ;
+
+	int nPermut      = ttbbORttH<1 ? nPermut_s     : nPermut_b;
+	float* m_scan    = ttbbORttH<1 ? mH_scan       : mT_scan;
+	float* p_vsM     = ttbbORttH<1 ? p_vsMH_s      : p_vsMT_b;
+
+	double pmax          =   0.;
+	unsigned int itermax = 999;
+
+	// start the scan over the Higgs mass
+	for(int mH_it = 0; mH_it<nMassPoints; mH_it++){
+
+	  float mH =  m_scan[mH_it];
+	  // given mH, scan over the permutations
+	  for( int perm_it = 0 ; perm_it<nPermut ; perm_it++){	
+
+	    // ME probability (undet ttH hypothesis)
+	    float ME_prob = p_vsM[mH_it*nPermut + perm_it];
+	    
+	    // b-tagging prob. (under ttbb hypothesis)
+	    float bb_prob =  p_tt_bb[perm_it] ;
+	    
+	    // total probability
+	    double p =  ME_prob*bb_prob;
+
+	    if( p>pmax ){
+	      pmax    = p;
+	      itermax = perm_it;
+	    }
+	  }
+	}
+	if(itermax==999) continue;
+
+	int permutList = ttbbORttH<1 ? perm_to_jet_s[itermax] : perm_to_jet_b[itermax];
+
+	int bLep_pos = permutList%1000000/100000;
+	int w1_pos   = permutList%100000/10000;
+	int w2_pos   = permutList%10000/1000;
+	int bHad_pos = permutList%1000/100;
+	int b1_pos   = permutList%100/10;
+	int b2_pos   = permutList%10/1;  
+
+	TLorentzVector TOPHADW1(1,0,0,1);
+	TLorentzVector TOPHADW2(1,0,0,1);
+	TLorentzVector TOPHADB (1,0,0,1);
+	TLorentzVector HIGGSB1 (1,0,0,1);
+	TLorentzVector HIGGSB2 (1,0,0,1);
+
+	TOPHADW1.SetPtEtaPhiM( jet_pt[w1_pos],   jet_eta[w1_pos],   jet_phi[w1_pos],   jet_m[w1_pos] );
+	TOPHADW2.SetPtEtaPhiM( jet_pt[w2_pos],   jet_eta[w2_pos],   jet_phi[w2_pos],   jet_m[w2_pos] );
+	TOPHADB. SetPtEtaPhiM( jet_pt[bHad_pos], jet_eta[bHad_pos], jet_phi[bHad_pos], jet_m[bHad_pos] );
+	HIGGSB1. SetPtEtaPhiM( jet_pt[b1_pos],   jet_eta[b1_pos],   jet_phi[b1_pos],   jet_m[b1_pos] );
+	HIGGSB2. SetPtEtaPhiM( jet_pt[b2_pos],   jet_eta[b2_pos],   jet_phi[b2_pos],   jet_m[b2_pos] );
+	
+	double eval  = 0.;
+	if( category=="best_mass_WHad" )   eval = ( TOPHADW1+TOPHADW2 ).M();
+	if( category=="best_mass_TopHad" ) eval = ( TOPHADW1+TOPHADW2+TOPHADB ).M();
+	if( category=="best_mass_H" )      eval = ( HIGGSB1+HIGGSB2 ).M();
+
+	h->Fill( eval, fill_weight);
+	continue;
+      }
+
       double eval  = treeobservable->EvalInstance();
       h->Fill( eval, fill_weight);
       continue;
@@ -833,7 +925,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
 	// skip other mass values...
 	float mH =  mH_scan[mH_it];
-	if(mH>126 || mH<124) continue;
+	if(mH>(HIGGSMASS+1) || mH<(HIGGSMASS-1)) continue;
 	
 	// once we got the good Higgs mass, loop over permutations...
 	for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){	
@@ -1147,7 +1239,7 @@ int main(int argc, const char* argv[])
       Int_S_bb = 0;
       TTree* tS_cut = (TTree*)tS->CopyTree( TCut((basecut+" && nSimBs>=2").c_str()) );
       float p_125_all_s_ttbb;
-      tS_cut->SetBranchAddress("p_125_all_s_ttbb",   &p_125_all_s_ttbb );
+      tS_cut->SetBranchAddress(Form("p_%d_all_s_ttbb",HIGGSMASS),   &p_125_all_s_ttbb );
       tS_cut->SetBranchAddress("weight",             &weight);
       tS_cut->SetBranchAddress("PUweight",           &PUweight);
       tS_cut->SetBranchAddress("trigger",            &trigger);
@@ -1165,7 +1257,7 @@ int main(int argc, const char* argv[])
       Int_B_bb = 0;
       TTree* tBbb_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2").c_str()) );
       float p_125_all_b_ttbb;
-      tBbb_cut->SetBranchAddress("p_125_all_b_ttbb",   &p_125_all_b_ttbb );
+      tBbb_cut->SetBranchAddress(Form("p_%d_all_b_ttbb",HIGGSMASS),   &p_125_all_b_ttbb );
       tBbb_cut->SetBranchAddress("weight",             &weight);
       tBbb_cut->SetBranchAddress("PUweight",           &PUweight);
       tBbb_cut->SetBranchAddress("trigger",            &trigger);
@@ -1183,7 +1275,7 @@ int main(int argc, const char* argv[])
       Int_B_jj = 0;
       TTree* tBjj_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nSimBs==2").c_str()) );
       float p_125_all_b_ttjj;
-      tBjj_cut->SetBranchAddress("p_125_all_b_ttjj",   &p_125_all_b_ttjj );
+      tBjj_cut->SetBranchAddress(Form("p_%d_all_b_ttjj",HIGGSMASS),   &p_125_all_b_ttjj );
       tBjj_cut->SetBranchAddress("weight",             &weight);
       tBjj_cut->SetBranchAddress("PUweight",           &PUweight);
       tBjj_cut->SetBranchAddress("trigger",            &trigger); 
@@ -1329,14 +1421,14 @@ int main(int argc, const char* argv[])
     if(VERBOSE) cout << "Variable = Higgs mass estimator" << endl;
   }
   else if(abs(doMEM)==2){
-    var  = TString(Form("p_125_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
-			param[0], param[1], param[2] ));
+    var  = TString(Form("p_%d_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
+			HIGGSMASS, param[0], param[1], param[2] ));
     if(VERBOSE) cout << "Variable = " << string(var.Data()) << endl;
     
   }
   if(abs(doMEM)==3){
-    var2 = TString(Form("%f*p_125_all_b_ttbb/(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj)", 
-			param[1], param[1], param[2] ));
+    var2 = TString(Form("%f*p_%d_all_b_ttbb/(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj)", 
+			param[1], HIGGSMASS, param[1], param[2] ));
     if(VERBOSE) cout << "Variable = " << string(var2.Data()) << endl;
   }
   else if(doMEM==4){
