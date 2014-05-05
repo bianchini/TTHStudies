@@ -1166,8 +1166,8 @@ int main(int argc, const char* argv[])
     int event_trials  = 0;
 
     if( evHigh<0 ) evHigh = nentries;
-    for (Long64_t i = 0; i < nentries ; i++){
-      
+    for (Long64_t i = 0; i < nentries ; i++){     
+
       // if fixed-size job and above upper bound, continue...
       if(counter>evHigh && fixNumEvJob) continue;
 
@@ -1199,6 +1199,7 @@ int main(int argc, const char* argv[])
       // read event...
       currentTree->GetEntry(i);
       
+
       if( debug>=2 ){
 	cout << endl;
 	cout << "******************************" << endl;
@@ -1690,7 +1691,14 @@ int main(int argc, const char* argv[])
 	probAtSgn_alt_ttbj_ =  0.;
 	probAtSgn_alt_ttcc_ =  0.;
 	probAtSgn_alt_ttjj_ =  0.;
-	
+
+	// reset the flags (events can migrate)
+	flag_type0_         = -99;
+	flag_type1_         = -99;
+	flag_type2_         = -99;
+	flag_type3_         = -99;
+	flag_type4_         = -99;
+	flag_type6_         = -99;	
 
 	/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@  */
 	/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@ LEPTON SELECTION @@@@@@@@@@@@@@@@@@@@@@@@@  */
@@ -2173,7 +2181,6 @@ int main(int argc, const char* argv[])
 	
 	// this container will hold the jets
 	std::vector<JetObservable> jet_map;
-	std::vector<JetObservable> hjet_map; //for extra cleaning to cover preselection level cut at step2
 
 	// for the MET
 	float deltaPx = 0.;
@@ -2315,8 +2322,6 @@ int main(int argc, const char* argv[])
 
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	      if ( coll == 0)
-		hjet_map.push_back ( myJet );
 
 	      if( debug>=3 ){
 		cout << "Jet #" << coll << "-" << hj << " => (" << pt << "," << eta << "," << phi << "," << m << "), ID=" << id << ", PU-ID=" << pu_id << ", csv = " << csv << ", flavour=" << flavour << endl;
@@ -2330,7 +2335,6 @@ int main(int argc, const char* argv[])
 
 	  // reset everything
 	  jet_map.clear();
-	  hjet_map.clear();
 
 	  // reset the sumEt
 	  MET_sumEt_ = 0.;
@@ -2441,8 +2445,6 @@ int main(int argc, const char* argv[])
 	      
 	      // push back the jet...
 	      jet_map.push_back    ( myJet );
-	      if ( coll == 0 )
-		hjet_map.push_back (myJet);
 
 	    }
 	    
@@ -2530,14 +2532,12 @@ int main(int argc, const char* argv[])
 	// order jet list by Pt
 	std::sort( jet_map.begin(),     jet_map.end(),     JetObservableListerByPt() );
       
-
 	// if use btag shape, order by decreasing CSV 
 	// <=> when considering only a subset of the jets, this ensures that the combination
 	// obtained from CSVM only jets is among those considered
 	if( selectByBTagShape || recoverTopBTagBin)
 	  std::sort( jet_map.begin(),   jet_map.end(),     JetObservableListerByCSV() );      
 
-	
 
 	for( int csv_sys = 0; csv_sys < 19 ; csv_sys++){
 	  double csv_syst_value = 1.0;
@@ -2573,11 +2573,11 @@ int main(int argc, const char* argv[])
 	csv       =  TMath::Min( TMath::Max( csv, float(0.)), float(0.999999) );
 
 	// the index
-	int index = jet_map[jj].index;
+	int index = jet_map[jj].index;	
 
 	// count jets above 40 GeV
-	if( p4.Pt()>jetPtLoose ) jetsAboveCut++;
-	
+	if( p4.Pt()>jetPtLoose ) jetsAboveCut++;		
+
 	// store jet p4...
 	jets_p4.push_back     ( p4 );
 	jets_p4_reg.push_back ( p4 );
@@ -3072,6 +3072,12 @@ int main(int argc, const char* argv[])
 
       // consider th event only if of the desired type
       if( calcME ){	       
+
+
+	if(debug>=2){
+	  cout << "Pass! Calc. ME..." << endl;
+	}
+	
 
 	if( enhanceMC ){
 	  trial_success = 1;
@@ -3674,6 +3680,12 @@ int main(int argc, const char* argv[])
 	// specify if topLep has pdgid +6 or -6
 	meIntegrator->setTopFlags( vLepton_charge[0]==1 ? +1 : -1 , vLepton_charge[0]==1 ? -1 : +1 );
 	  
+	// if needed, switch off OL
+	if(switchoffOL){
+	  meIntegrator->switchOffOL(); 
+	  cout << "*** Switching off OpenLoops to speed-up the calculation ***" << endl;
+	}
+
 	// start the clock...	  
 	clock->Start();
 	
@@ -4387,6 +4399,14 @@ int main(int argc, const char* argv[])
 	// if save all events, fill the tree...
 	if(ntuplizeAll){
 
+	  if(debug>=3){
+	    for(unsigned int q = 0; q < jets_p4.size() ; q++){
+	      cout << jets_p4[q].Pt() << endl;
+	    }
+	  }
+
+	  unsigned int jets_p4_ind = 0;
+
 	  // save jet kinematics into the tree...
 	  for(int q = 0; q < nJet_ ; q++ ){
 
@@ -4411,13 +4431,15 @@ int main(int argc, const char* argv[])
 	    }
 
 	    // fill other elems w/ the jet kinematics
-	    else if( (q-2) < jets_p4.size() && ( properEventSL || (properEventDL && !(q==3 || q==4)))   ){
-	      jet_pt_     [q] = !useRegression ? jets_p4[q-2].Pt() : jets_p4_reg[q-2].Pt(); 
-	      jet_pt_alt_ [q] =  useRegression ? jets_p4[q-2].Pt() : jets_p4_reg[q-2].Pt(); 
-	      jet_eta_    [q] = jets_p4[q-2].Eta(); 
-	      jet_phi_    [q] = jets_p4[q-2].Phi(); 	    
-	      jet_m_      [q] = jets_p4[q-2].M(); 
-	      jet_csv_    [q] = jets_csv[q-2];
+	    else if( jets_p4_ind < jets_p4.size() && ( properEventSL || (properEventDL && !(q==3 || q==4)))   ){
+	      jet_pt_     [q] = !useRegression ? jets_p4[jets_p4_ind].Pt() : jets_p4_reg[jets_p4_ind].Pt(); 
+	      jet_pt_alt_ [q] =  useRegression ? jets_p4[jets_p4_ind].Pt() : jets_p4_reg[jets_p4_ind].Pt(); 
+	      jet_eta_    [q] = jets_p4 [jets_p4_ind].Eta(); 
+	      jet_phi_    [q] = jets_p4 [jets_p4_ind].Phi(); 	    
+	      jet_m_      [q] = jets_p4 [jets_p4_ind].M(); 
+	      jet_csv_    [q] = jets_csv[jets_p4_ind];
+
+	      jets_p4_ind++;
 	    }
 
 	    // if DL, fill elem 3rd w/ second lepton kinematics

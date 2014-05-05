@@ -7,8 +7,8 @@ from Bianchi.TTHStudies.samples_cff import *
 ###############################################
 
 # path to file
-pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
-#pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
+#pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
+pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
 ordering   = 'DiJetPt_'
 
 # luminosity
@@ -37,8 +37,8 @@ printout    = 1
 debug       = 0
 
 # systematics
-#systematics = cms.vint32(0,3,4,5,6)
-systematics = cms.vint32(0)
+systematics = cms.vint32(0,3,4,5,6)
+#systematics = cms.vint32(0)
 
 
 ############################################### Object definition
@@ -48,7 +48,7 @@ systematics = cms.vint32(0)
 useRegression      = 0
 
 # read the (statistical error on the trigger/id scale factors
-triggerErrors      = 0
+triggerErrors      = 1
 
 # use gen-jets or reco-jets
 doGenLevelAnalysis = 0
@@ -61,13 +61,15 @@ doubleGaussianB    = 1
 
 # use csv
 useBtag            = 1
+
+# use MVA b-tagging
 useCMVA            = 0
 
 # use the csv calibration from BDT
 useCSVcalibration  = 1
 
 # toss csv values untill the event passes the cut
-enhanceMC          = 1
+enhanceMC          = 0
 
 # maximum number of trials (if enhanceMC)
 max_n_trials       = 200000
@@ -127,8 +129,8 @@ nMaxJetsSLw1jType3 = 4
 ###############################################
 
 # central mass values
-MH          = 125.00
-#MT          = 174.30
+#MH          = 125.00
+MH          =  90.00
 MT          = 173.50
 
 # whuch mass values to scan
