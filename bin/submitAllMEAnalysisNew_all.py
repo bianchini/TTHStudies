@@ -19,7 +19,7 @@ from Bianchi.TTHStudies.mem_parameters_cff import *
 
 
 DOMEMCATEGORIES = 1
-PSI             = 1
+PSI             = 0
 
 address1 = ''
 address2 = ''
@@ -168,10 +168,10 @@ def submitMEAnalysisNew_all(script,
         process.fwliteInput.doType6            = cms.untracked.int32(not selectByBTagShape)
         process.fwliteInput.doType7            = cms.untracked.int32(0)        
         process.fwliteInput.doType0ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        #process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        #process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
-        #process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
-        #process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType1ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType2ByBTagShape = cms.untracked.int32(    selectByBTagShape)        
+        process.fwliteInput.doType3ByBTagShape = cms.untracked.int32(    selectByBTagShape)
+        process.fwliteInput.doType6ByBTagShape = cms.untracked.int32(    selectByBTagShape)
         process.fwliteInput.doTypeBTag6        = cms.untracked.int32(0)
         process.fwliteInput.doTypeBTag5        = cms.untracked.int32(0)
         process.fwliteInput.doTypeBTag4        = cms.untracked.int32(0)
@@ -277,8 +277,8 @@ def submitFullMEAnalysisNew_all( analysis ):
 
     if PSI:
         toBeRun = [
-            #['TTH125',         50,'_V4/'], 
-            ['TTJetsSemiLept', 50,'_V4/'],
+            ['TTH125',         50,'_V4/'], 
+            #['TTJetsSemiLept', 50,'_V4/'],
             #['TTJetsFullLept', 50,'_V4/'],
             #['TTJetsFullHad',   5,'_V4/'],
             #['DYJets10to50',    1,'_V4/'],
@@ -322,24 +322,24 @@ def submitFullMEAnalysisNew_all( analysis ):
             ]
     else:
         toBeRun = [
-            ['TTH125',         499,''], 
-            ['TTJetsSemiLept', 499,''],
-            ['TTJetsFullLept', 499,''],
+            ['TTH125',        499,''], #499
+            ['TTJetsSemiLept',499,''], #499
+            ['TTJetsFullLept',499,''], #499
             ['TTJetsFullHad',   5,''],
             ['DYJets10to50',    1,''],
-            ['DYJets50',        1,''],
+            ['DYJets50',        1,''], # 1
             ['WJets',           1,''],
-            ['TtW',             1,''],
+            ['TtW',             2,''],
             ['Tt',              1,''],
             ['Ts',              1,''],
-            ['TbartW',          1,''],
+            ['TbartW',          2,''],
             ['Tbart',           1,''],
             ['Tbars',           1,''],
-            ['WW',              1,''],
-            ['WZ',              1,''],
-            ['ZZ',              1,''],
-            ['TTZ',            40,''],
-            ['TTW',            10,''],
+            ['WW',              1,''], #  1
+            ['WZ',              1,''], #  1
+            ['ZZ',              5,''], #  1
+            ['TTZ',            40,''], # 40
+            ['TTW',            10,''], # 10
             ['Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',                1, ''],
             ['Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',           1, ''],
             ['Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               12, ''],
@@ -355,7 +355,7 @@ def submitFullMEAnalysisNew_all( analysis ):
             ['Run2012_SingleElectronRun2012CAug24RerecoEdmV42',                       4, ''],
             ['Run2012_SingleElectronRun2012CPromptv2EdmV42',                          8, ''],
             ['Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42',                     8, ''],
-            ['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, ''],               
+            ['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, ''],  #40              
             ['Run2012_SingleMuRun2012AAug06',                                         1, ''],
             ['Run2012_SingleMuRun2012AJul13',                                         1, ''],
             ['Run2012_SingleMuRun2012BJul13',                                        18, ''],
@@ -363,7 +363,7 @@ def submitFullMEAnalysisNew_all( analysis ):
             ['Run2012_SingleMuRun2012CAug24Rereco',                                   4, ''],
             ['Run2012_SingleMuRun2012CPromptv2',                                      8, ''],
             ['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, ''],
-            ['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, ''],        
+            ['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, ''], #40   
             ]
 
 
@@ -387,7 +387,7 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 
 
-analyses = ['test_enhance_1']
+analyses = ['all']
 
 for analysis in analyses:
     if doGenLevelAnalysis:
