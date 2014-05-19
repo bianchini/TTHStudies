@@ -1,5 +1,18 @@
+
 import ROOT, sys, re
 from systematics import get_tot_sys
+from collections import OrderedDict as dict
+
+proc_names = {
+    "TTJetsJJ": "t#bar{t} + jj",
+    "TTJetsBJ": "t#bar{t} + b",
+    "TTJetsBB": "t#bar{t} + bb",
+    "TTV": "t#bar{t}V",
+    "DiBoson": "VV",
+    "TTH125": "t#bar{t}H (125)",
+    "SingleT": "Single top",
+    "EWK": "EWK",
+}
 
 colors = {
     "TTJetsJJ": 18,
@@ -12,7 +25,7 @@ colors = {
     "SingleT": ROOT.kMagenta
     }
 
-def get_ratio(hist1, hist2, is_band = False, ratio_ytitle = ""):
+def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = ""):
     """
     hist1 -- numerator
     hist2 -- denominator
@@ -30,12 +43,12 @@ def get_ratio(hist1, hist2, is_band = False, ratio_ytitle = ""):
     hist_ratio.SetMarkerStyle(20)
     hist_ratio.SetMarkerSize(0.35)
     if is_band:
-        hist_ratio.SetLineColor(9) 
+        hist_ratio.SetLineColor(ROOT.kBlack) 
     else:
         hist_ratio.SetMarkerColor(ROOT.kBlack)
         hist_ratio.SetLineColor(ROOT.kBlack)
-    hist_ratio.SetMaximum(2)
-    hist_ratio.SetMinimum(0.)
+    hist_ratio.SetMaximum(ymax)
+    hist_ratio.SetMinimum(ymin)
     
     xAxis = hist_ratio.GetXaxis()
     yAxis = hist_ratio.GetYaxis()
@@ -53,6 +66,20 @@ def get_ratio(hist1, hist2, is_band = False, ratio_ytitle = ""):
     xAxis.SetTitle("")
                                                                              
     return hist_ratio
+
+def get_error_band(err_up, err_down, nominal, band_only=True):
+    """
+    compose histogram with errors assigned to each bin. Use max(err_up, err_down)
+    band_only -- draw at errorband, nominal is a line at 1
+    """
+    if band_only:
+        nominal = err_up.Clone("nominal")
+
+    for ibin in range(nominal.GetNbinsX() + 1):
+        nominal.SetBinContent(ibin+1, 1)
+        nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1)-1, err_down.GetBinContent(ibin+1)-1 ) )
+
+    return nominal
 
 def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     """
@@ -109,13 +136,15 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     h_sumMC.GetXaxis().SetTitle(varname)
     h_sumMC.GetYaxis().SetTitle("")
 
-    if var == "numJets" or var == "numBTagM" or var == "cat_count": #for logscale
-        h_sumMC.SetMinimum(0.01)
-        sum.SetMinimum(0.01)
-        mc["TTH125"].SetMinimum(0.01)
-        signal.SetMinimum(0.01)
-        dataSum.SetMinimum(0.01)
-        p1[var].SetLogy()  
+    if var == "numJets" or var == "numBTagM" or var == "cat_count": # or var == "btag_LR" or var == "MTln" or var == "Mll": #for logscale
+        h_sumMC.SetMinimum(1)
+        sum.SetMinimum(1)
+        mc["TTH125"].SetMinimum(1)
+        signal.SetMinimum(1)
+        dataSum.SetMinimum(1)
+        p1[var].SetLogy()
+#        if var == "btag_LR":
+#            h_sumMC.GetXaxis().SetRange( 1, 20)
         if var == "numBTagM":
             h_sumMC.SetMaximum(50*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
@@ -133,25 +162,32 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
     #-------------------- legend ----------------------------
 
-    legend1 = ROOT.TLegend(0.72, 0.8, 0.95, 0.92, "", "brNDC")
+    legend1 = ROOT.TLegend(0.51, 0.8, 0.72, 0.92, "", "brNDC")
     legend1.SetBorderSize(0)
     legend1.SetFillColor(0)
     legend1.AddEntry(dataSum, "Data", "p")
-    legend1.AddEntry(sum, "Expectation", "l")
+    legend1.AddEntry(h_sumMC, "Expectation", "l")
     legend1.AddEntry(signal, "TTH125 x " + str(50) , "l")
     legend1.Draw()
     
-    legend2 = ROOT.TLegend(0.72, 0.57, 0.95, 0.79, "", "brNDC")
+#    if var == "btag_LR":
+    legend2 = ROOT.TLegend(0.72, 0.7, 0.95, 0.92, "", "brNDC")
+
+
+#    else:
+#        legend1 = 
+#        legend2 = ROOT.TLegend(0.72, 0.57, 0.95, 0.79, "", "brNDC")
+        
     legend2.SetBorderSize(0)
     legend2.SetFillColor(0)
     
-    mcitems = mc.items()
-    mcitems.reverse()
-    
-    lmc = dict(mcitems)
+    mc_rev = mc.items()
+    mc_rev.reverse()
+    lmc = dict(mc_rev)
+
     for lname, lh in lmc.iteritems():
         if not (lname == "TTH125"):
-            legend2.AddEntry(lh, lname, "f")
+            legend2.AddEntry(lh, proc_names[lname], "f")
             
     legend2.Draw()
 
@@ -166,18 +202,24 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     p2[var].cd()
 
 
-    hist_ratio = get_ratio(dataSum, h_sumMC, ratio_ytitle="Data/MC")
-
+    #-----Draw and style Data/MC points----
+    hist_ratio = get_ratio(dataSum, h_sumMC, ymin=0.5, ymax=1.5, ratio_ytitle="Data/MC")
+    hist_ratio.SetMarkerColor(1)
+    hist_ratio.SetMarkerStyle(20)
+    hist_ratio.SetMarkerSize(1)
+    hist_ratio.Draw("ep")
+    #------Draw and style error band----
     h_sumMCup = get_tot_sys(mc_up)
     h_sumMCdown = get_tot_sys(mc_down)
-
     ratio_up = get_ratio(h_sumMC+h_sumMCup, h_sumMC, is_band = True)
     ratio_down = get_ratio(h_sumMC-h_sumMCdown, h_sumMC, is_band = True)
 
-    hist_ratio.Draw("p0e1")
-    ratio_up.Draw("histsame")
-
-    ratio_down.Draw("histsame")
+    error_band = get_error_band(ratio_up, ratio_down, 1)
+    error_band.DrawCopy("histsame")
+    error_band.SetFillColor(ROOT.kBlack)
+    error_band.SetFillStyle(3004)
+    error_band.Draw("e2same")
+    #-----------------------------------
 
     c[var].cd()
 
@@ -189,11 +231,9 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
     cut = "CMS Preliminary"
         
-    std_txt = cut + " #sqrt{s}=8 TeV, L=19.04 fb^{-1} (" + reg + ")"
+    std_txt = cut + " #sqrt{s}=8 TeV, L=19.04 fb^{-1}" # (" + reg + ")"
     
     textlabel = std_txt
-#    if topw:
-#        textlabel = cut + ", (with top p_{T} SF)" + std_txt
     latex.DrawLatex(0.15, 0.975, textlabel)
 
     c[var].SaveAs("plots/control_" + var + "_" + reg + ".png")
@@ -204,3 +244,12 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     print "sum MC = " + str(h_sumMC.Integral())
 
     
+def get_jet_count_hist(jet_count_init, jet_range, label_name):
+    jet_count=jet_count_init.Clone("jet_count")
+    jet_count.GetXaxis().SetRange( jet_range[0]+1, jet_range[1])
+
+    for i in range(jet_range[0], jet_range[1]):
+        jet_count.GetXaxis().SetBinLabel(i+1, str(i) + " " + label_name)
+
+    return jet_count
+

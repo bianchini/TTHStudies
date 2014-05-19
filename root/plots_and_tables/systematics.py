@@ -9,16 +9,20 @@ q2_sys_list = ["Q2Scale1p", "Q2Scale2p", "Q2Scale3p", "Q2ScaleHFb", "Q2ScaleLF",
 
 systematics_list = ["JEC", "JER", "TopPt"] + csv_sys_list + q2_sys_list 
 
-def find_sum_sys(proc, procname, systematics_list, infile, var, shift):
+def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
 #    print "Getting systematics from" + str(infile)
-    nominal = infile.Get("MEM_" + var + "/" + procname)
+#    nominal = infile.Get("MEM_" + var + "/" + procname)
+    nominal = infile.Get(hist + "/" + procname)
+
     nominal_m = nominal.Clone("nominal_m")
     nominal_m.Scale(-1)
-    print nominal.Integral()
+#    print nominal.Integral()
 
     for idx, sys in enumerate(systematics_list):
-        print "Getting systematic variation " + sys
-        sys_var_up = infile.Get("MEM_" + var + "/" + procname + "_" + sys + shift)
+#        print "Getting systematic variation " + sys
+#        sys_var_up = infile.Get("MEM_" + var + "/" + procname + "_" + sys + shift)
+        sys_var_up = infile.Get(hist + "/" + procname + "_" + sys + shift)
+
         sys_var_up.Add(nominal_m)
         sys_var_up2 = sys_var_up*sys_var_up
         
@@ -34,7 +38,7 @@ def find_sum_sys(proc, procname, systematics_list, infile, var, shift):
         isys_sum = sum_sys_up2.GetBinContent(ibin+1)
         sys_tot_up.SetBinContent(ibin+1, math.sqrt(isys_sum) )
 
-    print "Sumsys : " + proc + ": " + str(sys_tot_up.Integral())
+ #   print "Sumsys : " + proc + ": " + str(sys_tot_up.Integral())
     return sys_tot_up
 
 def get_tot_sys( sys_proc):
