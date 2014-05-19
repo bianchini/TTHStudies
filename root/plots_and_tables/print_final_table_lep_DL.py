@@ -252,6 +252,7 @@ for idx in range( len(cutlabels)):
 
 print "\\\\"
 print "\\hline"
+print "\\hline"
 
 print "$S/B$",
 for reg in sumBkg:
@@ -267,6 +268,7 @@ for idx in range( len(cutlabels)):
         print " & \multicolumn{3}{|c|}{ " + str( round(sumSignal_LP/(sumBkgTot_LP)*100, 2 ) ) + "\\%}",
 
 print "\\\\"
+print "\\hline"
 print "\\hline"
 
 print " $S/\sqrt{B}$ ",
