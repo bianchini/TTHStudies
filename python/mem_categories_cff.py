@@ -13,7 +13,7 @@ ADDJETPT40CUT = 0
 cat = cms.PSet(
     
     name      = cms.string("New"),
-    version   = cms.string("_rec_std"),
+    version   = cms.string("_ntuplizeAll_v3_rec_std"),
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/files/byLLR/Apr23_2014/"),

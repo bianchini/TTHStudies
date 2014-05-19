@@ -525,7 +525,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     t->SetBranchAddress("mH_scan",      mH_scan);
     t->SetBranchAddress("mT_scan",      mT_scan);
   }
-  if( analysis==4 && string(category.Data()).find("best_mass")!=string::npos ){
+  if( analysis==4 && string(category.Data()).find("best_")!=string::npos ){
     t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
     t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
     t->SetBranchAddress("p_tt_bb",      p_tt_bb);
@@ -761,13 +761,13 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
     if( analysis==4 ){
 
-      if( string(category.Data()).find("best_mass")!=string::npos ){
+      if( string(category.Data()).find("best_")!=string::npos ){
 
-	int ttbbORttH    = string(category.Data()).find("Had")!=string::npos ;
+	int ttH    = string(category.Data()).find("best_0")!=string::npos ;
 
-	int nPermut      = ttbbORttH<1 ? nPermut_s     : nPermut_b;
-	float* m_scan    = ttbbORttH<1 ? mH_scan       : mT_scan;
-	float* p_vsM     = ttbbORttH<1 ? p_vsMH_s      : p_vsMT_b;
+	int nPermut      =  ttH ? nPermut_s     : nPermut_b;
+	float* m_scan    =  ttH ? mH_scan       : mT_scan;
+	float* p_vsM     =  ttH ? p_vsMH_s      : p_vsMT_b;
 
 	double pmax          =   0.;
 	unsigned int itermax = 999;
@@ -796,7 +796,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	}
 	if(itermax==999) continue;
 
-	int permutList = ttbbORttH<1 ? perm_to_jet_s[itermax] : perm_to_jet_b[itermax];
+	int permutList = ttH ? perm_to_jet_s[itermax] : perm_to_jet_b[itermax];
 
 	int bLep_pos = permutList%1000000/100000;
 	int w1_pos   = permutList%100000/10000;
@@ -805,22 +805,58 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	int b1_pos   = permutList%100/10;
 	int b2_pos   = permutList%10/1;  
 
+	TLorentzVector TOPLEPW1(1,0,0,1);
+	TLorentzVector TOPLEPW2(1,0,0,1);
+	TLorentzVector MET(1,0,0,1);
 	TLorentzVector TOPHADW1(1,0,0,1);
 	TLorentzVector TOPHADW2(1,0,0,1);
 	TLorentzVector TOPHADB (1,0,0,1);
+	TLorentzVector TOPLEPB (1,0,0,1);
 	TLorentzVector HIGGSB1 (1,0,0,1);
 	TLorentzVector HIGGSB2 (1,0,0,1);
+
+	TOPLEPW1.SetPtEtaPhiM( jet_pt[0],   jet_eta[0],   jet_phi[0],        jet_m[0] );
+	// this works only for DL only
+	TOPLEPW2.SetPtEtaPhiM( jet_pt[3],   jet_eta[3],   jet_phi[3],        jet_m[3]      );
+	MET.SetPtEtaPhiM     ( jet_pt[1],   0.,           jet_phi[1],                   0. );
 
 	TOPHADW1.SetPtEtaPhiM( jet_pt[w1_pos],   jet_eta[w1_pos],   jet_phi[w1_pos],   jet_m[w1_pos] );
 	TOPHADW2.SetPtEtaPhiM( jet_pt[w2_pos],   jet_eta[w2_pos],   jet_phi[w2_pos],   jet_m[w2_pos] );
 	TOPHADB. SetPtEtaPhiM( jet_pt[bHad_pos], jet_eta[bHad_pos], jet_phi[bHad_pos], jet_m[bHad_pos] );
+	TOPLEPB. SetPtEtaPhiM( jet_pt[bLep_pos], jet_eta[bLep_pos], jet_phi[bLep_pos], jet_m[bLep_pos] );
 	HIGGSB1. SetPtEtaPhiM( jet_pt[b1_pos],   jet_eta[b1_pos],   jet_phi[b1_pos],   jet_m[b1_pos] );
 	HIGGSB2. SetPtEtaPhiM( jet_pt[b2_pos],   jet_eta[b2_pos],   jet_phi[b2_pos],   jet_m[b2_pos] );
 	
 	double eval  = 0.;
-	if( category=="best_mass_WHad" )   eval = ( TOPHADW1+TOPHADW2 ).M();
-	if( category=="best_mass_TopHad" ) eval = ( TOPHADW1+TOPHADW2+TOPHADB ).M();
-	if( category=="best_mass_H" )      eval = ( HIGGSB1+HIGGSB2 ).M();
+	if( category=="best_0_mass_WHad"    || category=="best_1_mass_WHad" )   eval = ( TOPHADW1+TOPHADW2 ).M();
+	if( category=="best_0_mass_TopHad"  || category=="best_1_mass_TopHad" ) eval = ( TOPHADW1+TOPHADW2+TOPHADB ).M();
+	if( category=="best_0_mass_H"       || category=="best_1_mass_H" )      eval = ( HIGGSB1+HIGGSB2 ).M();
+	if( category=="best_0_mass_TopLep1" || category=="best_1_mass_TopLep1" )eval = ( MET+TOPLEPB+TOPLEPW1).M();
+	if( category=="best_0_mass_TopLep2" || category=="best_1_mass_TopLep2" )eval = ( MET+TOPHADB+TOPLEPW2).M();
+	if( category=="best_0_e_MET"        || category=="best_1_e_MET" )       eval = ( MET ).E();
+	if( category=="best_0_dphi_MET_WLep1"||category=="best_1_dphi_MET_WLep1" )  eval = TMath::ACos( TMath::Cos(( MET ).DeltaPhi( TOPLEPW1 )) );
+	if( category=="best_0_dphi_MET_WLep2"||category=="best_1_dphi_MET_WLep2" )  eval = TMath::ACos( TMath::Cos(( MET ).DeltaPhi( TOPLEPW2 )) );
+	if( category=="best_0_dphi_b1_b2" || category=="best_1_dphi_b1_b2" )       eval = TMath::ACos( TMath::Cos(( HIGGSB2 ).DeltaPhi( HIGGSB1 )) );
+
+	if( category=="best_0_pt_WLep1" || category=="best_1_pt_WLep1" ) eval = ( TOPLEPW1).Pt();
+	if( category=="best_0_pt_WLep2" || category=="best_1_pt_WLep2")  eval = ( TOPLEPW2).Pt();
+	if( category=="best_0_pt_bLep"  || category=="best_1_pt_bLep"  ) eval = ( TOPLEPB ).Pt();
+	if( category=="best_0_pt_WHad1" || category=="best_1_pt_WHad1" ) eval = ( TOPHADW1).Pt();
+	if( category=="best_0_pt_WHad2" || category=="best_1_pt_WHad2" ) eval = ( TOPHADW2).Pt();
+	if( category=="best_0_pt_bHad"  || category=="best_1_pt_bHad" )  eval = ( TOPHADB ).Pt();
+	if( category=="best_0_pt_b1"    || category=="best_1_pt_b1" )  eval = ( HIGGSB1 ).Pt();
+	if( category=="best_0_pt_b2"    || category=="best_1_pt_b2" )  eval = ( HIGGSB2 ).Pt();
+
+	if( category=="best_0_eta_WLep1" || category=="best_1_eta_WLep1" ) eval = ( TOPLEPW1).Eta();
+	if( category=="best_0_eta_WLep2" || category=="best_1_eta_WLep2")  eval = ( TOPLEPW2).Eta();
+	if( category=="best_0_eta_bLep"  || category=="best_1_eta_bLep"  ) eval = ( TOPLEPB ).Eta();
+	if( category=="best_0_eta_WHad1" || category=="best_1_eta_WHad1" ) eval = ( TOPHADW1).Eta();
+	if( category=="best_0_eta_WHad2" || category=="best_1_eta_WHad2" ) eval = ( TOPHADW2).Eta();
+	if( category=="best_0_eta_bHad"  || category=="best_1_eta_bHad" )  eval = ( TOPHADB ).Eta();
+	if( category=="best_0_eta_b1"    || category=="best_1_eta_b1" )    eval = ( HIGGSB1 ).Eta();
+	if( category=="best_0_eta_b2"    || category=="best_1_eta_b2" )    eval = ( HIGGSB2 ).Eta();
+
+
 
 	h->Fill( eval, fill_weight);
 	continue;
@@ -1017,6 +1053,12 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   //dummy->Close();
   //delete dummy;
   //gSystem->Exec("rm /scratch/bianchi/dummy_"+TString(sample.c_str())+".root");
+
+  delete treeformula;
+  if(treeobservable) 
+    delete treeobservable;
+  delete hTmp;
+
   return;
 
 }
@@ -1660,7 +1702,7 @@ int main(int argc, const char* argv[])
       string inputfilename = string(inputpath.Data())+"MEAnalysis"+name+event_type+"_"+sys+""+version+"_"+sample+".root";
       if( USEALLSAMPLES && f==0 ) 
 	f = TFile::Open(inputfilename.c_str());
-      else 
+      else if( !USEALLSAMPLES && f==0 )
 	f = TFile::Open(inputfilename.c_str());
       
       if(f==0 || f->IsZombie()){
@@ -1861,7 +1903,7 @@ int main(int argc, const char* argv[])
       if( !USEALLSAMPLES )
 	f->Close();
       
-    }    
+    }   
    
     if( USEALLSAMPLES )
       f->Close();
@@ -2512,9 +2554,10 @@ int main(int argc, const char* argv[])
   cout << " > S_bb/B_bb = " << S_bb/B_bb << ", S_bb/B_jj = " << S_bb/B_jj << ", B_bb/B_jj = " << B_bb/B_jj << endl << endl;
 
   // close the output file
+  delete h;
   if(corrector) delete corrector;
   fout->Close();
-  delete fout;
+  //delete fout;
 
   return 0;
 }

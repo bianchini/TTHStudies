@@ -21,8 +21,8 @@ process.fwliteInput = cms.PSet(
     pathToCP_smear= cms.string("./root/ControlPlotsTEST_std_gen.root"),
 
     # input file directory
-    #pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_new/"),
-    pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V4/"),
+    pathToFile    = cms.string("/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/"),
+    #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V4/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
     #pathToFile    = cms.string("/shome/bianchi/CMSSW_5_3_3_patch2_New/src/VHbbAnalysis/VHbbDataFormats/bin/"),
@@ -35,7 +35,7 @@ process.fwliteInput = cms.PSet(
     samples  =   cms.VPSet(
 
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -43,7 +43,7 @@ process.fwliteInput = cms.PSet(
     ),
     
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -120,10 +120,10 @@ process.fwliteInput = cms.PSet(
     doType6       = cms.untracked.int32(0),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
     doType0ByBTagShape = cms.untracked.int32(1),
-    doType1ByBTagShape = cms.untracked.int32(0),
-    doType2ByBTagShape = cms.untracked.int32(0),
-    doType3ByBTagShape = cms.untracked.int32(0),
-    doType6ByBTagShape = cms.untracked.int32(0),
+    doType1ByBTagShape = cms.untracked.int32(1),
+    doType2ByBTagShape = cms.untracked.int32(1),
+    doType3ByBTagShape = cms.untracked.int32(1),
+    doType6ByBTagShape = cms.untracked.int32(1),
 
     # MEIntegrator options
     useME         = cms.untracked.int32(1),
@@ -132,7 +132,7 @@ process.fwliteInput = cms.PSet(
     useTF         = cms.untracked.int32(1),
     usePDF        = cms.untracked.int32(1),
     useAnalyticalFormula = cms.untracked.int32(1),
-    useDynamicalScale    = cms.untracked.int32(0),
+    useDynamicalScale    = cms.untracked.int32(1),
 
     # use DG for b-jet TF
     doubleGaussianB  = cms.untracked.int32(1),
@@ -231,7 +231,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, 15000),
+    evLimits       = cms.vint32(0, -1),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -254,14 +254,14 @@ process.fwliteInput = cms.PSet(
     smearJets           = cms.untracked.int32(0),
 
     # toss csv values untill the event passes the cut
-    enhanceMC           = cms.untracked.int32(1),
+    enhanceMC           = cms.untracked.int32(0),
 
     # maximum number of trials (if enhanceMC)
     max_n_trials        = cms.untracked.int32(50000),
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(0),
+    ntuplizeAll         = cms.untracked.int32(1),
     
     )
 
