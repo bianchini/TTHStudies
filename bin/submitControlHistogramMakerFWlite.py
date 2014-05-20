@@ -32,6 +32,8 @@ samples_DL = [
     [["Run2012_DoubleElectron"], 2 ]
     ]
 
+
+
 cuts_SL = {
     #    "SL_5j": "(Vtype==2 || Vtype==3) && numJets==5", #btagLR5
 #    "SL_g6j": "(Vtype==2 || Vtype==3) && numJets>=6", #for btag M and btagLR
@@ -39,7 +41,7 @@ cuts_SL = {
 
 #    "SL_g6jg3t": "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM>=3", #tight preselection
 #    "SL_g5jg3t": "(Vtype==2 || Vtype==3) && numJets>=5 && numBTagM>=3", #tight preselection   
-    "SL_g5jg2t": "(Vtype==2 || Vtype==3) && numJets>=5 && numBTagM>=2", #loose preselection
+    "SL_g5jg2t_eta15": "(Vtype==2 || Vtype==3) && numJets>=5 && numBTagM>=2 && (lepton_eta[0] >= 1.5 || lepton_eta[0] <= -1.5)", #loose preselection
 
 #    "SL_g6j2t":  "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM==2",
 #    "SL_5j3t":   "(Vtype==2 || Vtype==3) && numJets==5 && numBTagM==3",
@@ -65,7 +67,8 @@ cuts_SL = {
 
 cuts_DL = {
 #    "DL_g4j": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4", #btagLR, numBtag
-    "DL_g2jg2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=2 && numBTagM >= 2",
+#    "DL_g2jg2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=2 && numBTagM >= 2",
+
 #    "DL_g3jg2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=3 && numBTagM >= 2",
     
 #    "DL_g4j2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4 && numBTagM == 2",
@@ -94,11 +97,12 @@ cuts_DL = {
 variables = {
 #    "MTln": [30, 350, 30],
 #    "Mll": [30, 350, 30],
-    "MET_pt": [0, 450, 40],
+#    "MET_pt": [0, 450, 40],
 
 #    "lepton_pt": [30, 250, 20] ,
 #    "lepton_eta": [-2.5, 2.5, 20],
-#    "lepton_rIso":[0, 0.12, 20],
+#    "lepton_rIso": [0, 0.12, 20],
+    "lepton_dxy": [0, 0.1, 50],
 
 #    "Vtype":[0,6,6],
 #    "numBTagM": [0, 10, 10],
@@ -111,10 +115,7 @@ variables = {
     }
 
 do_muon = False
-do_electron = False
-
-#do_muon = True
-#do_electron = True
+do_electron = True
 
 print "Read input files from: " + inpath
 print "Version: " + prod_ver
@@ -130,10 +131,12 @@ for var in variables:
     
     if var[:6] == "lepton" and do_muon:
         varname = "muon" + var[6:]
-        print varname
+        var = var + "[0]"
     elif var[:6] == "lepton" and do_electron:
         varname = "electron" + var[6:]
-        print varname
+        var = var + "[0]"
+    if var[:6] == "lepton":
+        print "Plotting: " + varname + " with " + var
 
     binvec = cms.vdouble( arange(minbin, maxbin + step, step) )
     print "binvec = " + str(binvec)
@@ -141,19 +144,19 @@ for var in variables:
     print "Submitting SL jobs... "
     for cut in cuts_SL:
         if do_muon:
-            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type==13"
+            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==13"
         elif do_electron:
-            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type==11"
+            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==11"
 
-        print "Submit jobs for var: " + var + ", cut = " + cut
+        print "Submit jobs for var: " + varname + ", cut = " + cut
         print "-----------------------------------------------"
-        submitDataCardMakerFWlite_all( var, cut, cuts_SL[cut], varname + "_" + cut , binvec, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
+        submitDataCardMakerFWlite_all( var, varname, cuts_SL[cut], varname + "_" + cut , binvec, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
 
     print "Submitting DL jobs... "
     for cut in cuts_DL:
-        print "Submit jobs for var: " + var + ", cut = " + cut
+        print "Submit jobs for var: " + varname + ", cut = " + cut
         print "-----------------------------------------------"
-        submitDataCardMakerFWlite_all( var, cut, cuts_DL[cut], varname + "_" + cut , binvec, 1, sampless=samples_DL, inputpath=inpath, version=prod_ver, outdir=outdir)
+        submitDataCardMakerFWlite_all( var, varname, cuts_DL[cut], varname + "_" + cut , binvec, 1, sampless=samples_DL, inputpath=inpath, version=prod_ver, outdir=outdir)
     print " ...done"
 
 
