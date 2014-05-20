@@ -14,13 +14,10 @@ import FWCore.ParameterSet.Config as cms
 
 from Bianchi.TTHStudies.mem_categories_cff import *
 
-
-
-
 ###########################################
 ###########################################
 
-PSI  = 1
+PSI  = 0
 qsub = ''
 if PSI==1:
     qsub            = 'qsub -V -cwd -l h_vmem=2G -q all.q'
@@ -44,9 +41,9 @@ def addDiJetPtCut( process ):
     old_cut     = process.cut.value()
     process.cut =  cms.string("("+old_cut+") && hJetAmong>=2")
         
-def addJetPt40Cut ( process ) :
+def addJetPt40Cut ( process, numJets ) :
     old_cut = process.cut.value()
-    process.cut = cms.string( "(" + old_cut + ") && jetsAboveCut >= 4") 
+    process.cut = cms.string( "(" + old_cut + ") && jetsAboveCut >= " + str(numJets) ) 
 
 ###########################################
 ###########################################
@@ -262,7 +259,7 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 ###########################################
  
 
-def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname, nparts, part, binvec, analysis, inputpath=""):
+def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname, nparts, part, binvec, analysis, inputpath="", version="", outdir=""):
 
     if len(sys.argv)<2:
         print "Specify how to run the job: [batch,local]"
@@ -287,6 +284,11 @@ def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
     if inputpath:
         process.fwliteInput.inputpath = cms.string(inputpath) #otherwise default
+    if outdir:
+        process.fwliteInput.directory = cms.string(outdir)
+    if version:
+        process.fwliteInput.version = cms.string(version)
+    
     process.fwliteInput.analysis  = cms.untracked.int32(analysis)
 
     if ADDZLLVETO:
@@ -299,7 +301,7 @@ def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname
         addDiJetPtCut( process.fwliteInput )
 
     if ADDJETPT40CUT:
-        addJetPt40Cut( process.fwliteInput )
+        addJetPt40Cut( process.fwliteInput, NR_PT40_JETS )
         
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
@@ -365,14 +367,20 @@ sampless_DL = [
     [["Run2012_SingleMu", "Run2012_DoubleElectron"],1],
     ]
 
-def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, analysis, inputpath=""):
+def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, analysis, sampless=[], inputpath="", version="", outdir=""):
+    """
+    Optional arguments (otherwise use default values from ../python/mem_categories.py):
+    inputpath -- path for inputfiles
+    outdir -- directory, where the output root files are saved in ../root/datacards/
+    version -- production version of MEM ntuples (e.g. '_ntuplizeAll_v3_rec_std')
+    """
     counter = 0
 
-    sampless = []
-    if analysis==0:
-        sampless = sampless_SL
-    else:
-        sampless = sampless_DL
+    if sampless == []:
+        if analysis==0:
+            sampless = sampless_SL
+        else:
+            sampless = sampless_DL
 
     for samples in sampless:
         toBeRun = cms.vstring( samples[0] )
@@ -385,8 +393,10 @@ def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, an
         for split in range( samples[1] ):
             counter += 1
             script  = selection + "_" + category + "_p"+str(counter)
-            submitDataCardMakerFWlite( varname, category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath)
-            #sleep(1)
+
+            submitDataCardMakerFWlite( varname, category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath, version, outdir)
+            sleep(1)
+
       
 ###########################################
 ###########################################

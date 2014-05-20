@@ -5,9 +5,10 @@ ADDZLLVETO    = 1
 
 ADDPIXELVETO  = 1
 
-ADDDIJETPTCUT = 0
+ADDDIJETPTCUT = 0 # for higgs jets (not needed)
 
 ADDJETPT40CUT = 0
+NR_PT40_JETS = 4 # min nr jets with pt>40 
 
 # baseline
 cat = cms.PSet(
@@ -43,7 +44,6 @@ cat = cms.PSet(
     )
 
 ################### category cut
-
 
 cut_cat1   = "( type==0 || (type==3 && flag_type3>0))   && btag_LR>=0."
 cut_cat2   = "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0."
