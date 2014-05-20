@@ -42,8 +42,10 @@ vars = {
 
 if args.mode == "SL":
     regs = [
-#        "SL_g6jg2t_ewk", 
-#        "SL_5jg2t_ewk",
+        "SL_5j_ewk",
+        "SL_6j_ewk",
+        "SL_g6jg2t_ewk", 
+        "SL_5jg2t_ewk",
 #        "SL_g5jg2tmt60",
 #        "SL_g6j",
 #        "SL_5j",
@@ -57,6 +59,7 @@ if args.mode == "SL":
 if args.mode == "DL":
     regs = [
         "DL_4j_z",
+#        "DL_4j",
 #        "DL_g4j",
 #        "DL_g2jg2t",
 #        "DL_g2jg2t",
@@ -180,9 +183,9 @@ for reg in regs:
 
         signal = mc["TTH125"].Clone("signal")
         signal.SetLineColor(ROOT.kRed-3)
-        signal.SetLineWidth(2)
+        signal.SetLineStyle(ROOT.kDashed)
+        signal.SetLineWidth(3)
         signal.SetFillStyle(0)
-        signal.Scale(50)
 
         stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var], reg)
 

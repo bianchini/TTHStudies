@@ -19,10 +19,10 @@ colors = {
     "TTJetsBJ": 17,
     "TTJetsBB": 16,
     "EWK": ROOT.kGreen+3,
-    "DiBoson": ROOT.kYellow+1,
+    "DiBoson": ROOT.kYellow,
     "TTH125": ROOT.kRed,
     "TTV": 30,
-    "SingleT": ROOT.kMagenta
+    "SingleT": ROOT.kMagenta-2
     }
 
 def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = ""):
@@ -90,6 +90,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     varname -- for axis label
     """
 
+    signal_scale = 50
+
     for proc in mc:
         mc[proc].SetLineColor(colors[proc])
         mc[proc].SetFillColor(colors[proc])
@@ -136,19 +138,24 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     h_sumMC.GetXaxis().SetTitle(varname)
     h_sumMC.GetYaxis().SetTitle("")
 
-    if var == "numJets" or var == "numBTagM" or var == "cat_count": # or var == "btag_LR" or var == "MTln" or var == "Mll": #for logscale
-        h_sumMC.SetMinimum(1)
-        sum.SetMinimum(1)
-        mc["TTH125"].SetMinimum(1)
-        signal.SetMinimum(1)
-        dataSum.SetMinimum(1)
+
+    signal.Scale(signal_scale)
+
+    if var == "numJets" or var == "numBTagM" or var == "cat_count" or var == "btag_LR" or var == "MTln" or var == "Mll": #for logscale
+        ymin_log = 5
+        h_sumMC.SetMinimum(ymin_log)
+        sum.SetMinimum(ymin_log)
+        mc["TTH125"].SetMinimum(ymin_log)
+        signal.SetMinimum(ymin_log)
+        dataSum.SetMinimum(ymin_log)
+
         p1[var].SetLogy()
 #        if var == "btag_LR":
 #            h_sumMC.GetXaxis().SetRange( 1, 20)
         if var == "numBTagM":
             h_sumMC.SetMaximum(50*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
-            h_sumMC.SetMaximum(30*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+            h_sumMC.SetMaximum(5*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
 #            h_sumMC.GetXaxis().SetRange(1,5)
     
@@ -167,11 +174,11 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     legend1.SetFillColor(0)
     legend1.AddEntry(dataSum, "Data", "p")
     legend1.AddEntry(h_sumMC, "Expectation", "l")
-    legend1.AddEntry(signal, "TTH125 x " + str(50) , "l")
+    legend1.AddEntry(signal, "t#bar{t}H (125) x " + str(signal_scale) , "l")
     legend1.Draw()
     
 #    if var == "btag_LR":
-    legend2 = ROOT.TLegend(0.72, 0.7, 0.95, 0.92, "", "brNDC")
+    legend2 = ROOT.TLegend(0.75, 0.7, 0.95, 0.92, "", "brNDC")
 
 
 #    else:
