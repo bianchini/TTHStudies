@@ -2,21 +2,25 @@ import FWCore.ParameterSet.Config as cms
 from submitDataCardMakerFWlite import submitDataCardMakerFWlite_all
 from numpy import arange
 
-inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
+#inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
+inpath="/home/liis/TTH/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/" #QCD path
+
 outdir = "May19_test/control_plots"
 prod_ver = "_ntuplizeAll_v3_rec_std"
 
+do_qcd = True
+
 samples_SL = [
-    [["TTV"],      1],
-    [["SingleT"],  1],
-    [["DiBoson"],  1],
-    [["TTJetsBB"], 5],
-    [["TTJetsBJ"], 5],
-    [["TTJetsJJ"], 5],
-    [["TTH125"],   1],
-    [["EWK"],      2],
-    [["Run2012_SingleMu"], 1 ],
-    [["Run2012_SingleElectron"], 1 ],
+#    [["TTV"],      1],
+#    [["SingleT"],  1],
+#    [["DiBoson"],  1],
+#    [["TTJetsBB"], 5],
+#    [["TTJetsBJ"], 5],
+#    [["TTJetsJJ"], 5],
+#    [["TTH125"],   1],
+#    [["EWK"],      2],
+#    [["Run2012_SingleMu"], 1 ],
+#    [["Run2012_SingleElectron"], 1 ],
     ]
 
 samples_DL = [
@@ -33,6 +37,21 @@ samples_DL = [
     ]
 
 
+samples_QCD = [
+    [["QCD_Pt-30To50_bEnriched"],            1],
+    [["QCD_Pt-50To150_bEnriched"],           1],
+    [["QCD_Pt-150_bEnriched"],               1],
+
+    [['QCD_Pt_80_170_BCtoE'],                1],
+    [['QCD_Pt_170_250_BCtoE'],               1],
+    [['QCD_Pt_250_350_BCtoE'],               1],
+    [['QCD_Pt_350_BCtoE'],                   1],
+
+    ]
+
+if do_qcd:
+    samples_SL += samples_QCD
+    samples_DL += samples_QCD
 
 cuts_SL = {
     #    "SL_5j": "(Vtype==2 || Vtype==3) && numJets==5", #btagLR5
@@ -95,23 +114,24 @@ cuts_DL = {
 
 
 variables = {
-#    "MTln": [30, 350, 30],
+    "MTln": [30, 450, 30],
 #    "Mll": [30, 350, 30],
-#    "MET_pt": [0, 450, 40],
+    "MET_pt": [0, 450, 30],
 
-#    "lepton_pt": [30, 250, 20] ,
-#    "lepton_eta": [-2.5, 2.5, 20],
-#    "lepton_rIso": [0, 0.12, 20],
-    "lepton_dxy": [0, 0.1, 50],
+    "lepton_pt": [30, 250, 15] ,
+    "lepton_eta": [-2.5, 2.5, 20],
+    "lepton_rIso": [0, 0.12, 15],
+
+#    "lepton_dxy": [0, 0.1, 50],
 
 #    "Vtype":[0,6,6],
 #    "numBTagM": [0, 10, 10],
 #    "numJets": [2,7,7],
 #    "numJets": [0,12,12],
     
-#    "btag_LR": [0, 1, 20], # (minbin, maxbin, nbins)
-#    "jetsAboveCut": [0, 10, 10],
-#    "numBTagM": [0, 7, 7], #Fixme -- need to change to allow int values
+    "btag_LR": [0, 1, 20], # (minbin, maxbin, nbins)
+    "jetsAboveCut": [0, 10, 10],
+    "numBTagM": [0, 7, 7], #Fixme -- need to change to allow int values
     }
 
 do_muon = False
