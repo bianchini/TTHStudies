@@ -322,7 +322,7 @@ def submitFullMEAnalysisNew_all( analysis ):
             ]
     else:
         toBeRun = [
-            ['TTH125',        499,''], #499
+            ['TTH125',        499, ''], #499
             ['TTJetsSemiLept',499,''], #499
             ['TTJetsFullLept',499,''], #499
             ['TTJetsFullHad',   5,''],
@@ -364,6 +364,17 @@ def submitFullMEAnalysisNew_all( analysis ):
             ['Run2012_SingleMuRun2012CPromptv2',                                      8, ''],
             ['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, ''],
             ['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, ''], #40   
+
+#            ['QCD_Pt-30To50_bEnriched',                                                1, ''],
+#            ['QCD_Pt-50To150_bEnriched',                                               1, ''],
+#            ['QCD_Pt-150_bEnriched',                                                   1, ''],
+
+#            ['QCD_Pt_80_170_BCtoE',                                                    1, ''],
+#            ['QCD_Pt_170_250_BCtoE',                                                   1, ''],
+#            ['QCD_Pt_250_350_BCtoE',                                                   1, ''],
+#            ['QCD_Pt_350_BCtoE',                                                       1, ''],
+            
+
             ]
 
 
@@ -386,8 +397,8 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 ###########################################
 
-
 analyses = ['all']
+#analyses = ['all_ntuplizeAll_v3']
 
 for analysis in analyses:
     if doGenLevelAnalysis:

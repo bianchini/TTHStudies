@@ -1,13 +1,12 @@
 import FWCore.ParameterSet.Types  as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
-
-#-----NLO-------                                                                                                                                
-xsecTT_SL = 103.0                                                                                                                              
-xsecTT_FL = 24.8                                                                                                                               
+#-----NLO-------
+xsecTT_SL = 103.0
+xsecTT_FL = 24.8
 xsecTT_FH = 106
 
-#----NNLO------                                                                                                                                 
+#----NNLO------
 xsecTT_SL = 107.66
 xsecTT_FL = 25.81
 xsecTT_FH = 112.33
@@ -313,7 +312,6 @@ samples_V2       = cms.VPSet(
     color    = cms.int32(1),
     xSec     = cms.double(-1),
     ),
-
 
     # THESE ARE FOR V2
     cms.PSet(
@@ -890,6 +888,64 @@ samples_V4       = cms.VPSet(
     xSec     = cms.double(xsecTT_FH),
     ),
 
+    #QCD x-sections from: http://cms.cern.ch/iCMS/prep/requestmanagement?dsn=QCD_Pt_*_*_BCtoE_TuneZ2star_8TeV_pythia6*
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt_80_170_BCtoE_TuneZ2star_8TeV_pythia6'),
+    nickName = cms.string('QCD_Pt_80_170_BCtoE'),
+    color    = cms.int32(100),
+    xSec     = cms.double(1191000.0*0.0109),
+    ),
+    
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt_170_250_BCtoE_TuneZ2star_8TeV_pythia6'),
+    nickName = cms.string('QCD_Pt_170_250_BCtoE'),
+    color    = cms.int32(100),
+    xSec     = cms.double(30980.0*0.0204),
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt_250_350_BCtoE_TuneZ2star_8TeV_pythia6'),
+    nickName = cms.string('QCD_Pt_250_350_BCtoE'),
+    color    = cms.int32(100),
+    xSec     = cms.double(4250.0*0.0243),
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt_350_BCtoE_TuneZ2star_8TeV_pythia6'),
+    nickName = cms.string('QCD_Pt_350_BCtoE'),
+    color    = cms.int32(100),
+    xSec     = cms.double(811.0*0.0295),
+    ),
+
+#    http://cms.cern.ch/iCMS/prep/requestmanagement?dsn=QCD_Pt-*_bEnriched_TuneZ2star_8TeV-pythia6-evtgen
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt-30To50_bEnriched_TuneZ2star_8TeV-pythia6'),
+    nickName = cms.string('QCD_Pt-30To50_bEnriched'),
+    color    = cms.int32(100),
+    xSec     = cms.double(6.677E7*0.0812),
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt-50To150_bEnriched_TuneZ2star_8TeV-pythia6'),
+    nickName = cms.string('QCD_Pt-50To150_bEnriched'),
+    color    = cms.int32(100),
+    xSec     = cms.double(9355000.0*0.0956),
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('QCD_Pt-150_bEnriched_TuneZ2star_8TeV-pythia6'),
+    nickName = cms.string('QCD_Pt-150_bEnriched'),
+    color    = cms.int32(100),
+    xSec     = cms.double(67340.0*0.1259),
+    ),
 
     ###################################################################################
     #################  DATA
