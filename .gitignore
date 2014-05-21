@@ -1,3 +1,4 @@
 *.pyc
 *~
 bin/root/MEAnalysisNewTEST.root
+root/*.root
