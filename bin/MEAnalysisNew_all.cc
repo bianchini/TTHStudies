@@ -711,6 +711,9 @@ int main(int argc, const char* argv[])
   float lepton_dz_    [2];
   float lepton_wp80_  [2];
   float lepton_wp95_  [2];
+  float lepton_wp70_  [2];
+  float lepton_MVAtrig_ [2];
+
   float Mll_, MTln_;
 
   // additional SF for electrons;
@@ -856,6 +859,9 @@ int main(int argc, const char* argv[])
   tree->Branch("lepton_dz",               lepton_dz_,    "lepton_dz[nLep]/F");
   tree->Branch("lepton_wp80",             lepton_wp80_,  "lepton_wp80[nLep]/F");
   tree->Branch("lepton_wp95",             lepton_wp95_,  "lepton_wp95[nLep]/F");
+  tree->Branch("lepton_wp70",             lepton_wp70_,  "lepton_wp70[nLep]/F");
+  tree->Branch("lepton_MVAtrig",          lepton_MVAtrig_, "lepton_MVAtrig[nLep]/F");
+
   tree->Branch("Mll",                     &Mll_,         "Mll/F");
   tree->Branch("MTln",                    &MTln_,        "MTln/F");
 
@@ -994,6 +1000,9 @@ int main(int argc, const char* argv[])
     Float_t vLepton_pfCorrIso [2];
     Float_t vLepton_wp80      [2];
     Float_t vLepton_wp95      [2];
+    Float_t vLepton_wp70      [2];
+    Float_t vLepton_idMVAtrig [2];
+
     Float_t vLepton_dxy       [2];
     Float_t vLepton_dz        [2];
     //Float_t vLepton_id2012tight[2];
@@ -1090,6 +1099,9 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("vLepton_type",     vLepton_type);
     currentTree->SetBranchAddress("vLepton_wp80",     vLepton_wp80);
     currentTree->SetBranchAddress("vLepton_wp95",     vLepton_wp95);
+    currentTree->SetBranchAddress("vLepton_wp70",     vLepton_wp70);
+    currentTree->SetBranchAddress("vLepton_idMVAtrig", vLepton_idMVAtrig);
+
     currentTree->SetBranchAddress("vLepton_dxy",      vLepton_dxy);
     currentTree->SetBranchAddress("vLepton_dz",       vLepton_dz);
     //currentTree->SetBranchAddress("vLepton_id2012tight",vLepton_id2012tight);
@@ -1287,7 +1299,7 @@ int main(int argc, const char* argv[])
       btag_LR_            = -99;
 
       for( int k = 0; k < 2; k++){
-	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99; lepton_dxy_[k] = -99; lepton_dz_[k] = -99; lepton_wp80_[k] = -99; lepton_wp95_[k] = -99;
+	lepton_pt_[k] = -99; lepton_eta_[k] = -99; lepton_phi_[k] = -99; lepton_m_[k] = -99; lepton_charge_[k] = -99; lepton_rIso_[k] = -99; lepton_type_[k] = -99; lepton_dxy_[k] = -99; lepton_dz_[k] = -99; lepton_wp80_[k] = -99; lepton_wp70_[k] = -99; lepton_wp95_[k] = -99; lepton_MVAtrig_[k] = -99;
       }
       Mll_  = -99.;
       MTln_ = -99.;
@@ -1861,7 +1873,9 @@ int main(int argc, const char* argv[])
           lepton_dz_     [0] = vLepton_dz[0];
           lepton_wp80_   [0] = vLepton_wp80[0];
 	  lepton_wp95_   [0] = vLepton_wp95[0];
-	
+	  lepton_wp70_   [0] = vLepton_wp70[0];
+	  lepton_MVAtrig_[0] = vLepton_idMVAtrig[0];
+
 	  if ( isMC && Vtype==3) // if single electron events
             sf_ele_ = eleSF( lepton_pt_[0], lepton_eta_[0]);
 	    else
@@ -2013,9 +2027,11 @@ int main(int argc, const char* argv[])
 	  lepton_type_   [0] = vLepton_type[0];	
 	  lepton_dxy_    [0] = vLepton_dxy[0];
           lepton_dz_     [0] = vLepton_dz[0];
+	  lepton_wp70_   [0] = vLepton_wp70[0];
           lepton_wp80_   [0] = vLepton_wp80[0];
 	  lepton_wp95_   [0] = vLepton_wp95[0];
-  
+	  lepton_MVAtrig_[0] = vLepton_idMVAtrig[0];
+
 	  // lep 2...
 	  lepton_pt_     [1] = leptonLV2.Pt();
 	  lepton_eta_    [1] = leptonLV2.Eta();
@@ -2027,7 +2043,9 @@ int main(int argc, const char* argv[])
 	  lepton_dxy_    [1] = vLepton_dxy[1];
           lepton_dz_     [1] = vLepton_dz[1];
           lepton_wp80_   [1] = vLepton_wp80[1];
+	  lepton_wp70_   [1] = vLepton_wp70[1];
           lepton_wp95_   [1] = vLepton_wp95[1];
+	  lepton_MVAtrig_[1] = vLepton_idMVAtrig[1];
 	  
 	  if ( isMC && Vtype==1 ) // if di-electron events
 	    sf_ele_ = eleSF( lepton_pt_[0], lepton_eta_[0]) * eleSF( lepton_pt_[1], lepton_eta_[1]);
