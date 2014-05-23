@@ -614,6 +614,9 @@ int main(int argc, const char* argv[])
   int nSimBs_; //, nC_, nCTop_;
   // num of b-hadrons inside jets
   int nMatchSimBs_;
+  // num of c-hadrons inside jets
+  int nMatchSimCs_;
+
   // gen top/higgs informations
   float p4H_   [4];
   float p4T_   [4];
@@ -783,6 +786,7 @@ int main(int argc, const char* argv[])
   
   tree->Branch("nSimBs",       &nSimBs_,        "nSimBs/I");
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,   "nMatchSimBs/I");
+  tree->Branch("nMatchSimCs",  &nMatchSimCs_,   "nMatchSimCs/I");
   tree->Branch("weight",       &weight_,        "weight/F");
   tree->Branch("weightCSV",    weightCSV_,      "weightCSV[19]/F");
   tree->Branch("SCALEsyst",    SCALEsyst_,      "SCALEsyst[3]/F");
@@ -1240,6 +1244,7 @@ int main(int argc, const char* argv[])
 
       nSimBs_             = nSimBs;
       nMatchSimBs_        = -99;
+      nMatchSimCs_        = -99;
       time_               = 0.;
 
       num_of_trials_      = 0;
@@ -1396,6 +1401,10 @@ int main(int argc, const char* argv[])
       TLorentzVector genBLV   (1,0,0,1);
       TLorentzVector genBbarLV(1,0,0,1);
 
+      // here, we save possible W->cs decays
+      TLorentzVector topCLV   (1,0,0,1);
+      TLorentzVector atopCLV  (1,0,0,1);
+
       if(debug>=2) cout << "@A" << endl;
 
       // set-up top decay products (if available from input file...)
@@ -1406,6 +1415,13 @@ int main(int argc, const char* argv[])
 	topBLV.SetPtEtaPhiM(  genTop.bpt,genTop.beta,genTop.bphi,genTop.bmass );
 	topW1LV.SetPtEtaPhiM( genTop.wdau1pt,genTop.wdau1eta, genTop.wdau1phi,genTop.wdau1mass);
 	topW2LV.SetPtEtaPhiM( genTop.wdau2pt,genTop.wdau2eta, genTop.wdau2phi,genTop.wdau2mass);
+
+	if( TMath::Abs(genTop.wdau1id)==4 )
+	  topCLV.SetPtEtaPhiM( genTop.wdau1pt,genTop.wdau1eta, genTop.wdau1phi,genTop.wdau1mass);
+	else if( TMath::Abs(genTop.wdau2id)==4 )
+	  topCLV.SetPtEtaPhiM( genTop.wdau2pt,genTop.wdau2eta, genTop.wdau2phi,genTop.wdau2mass);
+	else{}
+
 	p4T_[0] = (topBLV+topW1LV+topW2LV).Pt();
 	p4T_[1] = (topBLV+topW1LV+topW2LV).Eta();
 	p4T_[2] = (topBLV+topW1LV+topW2LV).Phi();
@@ -1415,6 +1431,13 @@ int main(int argc, const char* argv[])
 	atopBLV.SetPtEtaPhiM(  genTbar.bpt,genTbar.beta,genTbar.bphi,genTbar.bmass );
 	atopW1LV.SetPtEtaPhiM( genTbar.wdau1pt,genTbar.wdau1eta, genTbar.wdau1phi,genTbar.wdau1mass);
 	atopW2LV.SetPtEtaPhiM( genTbar.wdau2pt,genTbar.wdau2eta,genTbar.wdau2phi,genTbar.wdau2mass);
+
+	if( TMath::Abs(genTbar.wdau1id)==4 )
+	  atopCLV.SetPtEtaPhiM( genTbar.wdau1pt,genTbar.wdau1eta, genTbar.wdau1phi,genTbar.wdau1mass);
+	else if( TMath::Abs(genTbar.wdau2id)==4 )
+	  atopCLV.SetPtEtaPhiM( genTbar.wdau2pt,genTbar.wdau2eta, genTbar.wdau2phi,genTbar.wdau2mass);
+	else{}
+
 	p4Tbar_[0] = (atopBLV+atopW1LV+atopW2LV).Pt();
 	p4Tbar_[1] = (atopBLV+atopW1LV+atopW2LV).Eta();
 	p4Tbar_[2] = (atopBLV+atopW1LV+atopW2LV).Phi();
@@ -1629,6 +1652,10 @@ int main(int argc, const char* argv[])
       // find out number of b-hadrons in the event...
       nSimBs_      = nSimBs;
       nMatchSimBs_ = 0;
+      nMatchSimCs_ = 0;
+
+
+      /*
       for(int l = 0; l<nSimBs; l++){
 	TLorentzVector Bs(1,0,0,1);
 	Bs.SetPtEtaPhiM( SimBspt[l], SimBseta[l], SimBsphi[l], SimBsmass[l]);	    
@@ -1664,6 +1691,65 @@ int main(int argc, const char* argv[])
 	  }
 	}
       }
+      */
+
+
+      // now find out how many matched b's we have...
+      for(int hj = 0; hj<nhJets; hj++){
+	TLorentzVector hJLV(1,0,0,1);
+	if(hJet_genPt[hj]>10) 
+	  hJLV.SetPtEtaPhiM( hJet_genPt[hj], hJet_genEta[hj], hJet_genPhi[hj], 0.0);
+
+	// if jet is within acceptance...
+	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
+	  if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
+	  if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
+	  if( hJet_flavour[hj]==5 ) nMatchSimBs_++;
+	}
+      }
+      for(int aj = 0; aj<naJets; aj++){
+	TLorentzVector aJLV(1,0,0,1);
+	if(aJet_genPt[aj]>10) 
+	  aJLV.SetPtEtaPhiM( aJet_genPt[aj], aJet_genEta[aj], aJet_genPhi[aj], 0.0);
+
+	// if jet is within acceptance...
+	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
+	  if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
+	  if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
+	  if( aJet_flavour[aj]==5 ) nMatchSimBs_++;
+	}
+      }
+     
+
+
+      // now find out how many matched c's we have...
+      for(int hj = 0; hj<nhJets; hj++){
+	TLorentzVector hJLV(1,0,0,1);
+	if(hJet_genPt[hj]>10) 
+	  hJLV.SetPtEtaPhiM( hJet_genPt[hj], hJet_genEta[hj], hJet_genPhi[hj], 0.0);
+
+	// if jet is within acceptance...
+	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
+	  if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
+	  if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
+	  if( hJet_flavour[hj]==4 ) nMatchSimCs_++;
+	}
+      }
+      for(int aj = 0; aj<naJets; aj++){
+	TLorentzVector aJLV(1,0,0,1);
+	if(aJet_genPt[aj]>10) 
+	  aJLV.SetPtEtaPhiM( aJet_genPt[aj], aJet_genEta[aj], aJet_genPhi[aj], 0.0);
+
+	// if jet is within acceptance...
+	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
+	  if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
+	  if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
+	  if( aJet_flavour[aj]==4 ) nMatchSimCs_++;
+	}
+      }
+     
+      
+
 
       if(debug>=2) cout << "@H" << endl;
 
