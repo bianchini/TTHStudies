@@ -1645,8 +1645,13 @@ void plot_category(string dir  = "Mar25_2014",
   hS->Draw("HISTSAME");
   hErr_clone  ->Draw("E2SAME");
 
-
-  if(hData!=0) hData->Draw("ESAME");
+  double KS = -99;
+  if(hData!=0){
+    hData->Draw("ESAME");
+    KS = hErr_clone->KolmogorovTest( hData );
+    cout << "KS = " << KS << endl;
+    leg->AddEntry((TObject*)0, Form("KS %.3f", KS), "");
+  }
   leg->Draw();
 
   TLine* line = new TLine(hErr->GetBinLowEdge(3), max , hErr->GetBinLowEdge(3), 0.);
@@ -2153,6 +2158,39 @@ void plot_compAll(){
 	      Form("cat%d_H_TTH125_vs_TTJetsHFbb_nb", cat),
 	      "P_{s/b}^{1 perm}");
  
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "SingleT", "TTH125", 
+	      "nominal", "nominal", 
+	      "Single-t", "t#bar{t}H",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTH125_vs_SingleT", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "SingleT", "TTH125", 
+	      "nominal", "nominal", 
+	      "Single-t", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_SingleT", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTV", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}V", "t#bar{t}H",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTH125_vs_TTV", cat));
+
+    plot_comp("datacards/Apr23_2014/MEM_New_rec_std_sb.root" , "datacards/Apr23_2014/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTV", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}V", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_TTV", cat));
+
+  
 
   }
 
