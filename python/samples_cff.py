@@ -746,7 +746,7 @@ samples_V4       = cms.VPSet(
     name     = cms.string('DYJetsToLL_M-10To50_TuneZ2Star_8TeV-madgraph'),
     nickName = cms.string('DYJets10to50'),
     color    = cms.int32(18),
-    xSec     = cms.double(12765.)
+    xSec     = cms.double(14702.)
     ),
     
     cms.PSet(
@@ -843,7 +843,7 @@ samples_V4       = cms.VPSet(
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
-    xSec     = cms.double(0.1302*0.569)
+    xSec     = cms.double(0.1293*0.577)
     ),
 
 
