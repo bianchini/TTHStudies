@@ -89,6 +89,9 @@ typedef TMatrixT<double> TMatrixD;
 // needed to choose MH
 #define HIGGSMASS        125
 
+// split tt+jj into tt+cc
+#define SPLITCC            0
+
 string DUMMY;
 
 TF1* corrector = 0;
@@ -1493,6 +1496,8 @@ int main(int argc, const char* argv[])
   all_datacard_samples.push_back("EWK");
   all_datacard_samples.push_back("TTJetsHFbb");
   all_datacard_samples.push_back("TTJetsHFb");
+  if(SPLITCC)
+    all_datacard_samples.push_back("TTJetsLFcc");
   all_datacard_samples.push_back("TTJetsLF");
   all_datacard_samples.push_back("data_obs");
 
@@ -1526,18 +1531,26 @@ int main(int argc, const char* argv[])
       datacard_name = "EWK";
     }    
     if( sample.find("TTJetsBB")!=string::npos ){
-      sample        = "TTJets";
+      sample        = string(ttjets.Data());
       sample_cut    = sample_cut && TCut("nSimBs>2 && nMatchSimBs>=2");
       datacard_name = "TTJetsHFbb";
     }
     if( sample.find("TTJetsBJ")!=string::npos ){
-      sample        = "TTJets";
+      sample        = string(ttjets.Data());
       sample_cut    = sample_cut && TCut("nSimBs>2 && nMatchSimBs<2");
       datacard_name = "TTJetsHFb";
     }
+    if( SPLITCC && sample.find("TTJetsCC")!=string::npos ){
+      sample        = string(ttjets.Data());
+      sample_cut    = sample_cut && TCut("nSimBs==2 && nMatchSimCs>0");
+      datacard_name = "TTJetsLFcc";
+    }
     if( sample.find("TTJetsJJ")!=string::npos ){
-      sample        = "TTJets";
-      sample_cut    = sample_cut && TCut("nSimBs==2");
+      sample        = string(ttjets.Data());
+      if(SPLITCC)
+	sample_cut    = sample_cut && TCut("nSimBs==2 && nMatchSimCs<1");
+      else
+	sample_cut    = sample_cut && TCut("nSimBs==2");
       datacard_name = "TTJetsLF";
     }
     if( sample.find("Run2012")!=string::npos ){
@@ -2040,6 +2053,7 @@ int main(int argc, const char* argv[])
   bool isTTH125there     = aMap.find("TTH125")!=aMap.end()     ? aMap["TTH125"]->Integral()>0     : false;
   bool isTTJetsHFbbthere = aMap.find("TTJetsHFbb")!=aMap.end() ? aMap["TTJetsHFbb"]->Integral()>0 : false;
   bool isTTJetsHFbthere  = aMap.find("TTJetsHFb")!=aMap.end()  ? aMap["TTJetsHFb"]->Integral()>0  : false;
+  bool isTTJetsLFccthere = aMap.find("TTJetsLFcc")!=aMap.end() ? aMap["TTJetsLFcc"]->Integral()>0 : false;
   bool isTTJetsLFthere   = aMap.find("TTJetsLF")!=aMap.end()   ? aMap["TTJetsLF"]->Integral()>0   : false;
   bool isTTVthere        = aMap.find("TTV")!=aMap.end()        ? aMap["TTV"]->Integral()>0        : false;
   bool isSingleTthere    = aMap.find("SingleT")!=aMap.end()    ? aMap["SingleT"]->Integral()>0    : false;
@@ -2061,6 +2075,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there     ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isTTJetsHFbbthere ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isTTJetsHFbthere  ) line += string(Form("%s    ", (fname+"_"+category).Data()));
+  if( isTTJetsLFccthere ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isTTJetsLFthere   ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isTTVthere        ) line += string(Form("%s    ", (fname+"_"+category).Data()));
   if( isSingleTthere    ) line += string(Form("%s    ", (fname+"_"+category).Data()));
@@ -2071,26 +2086,55 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     line += "TTH125      ";
   if( isTTJetsHFbbthere ) line += "TTJetsHFbb    ";
   if( isTTJetsHFbthere )  line += "TTJetsHFb    ";
+  if( isTTJetsLFccthere ) line += "TTJetsLFcc  ";
   if( isTTJetsLFthere )   line += "TTJetsLF    ";
   if( isTTVthere )        line += "TTV      ";
   if( isSingleTthere )    line += "SingleT     ";
   if( isEWKthere )        line += "EWK      ";
   out<<line;
   out<<endl;
+
   line = "process                       ";
-  if( isTTH125there )     line += string(Form("%d          ", 0));
-  if( isTTJetsHFbbthere ) line += string(Form("%d          ", 1 - proc_num_offset));
-  if( isTTJetsHFbthere )  line += string(Form("%d          ", 2 - proc_num_offset));
-  if( isTTJetsLFthere )   line += string(Form("%d          ", 3 - proc_num_offset));
-  if( isTTVthere )        line += string(Form("%d          ", 4 - proc_num_offset));
-  if( isSingleTthere )    line += string(Form("%d          ", 5 - proc_num_offset));
-  if( isEWKthere )        line += string(Form("%d          ", 6 - proc_num_offset));
+  int count_proc_num = 0;
+  if( isTTH125there ){
+    line += string(Form("%d          ", count_proc_num));
+    count_proc_num++;
+  }
+  if( isTTJetsHFbbthere ){
+    line += string(Form("%d          ", count_proc_num - proc_num_offset));
+    count_proc_num++;
+  }
+  if( isTTJetsHFbthere ){
+    line += string(Form("%d          ", count_proc_num - proc_num_offset)); 
+    count_proc_num++; 
+  }
+  if( isTTJetsLFthere ) {
+    line += string(Form("%d          ", count_proc_num  - proc_num_offset));
+    count_proc_num++;
+  }
+  if( isTTJetsLFccthere ){
+    line += string(Form("%d          ", count_proc_num  - proc_num_offset)); 
+    count_proc_num++;
+  }
+  if( isTTVthere ) {
+    line += string(Form("%d          ", count_proc_num  - proc_num_offset)); 
+    count_proc_num++;
+  }
+  if( isSingleTthere ){
+    line += string(Form("%d          ", count_proc_num  - proc_num_offset)); 
+    count_proc_num++;
+  }
+  if( isEWKthere ){
+    line += string(Form("%d          ", count_proc_num  - proc_num_offset));
+  }
   out<<line;
   out<<endl;
+
   line = "rate                        ";
   if( isTTH125there )     line += string(Form("%.4f     ", aMap["TTH125"]->Integral() ));
   if( isTTJetsHFbbthere ) line += string(Form("%.4f     ", aMap["TTJetsHFbb"]->Integral() ));
   if( isTTJetsHFbthere )  line += string(Form("%.4f     ", aMap["TTJetsHFb"]->Integral() ));
+  if( isTTJetsLFccthere ) line += string(Form("%.4f     ", aMap["TTJetsLFcc"]->Integral())); 
   if( isTTJetsLFthere )   line += string(Form("%.4f     ", aMap["TTJetsLF"]->Integral()));
   if( isTTVthere )        line += string(Form("%.4f     ", aMap["TTV"]->Integral()));
   if( isSingleTthere )    line += string(Form("%.4f     ", aMap["SingleT"]->Integral()));
@@ -2108,6 +2152,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "lumi", 0.026, line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "lumi", 0.026, line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "lumi", 0.026, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "lumi", 0.026, line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "lumi", 0.026, line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "lumi", 0.026, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "lumi", 0.026, line);
@@ -2120,6 +2165,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "lepton_id", 0.02*(1+isDL), line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "lepton_id", 0.02*(1+isDL), line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "lepton_id", 0.02*(1+isDL), line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "lepton_id", 0.02*(1+isDL), line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "lepton_id", 0.02*(1+isDL), line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "lepton_id", 0.02*(1+isDL), line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "lepton_id", 0.02*(1+isDL), line);
@@ -2135,7 +2181,8 @@ int main(int argc, const char* argv[])
       if( isTTH125there )     line += "1.0        ";       
       if( isTTJetsHFbbthere ) line += "1.0        ";       
       if( isTTJetsHFbthere )  line += "1.0        ";       
-      if( isTTJetsLFthere )   line += "1.0        ";       
+      if( isTTJetsLFccthere ) line += "1.0        ";  
+      if( isTTJetsLFthere )   line += "1.0        ";            
       if( isTTVthere )        line += "1.0        ";
       if( isSingleTthere )    line += " -         ";
       if( isEWKthere )        line += " -         ";
@@ -2163,6 +2210,7 @@ int main(int argc, const char* argv[])
 	  if( isTTH125there )     line += "1.0        ";       
 	  if( isTTJetsHFbbthere ) line += "1.0        ";       
 	  if( isTTJetsHFbthere )  line += "1.0        ";       
+	  if( isTTJetsLFccthere ) line += "1.0        ";       
 	  if( isTTJetsLFthere )   line += "1.0        ";       
 	  if( isTTVthere )        line += "1.0        ";
 	  if( isSingleTthere )    line += "1.0        ";
@@ -2226,6 +2274,7 @@ int main(int argc, const char* argv[])
     if( isTTH125there )     line += "1.0        ";
     if( isTTJetsHFbbthere ) line += "1.0        ";
     if( isTTJetsHFbthere )  line += "1.0        ";
+    if( isTTJetsLFccthere ) line += "1.0        ";
     if( isTTJetsLFthere )   line += "1.0        ";
     if( isTTVthere )        line += "1.0        ";
     if( isSingleTthere )    line += "1.0        ";
@@ -2238,6 +2287,7 @@ int main(int argc, const char* argv[])
     if( isTTH125there )     line += "1.0        ";
     if( isTTJetsHFbbthere ) line += "1.0        ";
     if( isTTJetsHFbthere )  line += "1.0        ";
+    if( isTTJetsLFccthere ) line += "1.0        ";
     if( isTTJetsLFthere )   line += "1.0        ";
     if( isTTVthere )        line += "1.0        ";
     if( isSingleTthere )    line += "1.0        ";
@@ -2253,6 +2303,7 @@ int main(int argc, const char* argv[])
     if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "csv", 0.2, line);
     if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "csv", 0.2, line);
     if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "csv", 0.2, line);
+    if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "csv", 0.2, line);
     if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "csv", 0.2, line);
     if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "csv", 0.2, line);
     if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "csv", 0.2, line);
@@ -2265,6 +2316,7 @@ int main(int argc, const char* argv[])
     if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "JEC", 0.05, line);
     if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "JEC", 0.05, line);
     if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "JEC", 0.05, line);
+    if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "JEC", 0.05, line);
     if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "JEC", 0.05, line);
     if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "JEC", 0.05, line);
     if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "JEC", 0.05, line);
@@ -2279,6 +2331,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "Norm_TTbb", 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "Norm_TTbb", 0.50, line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "Norm_TTbb", 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "Norm_TTbb", 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "Norm_TTbb", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "Norm_TTbb", 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "Norm_TTbb", 0.0,  line);
@@ -2291,6 +2344,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "Norm_TTb", 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "Norm_TTb", 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "Norm_TTb", 0.50, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "Norm_TTb", 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "Norm_TTb", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "Norm_TTb", 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "Norm_TTb", 0.0,  line);
@@ -2298,11 +2352,28 @@ int main(int argc, const char* argv[])
   out<<line;
   out<<endl;
 
+  if( SPLITCC ){
+
+    // TTCC CROSS-SECTION
+    line="";
+    if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "Norm_TTcc", 0.0,  line);
+    if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "Norm_TTcc", 0.0,  line);
+    if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "Norm_TTcc", 0.0,  line);
+    if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "Norm_TTcc", 0.50, line);
+    if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "Norm_TTcc", 0.0,  line);
+    if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "Norm_TTcc", 0.0,  line);
+    if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "Norm_TTcc", 0.0,  line);
+    if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "Norm_TTcc", 0.0,  line);
+    out<<line;
+    out<<endl;
+  }
+
   // TTV CROSS-SECTION
   line="";
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "QCDscale_TTV", 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "QCDscale_TTV", 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "QCDscale_TTV", 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "QCDscale_TTV", 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "QCDscale_TTV", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "QCDscale_TTV", 0.15, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "QCDscale_TTV", 0.0,  line);
@@ -2315,6 +2386,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "QCDscale_SingleT", 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "QCDscale_SingleT", 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "QCDscale_SingleT", 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "QCDscale_SingleT", 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "QCDscale_SingleT", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "QCDscale_SingleT", 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "QCDscale_SingleT", 0.02, line);
@@ -2327,6 +2399,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "QCDscale_EWK", 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "QCDscale_EWK", 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "QCDscale_EWK", 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "QCDscale_EWK", 0.0,  line); 
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "QCDscale_EWK", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "QCDscale_EWK", 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "QCDscale_EWK", 0.0,  line);
@@ -2351,6 +2424,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.17, line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir,  string(Form("QCDscale%s_TTJetsHFbb", null.c_str())), 0.0,  line);
@@ -2363,6 +2437,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.07, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line); 
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir,  string(Form("QCDscale%s_TTJetsHFb", null.c_str())), 0.0,  line);
@@ -2370,11 +2445,27 @@ int main(int argc, const char* argv[])
   out<<line;
   out<<endl;
 
+  if( SPLITCC ){
+    //  QCD SCALE UNC. ON TT+LFcc
+    line="";
+    if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.11, line);
+    if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir,  string(Form("QCDscale%s_TTJetsLFcc", null.c_str())), 0.0,  line);
+    out<<line;
+    out<<endl;
+  }
+
   //  QCD SCALE UNC. ON TT+LF
   line="";
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.03, line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.03, line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
@@ -2387,6 +2478,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_gg", 0.09, line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "pdf_gg", 0.026,line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "pdf_gg", 0.026,line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "pdf_gg", 0.026,line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "pdf_gg", 0.026,line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "pdf_gg", 0.09, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "pdf_gg", 0.00, line);
@@ -2399,6 +2491,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_qq", 0.00, line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "pdf_qq", 0.00, line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "pdf_qq", 0.00, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "pdf_qq", 0.00, line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "pdf_qq", 0.00, line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "pdf_qq", 0.00, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "pdf_qq", 0.00, line);
@@ -2411,6 +2504,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_qg", 0.00, line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "pdf_qg", 0.00, line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "pdf_qg", 0.00, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "pdf_qg", 0.00, line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "pdf_qg", 0.00, line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "pdf_qg", 0.00, line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "pdf_qg", 0.045,line);
@@ -2428,6 +2522,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )     line += "1.0        ";
 	if( isTTJetsHFbbthere ) line += " -         ";
 	if( isTTJetsHFbthere )  line += " -         ";
+	if( isTTJetsLFccthere ) line += " -         ";
 	if( isTTJetsLFthere )   line += " -         ";
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += " -         ";
@@ -2444,6 +2539,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )     line += " -         ";
 	if( isTTJetsHFbbthere ) line += "1.0        ";
 	if( isTTJetsHFbthere )  line += " -        ";
+	if( isTTJetsLFccthere ) line += " -         ";
 	if( isTTJetsLFthere )   line += " -         ";
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += " -         ";
@@ -2460,6 +2556,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )     line += " -         ";
 	if( isTTJetsHFbbthere ) line += " -        ";
 	if( isTTJetsHFbthere )  line += "1.0        ";
+	if( isTTJetsLFccthere ) line += " -         ";
 	if( isTTJetsLFthere )   line += " -         ";
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += " -         ";
@@ -2469,6 +2566,23 @@ int main(int argc, const char* argv[])
       }
     }  
   }
+  if( isTTJetsLFccthere ){
+    for(int bin = 1; bin<=aMap["TTJetsLFcc"]->GetNbinsX(); bin++ ){
+      if(aMap["TTJetsLFcc"]->GetBinContent(bin)>0){
+	line = string(Form("TTJetsLFcc%sbin%d      shape  ", category.Data(), bin));
+	if( isTTH125there )     line += " -         ";
+	if( isTTJetsHFbbthere ) line += " -         ";
+	if( isTTJetsHFbthere )  line += " -         ";
+	if( isTTJetsLFccthere ) line += "1.0        ";
+	if( isTTJetsLFthere )   line += " -         ";
+	if( isTTVthere )        line += " -         ";
+	if( isSingleTthere )    line += " -         ";
+	if( isEWKthere )        line += " -         ";
+	out<<line;
+	out<<endl;
+      }
+    } 
+  } 
   if( isTTJetsLFthere ){
     for(int bin = 1; bin<=aMap["TTJetsLF"]->GetNbinsX(); bin++ ){
       if(aMap["TTJetsLF"]->GetBinContent(bin)>0){
@@ -2476,6 +2590,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )     line += " -         ";
 	if( isTTJetsHFbbthere ) line += " -         ";
 	if( isTTJetsHFbthere )  line += " -         ";
+	if( isTTJetsLFccthere ) line += " -         ";
 	if( isTTJetsLFthere )   line += "1.0        ";
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += " -         ";
@@ -2492,6 +2607,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )      line += " -         ";
 	if( isTTJetsHFbbthere )  line += " -         ";
 	if( isTTJetsHFbthere )   line += " -         ";
+	if( isTTJetsLFccthere )  line += " -         ";
 	if( isTTJetsLFthere )    line += " -         ";
 	if( isTTVthere )         line += "1.0        ";
 	if( isSingleTthere )     line += " -         ";
@@ -2508,6 +2624,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )     line += " -         ";
 	if( isTTJetsHFbbthere ) line += " -         ";
 	if( isTTJetsHFbthere )  line += " -         ";
+	if( isTTJetsLFccthere ) line += " -         ";
 	if( isTTJetsLFthere )   line += " -         ";
 	if( isTTVthere )        line += " -         ";
 	if( isSingleTthere )    line += "1.0        ";
@@ -2524,6 +2641,7 @@ int main(int argc, const char* argv[])
 	if( isTTH125there )      line += " -         ";
 	if( isTTJetsHFbbthere )  line += " -         ";
 	if( isTTJetsHFbthere )   line += " -         ";
+	if( isTTJetsLFccthere )  line += " -         ";
 	if( isTTJetsLFthere )    line += " -         ";
 	if( isTTVthere )         line += " -         ";
 	if( isSingleTthere )     line += " -         ";
