@@ -5,6 +5,7 @@ from collections import OrderedDict as dict
 
 proc_names = {
     "TTJetsJJ": "t#bar{t} + jj",
+    "TTJetsCC": "t#bar{t} + cc",
     "TTJetsBJ": "t#bar{t} + b",
     "TTJetsBB": "t#bar{t} + bb",
     "TTV": "t#bar{t}V",
@@ -12,17 +13,20 @@ proc_names = {
     "TTH125": "t#bar{t}H (125)",
     "SingleT": "Single top",
     "EWK": "EWK",
+    "QCD_BCtoE": "QCD",
 }
 
 colors = {
     "TTJetsJJ": 18,
-    "TTJetsBJ": 17,
-    "TTJetsBB": 16,
+    "TTJetsBJ": 16,
+    "TTJetsBB": 15,
+    "TTJetsCC": 17,
     "EWK": ROOT.kGreen+3,
     "DiBoson": ROOT.kYellow,
     "TTH125": ROOT.kRed,
     "TTV": 30,
-    "SingleT": ROOT.kMagenta-2
+    "SingleT": ROOT.kMagenta-2,
+    "QCD_BCtoE": ROOT.kRed
     }
 
 def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = ""):
@@ -33,18 +37,11 @@ def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = "")
     hist_ratio = hist1.Clone()
     hist_ratio.Divide(hist2)
 
-    if is_band:
-        print "considering band histo"
-        for ibin in range(hist_ratio.GetNbinsX()+1):
-            if hist_ratio.GetBinContent(ibin+1) == 0:
-                hist_ratio.SetBinContent(ibin+1, 1)
-
     hist_ratio.SetStats(False)
     hist_ratio.SetMarkerStyle(20)
     hist_ratio.SetMarkerSize(0.35)
-    if is_band:
-        hist_ratio.SetLineColor(ROOT.kBlack) 
-    else:
+
+    if not is_band:
         hist_ratio.SetMarkerColor(ROOT.kBlack)
         hist_ratio.SetLineColor(ROOT.kBlack)
     hist_ratio.SetMaximum(ymax)
@@ -77,11 +74,11 @@ def get_error_band(err_up, err_down, nominal, band_only=True):
 
     for ibin in range(nominal.GetNbinsX() + 1):
         nominal.SetBinContent(ibin+1, 1)
-        nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1)-1, err_down.GetBinContent(ibin+1)-1 ) )
+        nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1)-1, err_down.GetBinContent(ibin+1)-1, 0) )
 
     return nominal
 
-def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
+def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg=""):
     """
     data -- sum of data histograms
     mc -- dictionary of mc histograms
@@ -122,11 +119,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
     p1[var].Draw()
     p1[var].SetTicks(1, 1);
-
     p1[var].SetFillStyle(0);
- 
-    
-#    if var == "numJets" or var == "numBTagM": # Or Hist- == "btag_LR_5j" or hist == "btag_LR_6j" or hist == "btag_LR_4j":
+
 
     h_sumMC.SetTitle("")
     h_sumMC.SetStats(False)
@@ -138,11 +132,18 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     h_sumMC.GetXaxis().SetTitle(varname)
     h_sumMC.GetYaxis().SetTitle("")
 
+    if var != "numJets" and var != "numBTagM":
+        h_sumMC.GetXaxis().SetRangeUser( var_range[0], var_range[1])
+
 
     signal.Scale(signal_scale)
 
-    if var == "numJets" or var == "numBTagM" or var == "cat_count" or var == "btag_LR" or var == "MTln" or var == "Mll": #for logscale
-        ymin_log = 5
+    if var == "numJets" or var == "numBTagM" or var == "cat_count" or var == "btag_LR" or var == "MTln" or var == "Mll" or var == "MET_pt" or var == "jetsAboveCut": #for logscale
+        if var == "numJets" or var == "numBTagM":
+            ymin_log = 1
+        else:
+            ymin_log = 1
+
         h_sumMC.SetMinimum(ymin_log)
         sum.SetMinimum(ymin_log)
         mc["TTH125"].SetMinimum(ymin_log)
@@ -150,10 +151,9 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
         dataSum.SetMinimum(ymin_log)
 
         p1[var].SetLogy()
-#        if var == "btag_LR":
-#            h_sumMC.GetXaxis().SetRange( 1, 20)
+
         if var == "numBTagM":
-            h_sumMC.SetMaximum(50*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+            h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
             h_sumMC.SetMaximum(5*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
@@ -210,10 +210,13 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
 
     #-----Draw and style Data/MC points----
-    hist_ratio = get_ratio(dataSum, h_sumMC, ymin=0.5, ymax=1.5, ratio_ytitle="Data/MC")
+    hist_ratio = get_ratio(dataSum, h_sumMC, ymin=0., ymax=2, ratio_ytitle="Data/MC")
     hist_ratio.SetMarkerColor(1)
     hist_ratio.SetMarkerStyle(20)
     hist_ratio.SetMarkerSize(1)
+    
+    if var != "numJets" and var != "numBTagM":
+        hist_ratio.GetXaxis().SetRangeUser(var_range[0], var_range[1])
     hist_ratio.Draw("ep")
     #------Draw and style error band----
     h_sumMCup = get_tot_sys(mc_up)
@@ -222,6 +225,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
     ratio_down = get_ratio(h_sumMC-h_sumMCdown, h_sumMC, is_band = True)
 
     error_band = get_error_band(ratio_up, ratio_down, 1)
+    error_band.SetLineColor(ROOT.kBlack)
     error_band.DrawCopy("histsame")
     error_band.SetFillColor(ROOT.kBlack)
     error_band.SetFillStyle(3004)
@@ -238,7 +242,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
     cut = "CMS Preliminary"
         
-    std_txt = cut + " #sqrt{s}=8 TeV, L=19.04 fb^{-1}" # (" + reg + ")"
+    std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}" # (" + reg + ")"
     
     textlabel = std_txt
     latex.DrawLatex(0.15, 0.975, textlabel)
@@ -252,10 +256,11 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", reg=""):
 
     
 def get_jet_count_hist(jet_count_init, jet_range, label_name):
+    print "jet range = " + str(jet_range)
     jet_count=jet_count_init.Clone("jet_count")
-    jet_count.GetXaxis().SetRange( jet_range[0]+1, jet_range[1])
+    jet_count.GetXaxis().SetRange( jet_range[0]+1, jet_range[1]+1)
 
-    for i in range(jet_range[0], jet_range[1]):
+    for i in range(jet_range[0], jet_range[1]+1):
         jet_count.GetXaxis().SetBinLabel(i+1, str(i) + " " + label_name)
 
     return jet_count
