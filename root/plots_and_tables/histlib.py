@@ -64,7 +64,7 @@ def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = "")
                                                                              
     return hist_ratio
 
-def get_error_band(err_up, err_down, nominal, band_only=True):
+def get_error_band(err_up, err_down, nominal_in, band_only=True):
     """
     compose histogram with errors assigned to each bin. Use max(err_up, err_down)
     band_only -- draw at errorband, nominal is a line at 1
@@ -72,9 +72,17 @@ def get_error_band(err_up, err_down, nominal, band_only=True):
     if band_only:
         nominal = err_up.Clone("nominal")
 
-    for ibin in range(nominal.GetNbinsX() + 1):
-        nominal.SetBinContent(ibin+1, 1)
-        nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1)-1, err_down.GetBinContent(ibin+1)-1, 0) )
+        for ibin in range(nominal.GetNbinsX() + 1):
+            nominal.SetBinContent(ibin+1, 1)
+            nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1)-1, err_down.GetBinContent(ibin+1)-1, 0) )
+
+    else:
+        nominal = nominal_in.Clone("nominal")
+
+        for ibin in range(nominal.GetNbinsX() + 1):
+            nominal.SetBinContent(ibin+1, nominal_in.GetBinContent(ibin+1))
+            nominal.SetBinError(ibin+1, max(err_up.GetBinContent(ibin+1), err_down.GetBinContent(ibin+1), 0) )
+            print "err = " + str(nominal.GetBinError(ibin+1))
 
     return nominal
 
@@ -158,12 +166,30 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
             h_sumMC.SetMaximum(5*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
 #            h_sumMC.GetXaxis().SetRange(1,5)
-    
+    h_sumMCup = get_tot_sys(mc_up)
+    h_sumMCdown = get_tot_sys(mc_down)
+
+    error_band_mc = get_error_band(h_sumMCup, h_sumMCdown, h_sumMC, 0)
+#    error_band.SetLineColor(ROOT.kBlack)
+#    error_band.DrawCopy("histsame")
+#    error_band_mc.SetFillColor(ROOT.kBlack)
+#    error_band_mc.SetFillStyle(3004)
+
+
     p1[var].cd()
        
     h_sumMC.Draw("hist")
     sum.Draw("histsame")
     h_sumMC.Draw("histsame")
+    
+    
+    error_band_mc.SetLineColor(ROOT.kBlack)                                                                                                    
+    error_band_mc.DrawCopy("histsame")
+    
+    error_band_mc.SetFillColor(ROOT.kBlack)
+    error_band_mc.SetFillStyle(3004)
+    error_band_mc.Draw("e2same")
+ 
     signal.Draw("histsame")
     dataSum.Draw("epsame")
 
@@ -219,8 +245,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
         hist_ratio.GetXaxis().SetRangeUser(var_range[0], var_range[1])
     hist_ratio.Draw("ep")
     #------Draw and style error band----
-    h_sumMCup = get_tot_sys(mc_up)
-    h_sumMCdown = get_tot_sys(mc_down)
+#    h_sumMCup = get_tot_sys(mc_up)
+#    h_sumMCdown = get_tot_sys(mc_down)
     ratio_up = get_ratio(h_sumMC+h_sumMCup, h_sumMC, is_band = True)
     ratio_down = get_ratio(h_sumMC-h_sumMCdown, h_sumMC, is_band = True)
 
