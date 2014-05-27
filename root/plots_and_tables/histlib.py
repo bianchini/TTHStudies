@@ -165,31 +165,21 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
         else:
             h_sumMC.SetMaximum(5*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
-#            h_sumMC.GetXaxis().SetRange(1,5)
+
     h_sumMCup = get_tot_sys(mc_up)
     h_sumMCdown = get_tot_sys(mc_down)
 
     error_band_mc = get_error_band(h_sumMCup, h_sumMCdown, h_sumMC, 0)
-#    error_band.SetLineColor(ROOT.kBlack)
-#    error_band.DrawCopy("histsame")
-#    error_band_mc.SetFillColor(ROOT.kBlack)
-#    error_band_mc.SetFillStyle(3004)
-
+    error_band_mc.SetFillColor(ROOT.kBlack)
+    error_band_mc.SetFillStyle(3004)
 
     p1[var].cd()
        
     h_sumMC.Draw("hist")
     sum.Draw("histsame")
     h_sumMC.Draw("histsame")
-    
-    
-    error_band_mc.SetLineColor(ROOT.kBlack)                                                                                                    
-    error_band_mc.DrawCopy("histsame")
-    
-    error_band_mc.SetFillColor(ROOT.kBlack)
-    error_band_mc.SetFillStyle(3004)
+        
     error_band_mc.Draw("e2same")
- 
     signal.Draw("histsame")
     dataSum.Draw("epsame")
 

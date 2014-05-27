@@ -31,7 +31,7 @@ def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
         try:
             sys_var_up.Add(nominal_m)
         except AttributeError:
-            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
+#            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
             continue
 
         sys_var_up2 = sys_var_up*sys_var_up

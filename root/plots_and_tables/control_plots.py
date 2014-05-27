@@ -16,7 +16,7 @@ args = parser.parse_args()
 
 #inpath = "../datacards/Apr24_2014_control_plots_merged/"
 #inpath = "../datacards/May19/control_plots_merged/"
-inpath = "../datacards/May23_PAS/control_plots_merged/"
+inpath = "../datacards/May26_PAS/control_plots_merged/"
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
@@ -58,75 +58,62 @@ if args.mode == "DL":
 
 if args.mode == "SL":
     regs = {
-  #      "SL_5j": ["btag_LR"],
- #       "SL_6j": ["btag_LR"],
-  #      "SL_g6jg2t": ["btag_LR"], 
-  #      "SL_5jg2t": ["btag_LR"],
+        "SL_5j": ["btag_LR"],
+        "SL_6j": ["btag_LR"],
+        "SL_g6jg2t": ["btag_LR"], 
+        "SL_5jg2t": ["btag_LR"],
+        
+        "SL_g4jg2t": [ "numBTagM", "numJets"],
+        
+        "SL_g5jg3t": [
+            "electron_pt", 
+            "electron_eta", 
+            "electron_rIso",
 
-        "SL_g4jg2t": [ "numBTagM", "numJets"]
-#        "SL_g5jg3t": ["electron_eta", "muon_eta"]
-     
-#        "SL_g5jg2t": [
-       #     "electron_pt", 
-#            "electron_eta", 
-#            "electron_rIso",
+            "muon_eta",
+            "muon_pt",
+            "muon_rIso",
 
-       #     "muon_eta",
-       #     "muon_pt",
- #           "muon_rIso",
-
- #           "MET_pt",
-        #    "MET_sumEt",
-        #    "MTln",
-        #    "nPVs",
+            "MET_pt",
+            #"MET_sumEt",
+            "MTln",
+            "nPVs",
             
-        #    "jet_pt",
-        #    "jet_eta",
-  #          ]#, "numBTagM"], #investigating QCD in high eta electron events
+            "jet_pt",
+            "jet_eta",
+            ]#, "numBTagM"], #investigating QCD in high eta electron events
 
-     }
+     
 #        "SL_g5jg2t_eta15": ["electron_dxy", "electron_eta", "electron_pt", "electron_rIso", "MET_pt", "MTln", "btag_LR", "jetsAboveCut", "numBTagM"], #investigating QCD in high eta electron events
 #        "SL_g5jg2t": ["MET_pt"],
-#        "SL_g6j",
-#        "SL_5j",
-#        "SL_g4jg2t",
-#        "SL_g5jg2t",
-#        "SL_g5jg3t",
-#        "SL_tot_3j40",
-#        "SL_tot_mt60_3j40"
-#        "SL_tot_3t_3tag"
+        }
       
 
 if args.mode == "DL":
     regs = {
         "DL_g2jg2t": [
-  #          "electron_pt",
-  #          "electron_eta",
-  #          "electron_rIso",
+            "electron_pt",
+            "electron_eta",
+            "electron_rIso",
 
-  #          "muon_eta",
-  #          "muon_pt",
-  #          "muon_rIso",
+            "muon_eta",
+            "muon_pt",
+            "muon_rIso",
             
-  #          "jet_pt",
-  #          "jet_eta",
+            "jet_pt",
+            "jet_eta",
 
-  #          "MET_pt",
+            "MET_pt",
 #            "MET_sumEt",
-#            "Mll",
-#
+            "Mll",
+
             "numJets",
         ],
- #       "DL_g4j_z": ["btag_LR"],
- #       "DL_g4j": ["btag_LR", "numBTagM"],
+        "DL_g2jg2t": ["Mll_z"],
+        
+        "DL_g4j_z": ["btag_LR"],
+        "DL_g4j": ["btag_LR", "numBTagM"],
 
-#        "DL_g2jg2t": ["muon_pt", "muon_eta", "muon_rIso", "electron_pt", "electron_eta", "electron_rIso", "numJets"],
-#        "DL_g4j": ["numBTagM"]
-#        "DL_4j",
-
-
-#        "DL_g2jg2t",
-        #"DL_g3jg2t",
         }
 
 do_QCD=False
