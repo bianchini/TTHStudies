@@ -2,7 +2,7 @@ import math
 csv_sys_list = ["csv_sys_CSVLF", "csv_sys_CSVHFStats1", "csv_sys_CSVHFStats2", "csv_sys_CSVCErr1", "csv_sys_CSVCErr2",
                 "csv_sys_CSVHF",  "csv_sys_CSVLFStats1", "csv_sys_CSVLFStats2"]
 
-q2_sys_list = ["Q2Scale1p", "Q2Scale2p", "Q2Scale3p", "Q2ScaleHFb", "Q2ScaleLF", "Q2ScaleHFbb"]#, "pdf_gg"]#, "pdf_qq", "pdf_qg"]
+q2_sys_list = ["Q2Scale1p", "Q2Scale2p", "Q2Scale3p", "Q2ScaleHFb", "Q2ScaleLF", "Q2ScaleHFbb"]
 
 pdf_sys_list = ["pdf_gg", "pdf_qq", "pdf_qg"]
 
@@ -31,7 +31,7 @@ def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
         try:
             sys_var_up.Add(nominal_m)
         except AttributeError:
-            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
+#            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
             continue
 
         sys_var_up2 = sys_var_up*sys_var_up
@@ -73,6 +73,6 @@ def get_tot_sys( sys_proc):
         tot_sys_bin = tot_sys2.GetBinContent(ibin+1)
         tot_sys.SetBinContent(ibin+1, math.sqrt(tot_sys_bin) )
 
-    print "Sumsys (tot processes): " + str(tot_sys.Integral())
+#    print "Sumsys (tot processes): " + str(tot_sys.Integral())
 
     return tot_sys

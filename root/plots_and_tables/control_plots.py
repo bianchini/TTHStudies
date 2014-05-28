@@ -14,65 +14,119 @@ args = parser.parse_args()
 
 #mode = "SL"
 
-#inpath = "../datacards/Apr15_2014_3jets40_merged/"
 #inpath = "../datacards/Apr24_2014_control_plots_merged/"
-inpath = "../datacards/Apr28_checks/controlPlots_merged/"
+#inpath = "../datacards/May19/control_plots_merged/"
+inpath = "../datacards/May26_PAS/control_plots_merged/"
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
 
-vars = {
-    "btag_LR": "b_{LR}",
-#    "MET_pt": "MET",
-#    "electron_eta": "electron #eta",
-#    "electron_pt": "electron #pt",
-#    "electron_rIso": "electron relIso",
+vars = { # x-axis title, x-axis range
+    "btag_LR": ["b_{LR}", [0,1] ],
 
-#    "muon_eta": "muon #eta",
-#    "muon_pt": "muon #pt",
-#    "muon_rIso": "muon relIso",
 
-#    "Mll": "m(l^{+}l^{-})",
-#    "MTln": "m_{T}(l #nu)",
+    "electron_eta": ["electron #eta", [-2.5, 2.5] ],
+    "electron_pt": ["electron p_{T}", [30, 250] ],
+    "electron_rIso": ["electron r_{iso}", [0, 0.115] ], #needed for showing 0.12 upper bound
+    "electron_dxy": ["electrond dxy", [0, 0.025] ],
 
-#    "numJets": "nr jets",
-#    "numBTagM": "nr b-tag (CSV medium)",
+    "muon_eta": ["muon #eta", [-2.5, 2.5] ],
+    "muon_pt": ["muon p_{T}", [30, 250] ],
+    "muon_rIso": ["muon r_{iso}", [0, 0.115] ],
+
+    "Mll": ["m(l^{+}l^{-})", [30,350] ],
+    "MTln": ["m_{T}(l #nu)", [30,450] ],
+    "MET_pt": ["MET", [0,250] ],
+    "MET_sumEt": ["MET_sumEt", [350,3500]],
+
+    "numJets": ["nr jets", [4, 10] ],
+    "numBTagM": ["nr b-tags (CSV medium)", [0, 5] ],
+    "jetsAboveCut": ["nr jets with p_{T} > 40", [0, 10] ],
+    
+    "nPVs": ["# primary vertices", [0,40]],
+  
+    "jet_pt": ["jet p_{T}", [30, 350]],
+    "jet_eta": ["jet #eta", [-2.5, 2.5]],
     }
+
+if args.mode == "DL":
+    vars["electron_pt"][1] = [20, 250]
+    vars["muon_pt"][1] = [20, 250]
+    vars["numJets"][1] = [0, 10]
+    vars["numBTagM"][1] = [1, 4]
 
 
 if args.mode == "SL":
-    regs = [
-        "SL_5j_ewk",
-        "SL_6j_ewk",
-        "SL_g6jg2t_ewk", 
-        "SL_5jg2t_ewk",
-#        "SL_g5jg2tmt60",
-#        "SL_g6j",
-#        "SL_5j",
-#        "SL_g4jg2t",
-#        "SL_g5jg2t",
-#        "SL_g5jg3t",
-#        "SL_tot_3j40",
-#        "SL_tot_mt60_3j40"
-#        "SL_tot_3t_3tag"
-        ]
-if args.mode == "DL":
-    regs = [
-        "DL_4j_z",
-#        "DL_4j",
-#        "DL_g4j",
-#        "DL_g2jg2t",
-#        "DL_g2jg2t",
-        #"DL_g3jg2t",
-        ]
+    regs = {
+        "SL_5j": ["btag_LR"],
+        "SL_6j": ["btag_LR"],
+        "SL_g6jg2t": ["btag_LR"], 
+        "SL_5jg2t": ["btag_LR"],
+        
+        "SL_g4jg2t": [ "numBTagM", "numJets"],
+        
+        "SL_g5jg3t": [
+            "electron_pt", 
+            "electron_eta", 
+            "electron_rIso",
 
+            "muon_eta",
+            "muon_pt",
+            "muon_rIso",
+
+            "MET_pt",
+            #"MET_sumEt",
+            "MTln",
+            "nPVs",
+            
+            "jet_pt",
+            "jet_eta",
+            ]#, "numBTagM"], #investigating QCD in high eta electron events
+
+     
+#        "SL_g5jg2t_eta15": ["electron_dxy", "electron_eta", "electron_pt", "electron_rIso", "MET_pt", "MTln", "btag_LR", "jetsAboveCut", "numBTagM"], #investigating QCD in high eta electron events
+#        "SL_g5jg2t": ["MET_pt"],
+        }
+      
+
+if args.mode == "DL":
+    regs = {
+        "DL_g2jg2t": [
+            "electron_pt",
+            "electron_eta",
+            "electron_rIso",
+
+            "muon_eta",
+            "muon_pt",
+            "muon_rIso",
+            
+            "jet_pt",
+            "jet_eta",
+
+            "MET_pt",
+#            "MET_sumEt",
+            "Mll",
+
+            "numJets",
+        ],
+        "DL_g2jg2t": ["Mll_z"],
+        
+        "DL_g4j_z": ["btag_LR"],
+        "DL_g4j": ["btag_LR", "numBTagM"],
+
+        }
+
+do_QCD=False
 proc_mc = dict() #filename: [histname, pretty name]
 proc_mc["TTH125"] = ["TTH125", "$t\\bar{t}H(\\rightarrow b\\bar{b})$ (125)" ]
+if do_QCD:
+    proc_mc["QCD_BCtoE"] = ["_TopPtUp", "QCD"]
 proc_mc["SingleT"] = ["SingleT", "single-$t$"]
 proc_mc["TTV"] = ["TTV", " $t\\bar{t} + V$ "]
 proc_mc["DiBoson"] = ["DiBoson", "diboson"]
 proc_mc["EWK"] = ["EWK", "$V$ + jets"]
 proc_mc["TTJetsJJ"] = ["TTJetsLF", " $t\\bar{t} + jj$"]
+proc_mc["TTJetsCC"] = ["TTJetsLFcc", " $t\\bar{t} + cc$"]
 proc_mc["TTJetsBJ"] = ["TTJetsHFb", " $t\\bar{t} + bj$"]
 proc_mc["TTJetsBB"] = ["TTJetsHFbb", " $t\\bar{t} + b\\bar{b}$ "]
 
@@ -86,7 +140,7 @@ if args.mode == "DL":
     proc_data["Run2012_DoubleElectron"] = ["data_obs", ""]
 
 for reg in regs:
-    for var in vars:
+    for var in regs[reg]:
         hist = "MEM_" + var
 
         mc=dict()
@@ -109,7 +163,6 @@ for reg in regs:
                 break
 
             inputfiles[proc] =ROOT.TFile(infile)
-
             
 #            if var[:8] == "electron" or var[:4] == "muon":
 #                hist= "MEM_lepton_" + var.split("_")[1]
@@ -118,17 +171,26 @@ for reg in regs:
 #                histvar=var
 
             mc[proc] = inputfiles[proc].Get(hist + "/" + proc_mc[proc][0])
-            print mc[proc].Integral()
-            mc_up[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Up") # sys_err_up per process
-            mc_down[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Down")
+ 
+            try:
+                test=mc[proc].Integral()
+            except AttributeError:
+                print "Failed to open histogram: " + hist + "/" + proc_mc[proc][0] + " from file " + str(inputfiles[proc])
+                continue
+            if proc != "QCD_BCtoE":
+                mc_up[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Up") # sys_err_up per process
+                mc_down[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Down")
+            else:
+                mc_up[proc] = mc[proc]
+                mc_down[proc] = mc[proc]
 
             jet_labels = {} # xaxis-range, label name (for jet count hists)
             if args.mode == "SL":
                 jet_labels["numJets"] = ( [4,10], "jets")
-                jet_labels["numBTagM"] =( [2,6], "b-tags")
+                jet_labels["numBTagM"] =( [2,5], "b-tags")
             if args.mode == "DL":
-                jet_labels["numJets"] = ( [2,6], "jets")
-                jet_labels["numBTagM"] =( [0,6], "b-tags")
+                jet_labels["numJets"] = ( [2,8], "jets")
+                jet_labels["numBTagM"] =( [1,4], "b-tags")
 
             if var == "numJets" or var == "numBTagM":
                 jet_count[proc] = get_jet_count_hist(mc[proc], jet_labels[var][0], jet_labels[var][1])
@@ -187,5 +249,5 @@ for reg in regs:
         signal.SetLineWidth(3)
         signal.SetFillStyle(0)
 
-        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var], reg)
+        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg)
 
