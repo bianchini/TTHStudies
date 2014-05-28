@@ -70,7 +70,6 @@ typedef TMatrixT<double> TMatrixD;
 #define USESHIFTEDSAMPLES 1
 #define USEALLSAMPLES     1
 
-#define RUNONDATA         1
 #define VERBOSE           1
 
 // use csv calibration from BDT
@@ -78,7 +77,7 @@ typedef TMatrixT<double> TMatrixD;
 #define NCSVSYS          16
 
 // number of extra systematics
-#define NTHSYS           14 // used to be 4
+#define NTHSYS           16 // used to be 4
 
 // test effect of matching MEt phi distribution to data
 #define RESHAPEMETPHI     0
@@ -90,7 +89,7 @@ typedef TMatrixT<double> TMatrixD;
 #define HIGGSMASS        125
 
 // split tt+jj into tt+cc
-#define SPLITCC            0
+#define SPLITCC            1
 
 string DUMMY;
 
@@ -116,7 +115,7 @@ const string csv_sys_names[16] = {
    "CSVLFStats2Down"
 };
 
-const string th_sys_names[14] = {
+const string th_sys_names[16] = {
   //"Q2ScaleUp",     
   //"Q2ScaleDown",   
   "TopPtUp",
@@ -131,6 +130,8 @@ const string th_sys_names[14] = {
   "Q2ScaleHFbbDown",
   "Q2ScaleHFbUp",
   "Q2ScaleHFbDown",
+  "Q2ScaleLFccUp",
+  "Q2ScaleLFccDown",
   "Q2ScaleLFUp",
   "Q2ScaleLFDown"
 };
@@ -515,7 +516,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   
   // number of extra partons in ME  
   int n_b,n_c,n_l,n_g;
-  int nSimBs, nMatchSimBs;
+  int nSimBs, nMatchSimBs, nMatchSimCs;
 
   if( analysis!=4 ){
     t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
@@ -609,6 +610,10 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     t->SetBranchAddress("n_g",    &n_g);   
     t->SetBranchAddress("nSimBs", &nSimBs);  
     t->SetBranchAddress("nMatchSimBs", &nMatchSimBs);  
+    if(SPLITCC && t->GetBranch("nMatchSimCs")) 
+      t->SetBranchAddress("nMatchSimCs", &nMatchSimCs); 
+    else
+      nMatchSimCs = -99;
   }
   else{
     n_b = -99;
@@ -617,6 +622,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     n_g = -99;
     nSimBs      = -99;
     nMatchSimBs = -99;
+    nMatchSimCs = -99;
   }
 
   if( t->GetBranch("weightEle") )    
@@ -737,16 +743,22 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	equivalent_pos_weight2 = nSimBs>2 && nMatchSimBs<2 ?  1 : 0; //Q2 Down
 	break;
       case 11:
-	equivalent_pos_weight2 = nSimBs<=2 ?  2 : 0; //Q2 Up
+	equivalent_pos_weight2 = ((!SPLITCC && nSimBs<=2) || (SPLITCC && nSimBs<=2 && nMatchSimCs<1)) ?  2 : 0; //Q2 Up
 	break;
       case 12:
-	equivalent_pos_weight2 = nSimBs<=2 ?  1 : 0; //Q2 Down
+	equivalent_pos_weight2 = ((!SPLITCC && nSimBs<=2) || (SPLITCC && nSimBs<=2 && nMatchSimCs<1)) ?  1 : 0; //Q2 Down
 	break;
       case 13:
 	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==3 ?  2 : 0; //Q2 Up
 	break;
       case 14:
 	equivalent_pos_weight2 = (n_b+n_c+n_l+n_g)==3 ?  1 : 0; //Q2 Down
+	break;
+      case 15:
+	equivalent_pos_weight2 = SPLITCC && nSimBs<=2 && nMatchSimCs>0 ?  2 : 0; //Q2 Up
+	break;
+      case 16:
+	equivalent_pos_weight2 = SPLITCC && nSimBs<=2 && nMatchSimCs>0 ?  1 : 0; //Q2 Down
 	break;
 
       default:
@@ -1143,6 +1155,7 @@ int main(int argc, const char* argv[])
   int part                =  ( in.getParameter<int>    ("part" ) );
   int analysis            =  ( in.getUntrackedParameter<int>    ("analysis", -1 ) );
   int doSystematics       =  ( in.getUntrackedParameter<int>    ("doSystematics", 1 ) );
+  int runOnData           =  ( in.getUntrackedParameter<int>    ("runOnData", 1 ) );
 
   string nJob = "";
   if( argc==3 )
@@ -1185,7 +1198,7 @@ int main(int argc, const char* argv[])
   }
 
   // name of the main background (needed because one could use TTJetsSemiLept, TTJetsFullLept, ...)
-  TString ttjets = "_TTJets";
+  TString ttjets = "TTJets_nC";
 
   // name tag for the nominal samples
   TString nominal = USEALLSAMPLES ? "_all" : "_"+string(fname.Data())+"_nominal";
@@ -1223,7 +1236,7 @@ int main(int argc, const char* argv[])
   
   if(abs(doMEM)==2 || abs(doMEM)==3){
 
-    TFile* f_B = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+ttjets+".root", "OPEN");
+    TFile* f_B = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+"_"+ttjets+".root", "OPEN");
     if( f_B==0 || f_B->IsZombie() ){
       cout << "Could not find f_B" << endl;
       return 1;
@@ -1375,7 +1388,7 @@ int main(int argc, const char* argv[])
 
     if(VERBOSE) cout << "\e[1;31m!!! MC will be reweighted to match MET_phi distribution observed in data !!!\e[0m" << endl;
 
-    TFile* f_MC = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+ttjets+".root", "OPEN");
+    TFile* f_MC = TFile::Open(inputpath+"MEAnalysis"+name+nominal+version+"_"+ttjets+".root", "OPEN");
     if( f_MC==0 || f_MC->IsZombie() ){
       cout << "Could not find f_MC" << endl;
       return 1;
@@ -1808,7 +1821,10 @@ int main(int argc, const char* argv[])
 	pos_weight2 = 13;
       if( syst_name.find( "Q2Scale3pDown" )  !=string::npos )
 	pos_weight2 = 14;
-
+      if( syst_name.find( "Q2ScaleLFccUp"   )    !=string::npos )
+	pos_weight2 = 15;
+      if( syst_name.find( "Q2ScaleLFccDown" )    !=string::npos )
+	pos_weight2 = 16;
 
 
       // fill the histogram
@@ -1975,7 +1991,7 @@ int main(int argc, const char* argv[])
     // add the histogram to the map
     aMap[all_datacard_samples[s]] = h_tmp;
 
-    if(RUNONDATA==0 && 
+    if(runOnData==0 && 
        string(all_datacard_samples[s].Data()).find("data_obs")==string::npos && 
        string(all_datacard_samples[s].Data()).find("TTH")==string::npos){
 
@@ -1987,7 +2003,7 @@ int main(int argc, const char* argv[])
 
       cout << "   ( h_data++ : " << h_data->Integral()  << " )" << endl; 
     }
-    else if(RUNONDATA){
+    else if(runOnData){
       if(string(all_datacard_samples[s].Data()).find("data_obs")!=string::npos){
 	h_data->Add( h_tmp );
 	observation +=  h_tmp->Integral();
@@ -2007,7 +2023,7 @@ int main(int argc, const char* argv[])
 
   //cout << "************************" << endl;
 
-  if(RUNONDATA==0){
+  if(runOnData==0){
 
     // approximate to integer precision
     observation = int(observation);
@@ -2233,8 +2249,10 @@ int main(int argc, const char* argv[])
 
 	bool isNotForHFbb = sys_name.find("LF") != string::npos || (sys_name.find("HFb")!=string::npos && sys_name.find("HFbb")==string::npos );
 	bool isNotForHFb  = sys_name.find("LF") != string::npos || sys_name.find("HFbb")!=string::npos;
-	bool isNotForLF   = sys_name.find("HFb")!= string::npos ;
+	bool isNotForLF   = sys_name.find("HFb")!= string::npos || sys_name.find("LFcc")!= string::npos;
+	bool isNotForLFcc = sys_name.find("HFb")!= string::npos || (sys_name.find("LF") != string::npos && sys_name.find("LFcc")== string::npos);
 	
+
 	if( sys_name.find("Up")!=string::npos )
 	  sys_name.erase( sys_name.find("Up"),   2 );
 	else if ( sys_name.find("Down")!=string::npos )
@@ -2253,6 +2271,10 @@ int main(int argc, const char* argv[])
 	if( isTTJetsHFbthere){
 	  if( !isNotForHFb ) line += "1.0        "; 
 	  else               line += " -         ";         
+	}
+	if( isTTJetsLFccthere ) {
+	  if( !isNotForLFcc ) line += "1.0        ";       
+	  else                line += " -         "; 
 	}
 	if( isTTJetsLFthere ) {
 	  if( !isNotForLF ) line += "1.0        ";       
@@ -2412,6 +2434,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "QCDscale_TTH", 0.12, line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "QCDscale_TTH", 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "QCDscale_TTH", 0.0,  line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "QCDscale_TTH", 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "QCDscale_TTH", 0.0,  line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "QCDscale_TTH", 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "QCDscale_TTH", 0.0,  line);
@@ -2465,7 +2488,7 @@ int main(int argc, const char* argv[])
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
-  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.03, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.03, line);
   if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
   if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir,  string(Form("QCDscale%s_TTJetsLF", null.c_str())), 0.0,  line);
@@ -2485,7 +2508,7 @@ int main(int argc, const char* argv[])
   if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "pdf_gg", 0.00, line);
   out<<line;
   out<<endl;
-
+  
   // PDFs qq
   line="";
   if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_qq", 0.00, line);
