@@ -8,35 +8,37 @@ parser = argparse.ArgumentParser()
 
 args = parser.parse_args()
 
-inpath = "../datacards/Apr28_checks/controlPlots_merged/"
-#inpath = "../datacards/Apr24_2014_control_plots" + "_merged/"
+#inpath = "../datacards/Apr28_checks/controlPlots_merged/"
+inpath = "../datacards/May26_PAS/tables/"
 standalone = True
 
-Lumi = 19.04
+Lumi = 19.5
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
 
-var = "jetsAboveCut"
+#var = "jetsAboveCut"
 #var = "numBTagM"
+var = "Vtype"
 hist = "MEM_" + var
 
 cuts = dict()
 
 
-cuts["DL_cat4_HP_mm"] = "$\mu\mu$"
-cuts["DL_cat4_HP_em"] = "$e\mu$"
-cuts["DL_cat4_HP_ee"] = "ee"
+cuts["DL_cat6_HP_mm"] = "$\mu\mu$"
+cuts["DL_cat6_HP_em"] = "$e\mu$"
+cuts["DL_cat6_HP_ee"] = "ee"
 
-cuts["DL_cat4_LP_mm"] = "$\mu\mu$"
-cuts["DL_cat4_LP_em"] = "$e\mu$"
-cuts["DL_cat4_LP_ee"] = "ee"
+cuts["DL_cat6_LP_mm"] = "$\mu\mu$"
+cuts["DL_cat6_LP_em"] = "$e\mu$"
+cuts["DL_cat6_LP_ee"] = "ee"
 
 cutlabels = ["di-lepton HP", "di-lepton LP"]
 
 processes = dict() #filename: [histname, pretty name]
 processes["TTH125"] = ["TTH125", "$t\\bar{t}H(\\rightarrow b\\bar{b})$" ]
 processes["TTJetsJJ"] = ["TTJetsLF", " $t\\bar{t} + jj$"]
+processes["TTJetsCC"] = ["TTJetsLFcc", "$t\\bar{t} + cc$"]
 processes["TTJetsBJ"] = ["TTJetsHFb", " $t\\bar{t} + bj$"]
 processes["TTJetsBB"] = ["TTJetsHFbb", " $t\\bar{t} + b\\bar{b}$ "]
 processes["TTV"] = ["TTV", " $t\\bar{t} + V$ "]
@@ -76,10 +78,10 @@ for reg in cuts:
             signal[reg] = nr_evts
             continue
 
-        if (reg[:7] == "DL_cat4") and (proc == "Run2012_SingleMu" or proc == "Run2012_DoubleElectron"):
+        if (reg[:7] == "DL_cat6") and (proc == "Run2012_SingleMu" or proc == "Run2012_DoubleElectron"):
             print "add DL: " + reg + ", proc = " + proc
             sumData[reg] += nr_evts
-        elif not (reg[:7] == "DL_cat4") and (proc == "Run2012_SingleMu" or proc == "Run2012_SingleElectron"):
+        elif not (reg[:7] == "DL_cat6") and (proc == "Run2012_SingleMu" or proc == "Run2012_SingleElectron"):
             print "add SL: " + reg + ", proc = " + proc
             sumData[reg] += nr_evts
 
@@ -103,7 +105,7 @@ print """
 \\begin{center}"""
 print "\\footnotesize{"
 
-print "\label{tab:cutflow}"
+
 print "\\begin{tabular}{|",
 for it in range(len(cuts) + 1):
     print "c|",
@@ -292,6 +294,7 @@ print """
         \end{tabular}
 """        
 print "\caption{Final event yields for DL categories, L = " + str(Lumi) + " fb$^{-1}$. }"
+print "\label{tab:cutflow_DL}"
 print "}"
 
 print """   

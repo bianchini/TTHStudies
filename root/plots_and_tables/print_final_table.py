@@ -8,17 +8,18 @@ parser = argparse.ArgumentParser()
 
 args = parser.parse_args()
 
-inpath = "../datacards/Apr28_checks/controlPlots_merged/"
-#inpath = "../datacards/Apr24_2014_control_plots" + "_merged/"
+#inpath = "../datacards/Apr28_checks/controlPlots_merged/"
+inpath = "../datacards/May26_PAS/tables/"
 standalone = True
 
-Lumi = 19.04
+Lumi = 19.5
 
-#version = "MEM_New_ntuplizeAll_v3_rec_std_"
-version = "MEM_New_rec_std_"
+version = "MEM_New_ntuplizeAll_v3_rec_std_"
+#version = "MEM_New_rec_std_"
 
-var = "jetsAboveCut"
+#var = "jetsAboveCut"
 #var = "numBTagM"
+var = "Vtype"
 hist = "MEM_" + var
 
 cuts = dict()
@@ -42,6 +43,7 @@ cuts["SL_cat3_LP"] = "Cat 3 LP"
 processes = dict() #filename: [histname, pretty name]
 processes["TTH125"] = ["TTH125", "$t\\bar{t}H(\\rightarrow b\\bar{b})$" ]
 processes["TTJetsJJ"] = ["TTJetsLF", " $t\\bar{t} + jj$"]
+processes["TTJetsCC"] = ["TTJetsLFcc", "$t\\bar{t} + cc$"]
 processes["TTJetsBJ"] = ["TTJetsHFb", " $t\\bar{t} + bj$"]
 processes["TTJetsBB"] = ["TTJetsHFbb", " $t\\bar{t} + b\\bar{b}$ "]
 processes["TTV"] = ["TTV", " $t\\bar{t} + V$ "]
@@ -110,7 +112,7 @@ print """
 \\begin{center}"""
 print "\\footnotesize{"
 
-print "\label{tab:cutflow}"
+
 print "\\begin{tabular}{|",
 for it in range(len(cuts) + 1):
     print "c|",
@@ -184,7 +186,8 @@ print "\\hline"
 print """
         \end{tabular}
 """        
-print "\caption{Final event yields, L = " + str(Lumi) + " fb$^{-1}$. }"
+print  "\caption{Final event yields for SL categories, L = " + str(Lumi) + " fb$^{-1}$. }"
+print "\label{tab:cutflow_SL}"
 print "}"
 
 print """   
