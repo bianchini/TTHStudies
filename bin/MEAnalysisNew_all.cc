@@ -616,8 +616,15 @@ int main(int argc, const char* argv[])
   // num of b-hadrons inside jets (backward compatibility)
   int nMatchSimBsOld_;
   // num of b-hadrons inside jets
+  // gen_eta < 5, gen_pt > 20
+  int nMatchSimBs_v1_;
+  // gen_eta <2.5, gen_pt > 20
+  int nMatchSimBs_v2_;
+  // gen_eta < 2.5, gen_pt > 20, reco_pt > 30
   int nMatchSimBs_;
   // num of c-hadrons inside jets
+  int nMatchSimCs_v1_;
+  int nMatchSimCs_v2_;
   int nMatchSimCs_;
 
   // gen top/higgs informations
@@ -789,8 +796,13 @@ int main(int argc, const char* argv[])
   
   tree->Branch("nSimBs",       &nSimBs_,        "nSimBs/I");
   tree->Branch("nMatchSimBsOld",&nMatchSimBsOld_,"nMatchSimBsOld/I");
+  tree->Branch("nMatchSimBs_v1",&nMatchSimBs_v1_,"nMatchSimBs_v1/I");
+  tree->Branch("nMatchSimBs_v2",&nMatchSimBs_v2_,"nMatchSimBs_v2/I");
   tree->Branch("nMatchSimBs",  &nMatchSimBs_,    "nMatchSimBs/I");
+  tree->Branch("nMatchSimCs_v1",  &nMatchSimCs_v1_,    "nMatchSimCs_v1/I");
+  tree->Branch("nMatchSimCs_v2",  &nMatchSimCs_v2_,    "nMatchSimCs_v2/I");
   tree->Branch("nMatchSimCs",  &nMatchSimCs_,    "nMatchSimCs/I");
+
   tree->Branch("weight",       &weight_,        "weight/F");
   tree->Branch("weightCSV",    weightCSV_,      "weightCSV[19]/F");
   tree->Branch("SCALEsyst",    SCALEsyst_,      "SCALEsyst[3]/F");
@@ -1248,7 +1260,11 @@ int main(int argc, const char* argv[])
 
       nSimBs_             = nSimBs;
       nMatchSimBsOld_     = -99;
+      nMatchSimBs_v1_     = -99;
+      nMatchSimBs_v2_     = -99;
       nMatchSimBs_        = -99;
+      nMatchSimCs_v1_     = -99;
+      nMatchSimCs_v2_     = -99;
       nMatchSimCs_        = -99;
       time_               = 0.;
 
@@ -1657,7 +1673,11 @@ int main(int argc, const char* argv[])
       // find out number of b-hadrons in the event...
       nSimBs_         = nSimBs;
       nMatchSimBsOld_ = 0;
+      nMatchSimBs_v1_ = 0;
+      nMatchSimBs_v2_ = 0;
       nMatchSimBs_    = 0;
+      nMatchSimCs_v1_ = 0;
+      nMatchSimCs_v2_ = 0;
       nMatchSimCs_    = 0;
 
 
@@ -1710,8 +1730,21 @@ int main(int argc, const char* argv[])
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
 	  if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
 	  if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
-	  if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_++;
+	  if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v1_++;
 	}
+
+	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
+          if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
+          if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
+          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v2_++;
+        }
+
+	if( hJet_pt[hj]>30 && hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
+          if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
+          if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
+          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_++; //baseline
+        }
+
       }
       for(int aj = 0; aj<naJets; aj++){
 	TLorentzVector aJLV(1,0,0,1);
@@ -1722,11 +1755,23 @@ int main(int argc, const char* argv[])
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
 	  if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
 	  if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
-	  if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_++;
+	  if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v1_++;
 	}
+
+	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
+          if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
+          if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
+          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v2_++;
+        }
+
+	if( aJet_pt[aj]>30 && aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
+          if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
+          if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
+          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_++;
+        }
+
       }
      
-
 
       // now find out how many matched c's we have...
       for(int hj = 0; hj<nhJets; hj++){
@@ -1738,8 +1783,21 @@ int main(int argc, const char* argv[])
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
 	  if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
 	  if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
-	  if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_++;
+	  if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v1_++;
 	}
+
+	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
+          if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
+          if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
+          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v2_++;
+        }
+
+	if( hJet_pt[hj]>30 && hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
+          if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
+          if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
+          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_++;
+        }
+
       }
       for(int aj = 0; aj<naJets; aj++){
 	TLorentzVector aJLV(1,0,0,1);
@@ -1750,8 +1808,21 @@ int main(int argc, const char* argv[])
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
 	  if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
 	  if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
-	  if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_++;
+	  if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v1_++;
 	}
+
+	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
+          if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
+          if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
+          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v2_++;
+        }
+
+	if( aJet_pt[aj]>30 && aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
+          if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
+          if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
+          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_++;
+        }
+
       }
      
       
