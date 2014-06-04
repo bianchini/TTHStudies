@@ -16,7 +16,7 @@ ADDJETPT40CUT = 0
 NR_PT40_JETS  = 4
 
 # blind
-RUNONDATA      = 0
+RUNONDATA      = 1
 extraNameBlind = ""
 if RUNONDATA==0:
     extraNameBlind = "_MC"
@@ -29,7 +29,7 @@ cat = cms.PSet(
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/files/byLLR/Apr23_2014/"),
-    directory = cms.string("May25_2014_195fb"),
+    directory = cms.string("PreApproval"),
     cut       = cms.string(""),
     category  = cms.string(""),
     varname   = cms.string(""),
@@ -48,11 +48,11 @@ cat = cms.PSet(
     part  = cms.int32(0),
 
     # 0 = SL, 1 = DL
-    analysis = cms.untracked.int32(-1),
-
+    analysis      = cms.untracked.int32(-1),
     doSystematics = cms.untracked.int32(1),
-
-    runOnData     = cms.untracked.int32(RUNONDATA)
+    runOnData     = cms.untracked.int32(RUNONDATA),
+    massH         = cms.untracked.double(125.),
+    do2Dplots     = cms.untracked.int32(0)
 
     )
 
