@@ -1,14 +1,19 @@
 import math
-csv_sys_list = ["csv_sys_CSVLF", "csv_sys_CSVHFStats1", "csv_sys_CSVHFStats2", "csv_sys_CSVCErr1", "csv_sys_CSVCErr2",
-                "csv_sys_CSVHF",  "csv_sys_CSVLFStats1", "csv_sys_CSVLFStats2"]
+csv_sys_list = ["CMS_ttH_CSVLF", "CMS_ttH_CSVHFStats1", "CMS_ttH_CSVHFStats2", "CMS_ttH_CSVCErr1", "CMS_ttH_CSVCErr2",                                                                                                                         
+                "CMS_ttH_CSVHF",  "CMS_ttH_CSVLFStats1", "CMS_ttH_CSVLFStats2"]
 
-q2_sys_list = ["Q2Scale1p", "Q2Scale2p", "Q2Scale3p", "Q2ScaleHFb", "Q2ScaleLF", "Q2ScaleHFbb"]
+q2_sys_list = ["Q2scale_ttH_ttbar1p", "Q2scale_ttH_ttbar2p", "Q2scale_ttH_ttbar3p", "Q2scale_ttH_ttbar_bb", "Q2scale_ttH_ttbar_b", "Q2scale_ttH_ttbar_cc"]
 
 pdf_sys_list = ["pdf_gg", "pdf_qq", "pdf_qg"]
 
-extras = ["TopPt", "Norm_TTbb", "Norm_TTb"]
+extras = ["CMS_ttH_topPtcorr"] 
 
-systematics_list = ["JEC", "JER", "lepton_id", "lumi"] + csv_sys_list + q2_sys_list + pdf_sys_list + extras
+normalization = ["CMS_ttH_eff_lep", "lumi_8TeV", "Norm_TTbb", "Norm_TTb"]
+
+systematics_list_profile = ["CMS_scale_j", "CMS_res_j"] + csv_sys_list + q2_sys_list + extras 
+systematics_list = ["CMS_scale_j", "CMS_res_j"] + csv_sys_list + q2_sys_list + extras #+ pdf_sys_list + normalization 
+
+#systematics_list = ["JEC", "JER", "lepton_id", "lumi"] + csv_sys_list + q2_sys_list + pdf_sys_list + extras
 
 def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
 #    print "Getting systematics from" + str(infile)
@@ -25,13 +30,13 @@ def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
     systematics_list.append(qcdScale)
     
     for idx, sys in enumerate(systematics_list):
-#        print "Getting systematic variation " + sys
+        print "Getting systematic variation " + sys
         sys_var_up = infile.Get(hist + "/" + procname + "_" + sys + shift)
 
         try:
             sys_var_up.Add(nominal_m)
         except AttributeError:
-#            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
+            print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
             continue
 
         sys_var_up2 = sys_var_up*sys_var_up
@@ -76,3 +81,38 @@ def get_tot_sys( sys_proc):
 #    print "Sumsys (tot processes): " + str(tot_sys.Integral())
 
     return tot_sys
+
+def get_profile_sys( mc_nominal, mc_sys):
+    """
+    mc_nominal -- nominal histogram
+    mc_syst -- dictionary of systematic variations of mc_nominal
+    """
+#    print mc_nominal.Integral()
+    mc_nominal_m = mc_nominal.Clone("mc_nominal_m")
+    mc_nominal_m.Scale(-1)
+#    print mc_nominal_m.Integral()
+
+    for idx, sys in enumerate(mc_sys):
+        mc_diff = mc_sys[sys].Clone("mc_diff")
+        mc_diff.Add(mc_nominal_m)
+        mc_diff2= mc_diff*mc_diff
+
+        if idx == 0:
+            sum_sys2 = mc_diff2.Clone("sum_sys2")
+        else:
+            sum_sys2.Add(mc_diff2)
+
+        mc_diff.Clear()
+        mc_diff2.Clear()
+        
+
+    print "sys2 = " + str(sum_sys2.Integral())
+    sum_sys = sum_sys2.Clone("sum_sys")
+    for ibinx in range(sum_sys2.GetNbinsX()+1):
+        for ibiny in range(sum_sys2.GetNbinsY()+1):
+            isys_sum = sum_sys2.GetBinContent(ibinx+1, ibiny+1)
+            sum_sys.SetBinContent(ibinx+1, ibiny+1, math.sqrt(isys_sum))
+
+    print "final sys = " + str(sum_sys.Integral())
+ 
+    return sum_sys

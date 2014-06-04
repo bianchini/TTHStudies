@@ -16,7 +16,8 @@ args = parser.parse_args()
 
 #inpath = "../datacards/Apr24_2014_control_plots_merged/"
 #inpath = "../datacards/May19/control_plots_merged/"
-inpath = "../datacards/May26_PAS/control_plots_merged/"
+#inpath = "../datacards/May26_PAS/control_plots_merged/"
+inpath = "../datacards/June03_PAS/control_plots_merged/"
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
@@ -45,8 +46,12 @@ vars = { # x-axis title, x-axis range
     
     "nPVs": ["# primary vertices", [0,40]],
   
-    "jet_pt": ["jet p_{T}", [30, 350]],
-    "jet_eta": ["jet #eta", [-2.5, 2.5]],
+    "bjet_pt": ["b-jet p_{T}", [30, 350]],
+    "bjet_eta": ["b-jet #eta", [-2.5, 2.5]],
+
+    "leadjet_pt": ["leading jet p_{T}", [30, 350]],
+    "leadjet_eta": ["leading jet #eta", [-2.5, 2.5]],
+
     }
 
 if args.mode == "DL":
@@ -58,29 +63,31 @@ if args.mode == "DL":
 
 if args.mode == "SL":
     regs = {
-        "SL_5j": ["btag_LR"],
-        "SL_6j": ["btag_LR"],
-        "SL_g6jg2t": ["btag_LR"], 
-        "SL_5jg2t": ["btag_LR"],
+#        "SL_5j": ["btag_LR"],
+#        "SL_6j": ["btag_LR"],
+#        "SL_g6jg2t": ["btag_LR"], 
+#        "SL_5jg2t": ["btag_LR"],
         
-        "SL_g4jg2t": [ "numBTagM", "numJets"],
+#        "SL_g4jg2t": [ "numBTagM", "numJets"],
         
         "SL_g5jg3t": [
-            "electron_pt", 
-            "electron_eta", 
-            "electron_rIso",
+ #           "electron_pt", 
+ #           "electron_eta", 
+ #           "electron_rIso",
 
-            "muon_eta",
-            "muon_pt",
-            "muon_rIso",
+#            "muon_eta",
+#            "muon_pt",
+#            "muon_rIso",
 
-            "MET_pt",
+ #           "MET_pt",
             #"MET_sumEt",
-            "MTln",
-            "nPVs",
-            
-            "jet_pt",
-            "jet_eta",
+#            "MTln",
+#            "nPVs",
+
+            "leadjet_pt",
+            "leadjet_eta",
+            "bjet_pt",
+            "bjet_eta",
             ]#, "numBTagM"], #investigating QCD in high eta electron events
 
      
@@ -92,43 +99,43 @@ if args.mode == "SL":
 if args.mode == "DL":
     regs = {
         "DL_g2jg2t": [
-            "electron_pt",
-            "electron_eta",
-            "electron_rIso",
+ #           "electron_pt",
+ #           "electron_eta",
+ #           "electron_rIso",
 
             "muon_eta",
             "muon_pt",
             "muon_rIso",
             
-            "jet_pt",
-            "jet_eta",
+  #          "bjet_pt",
+  #          "bjet_eta",
 
-            "MET_pt",
+  #          "MET_pt",
 #            "MET_sumEt",
-            "Mll",
+  #          "Mll",
 
-            "numJets",
+  #          "numJets",
         ],
-        "DL_g2jg2t": ["Mll_z"],
+#        "DL_g2jg2t": ["Mll_z"],
         
-        "DL_g4j_z": ["btag_LR"],
-        "DL_g4j": ["btag_LR", "numBTagM"],
+  #      "DL_g4j_z": ["btag_LR"],
+  #      "DL_g4j": ["btag_LR", "numBTagM"],
 
         }
 
 do_QCD=False
 proc_mc = dict() #filename: [histname, pretty name]
-proc_mc["TTH125"] = ["TTH125", "$t\\bar{t}H(\\rightarrow b\\bar{b})$ (125)" ]
+proc_mc["TTH125"] = ["ttH_hbb", "$t\\bar{t}H(\\rightarrow b\\bar{b})$ (125)" ]
 if do_QCD:
     proc_mc["QCD_BCtoE"] = ["_TopPtUp", "QCD"]
-proc_mc["SingleT"] = ["SingleT", "single-$t$"]
-proc_mc["TTV"] = ["TTV", " $t\\bar{t} + V$ "]
-proc_mc["DiBoson"] = ["DiBoson", "diboson"]
-proc_mc["EWK"] = ["EWK", "$V$ + jets"]
-proc_mc["TTJetsJJ"] = ["TTJetsLF", " $t\\bar{t} + jj$"]
-proc_mc["TTJetsCC"] = ["TTJetsLFcc", " $t\\bar{t} + cc$"]
-proc_mc["TTJetsBJ"] = ["TTJetsHFb", " $t\\bar{t} + bj$"]
-proc_mc["TTJetsBB"] = ["TTJetsHFbb", " $t\\bar{t} + b\\bar{b}$ "]
+proc_mc["SingleT"] = ["singlet", "single-$t$"]
+proc_mc["TTV"] = ["ttbarV", " $t\\bar{t} + V$ "]
+proc_mc["DiBoson"] = ["diboson", "diboson"]
+proc_mc["EWK"] = ["ewk", "$V$ + jets"]
+proc_mc["TTJetsJJ"] = ["ttbar", " $t\\bar{t} + jj$"]
+proc_mc["TTJetsCC"] = ["ttbarPlusCCbar", " $t\\bar{t} + cc$"]
+proc_mc["TTJetsBJ"] = ["ttbarPlusB", " $t\\bar{t} + bj$"]
+proc_mc["TTJetsBB"] = ["ttbarPlusBBbar", " $t\\bar{t} + b\\bar{b}$ "]
 
 proc_data = dict()
 
