@@ -5,11 +5,11 @@ from collections import OrderedDict as dict
 import argparse
 import math
 from systematics import systematics_list_profile as systematics_list
-from systematics import get_profile_sys
+from systematics import get_profile_sys, get_profile_sys2
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)                                                       
 
 
-infilepath = "../datacards/June03_PAS/2D_corr/"
+infilepath = "../datacards/June03_PAS/2D_corr/controlPlots/"
 
 proc_hist = [
     "ttH_hbb",
@@ -24,7 +24,15 @@ proc_hist = [
     ]
 
 
-regs = [ "cat1_H", "cat1_L", "cat2_H", "cat2_L", "cat3_H", "cat3_L", "cat6_H", "cat6_L" ]
+regs = { "cat1_H": "SL cat. 1 (H)", 
+#         "cat1_L": "SL cat. 1 (L)", 
+#         "cat2_H": "SL cat. 2 (H)",
+#         "cat2_L": "SL cat. 2 (L)",
+#         "cat3_H": "SL cat. 3 (H)",
+#         "cat3_L": "SL cat. 3 (L)",
+#         "cat6_H": "DL (H)",
+#         "cat6_L": "DL (L)", 
+         }
 
 for reg in regs:
     infilename = "MEM_New_rec_std_" + reg + ".root"
@@ -40,14 +48,25 @@ for reg in regs:
     infile = ROOT.TFile(infilename_full)
 
     histnames = { #histname: [xaxis, yaxis, [xmin, xmax], [ymin,ymax], doProfileY]
-        "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 40], [0,55], True],
-        "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-20, 15], [-10, 25], True],
+        "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 40], [0,45], False],
+        "MEM_logPbvslogPbb": ["log(#omega_{1})", "log(L_{bb}^{b-tag})", [0,40], [0,15], False],
+        "MEM_logPbvslogPjj": ["log(#omega_{1})","log(L_{jj}^{b-tag})", [0,40], [-10, 5], False],
+
+        "MEM_logPsvslogPbb": ["log(#omega_{0})","log(L_{bb}^{b-tag})", [0,40], [0, 15], False],
+        "MEM_logPsvslogPjj": ["log(#omega_{0})","log(L_{jj}^{b-tag})", [0,40], [-10, 5], False],
+
+        "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-5, 20], [-10, 10], False],
+
+
         }
 
 
 
-#    histname = "MEM_logPbvslogPs"
-    histname = "MEM_logPbbvslogPjj"
+    
+    histname = "MEM_logPsvslogPjj"
+
+
+    do_sys_v2 = False
     doProfileY = histnames[histname][4]
 
 
@@ -119,6 +138,7 @@ for reg in regs:
     prof_data.GetXaxis().SetRangeUser(histnames[histname][2][0], histnames[histname][2][1])
     prof_data.GetYaxis().SetRangeUser(histnames[histname][3][0], histnames[histname][3][1])
     prof_data.GetYaxis().SetTitleSize(0.0375)
+    prof_data.GetXaxis().SetTitleOffset(1.2)
     prof_data.GetYaxis().SetLabelSize(0.0375)
 
     prof_data.SetMarkerColor(1)
@@ -134,22 +154,38 @@ for reg in regs:
     prof_mc.SetLineColor(ROOT.kWhite)
     prof_mc.SetMarkerStyle(20)
 
-    error_band_mc = prof_mc.Clone()
+
+
+    if do_sys_v2:
+        error_band_mc = get_profile_sys2(mc_nominal, mc_sys_up, histnames[histname][2])
+    else:
+        error_band_mc = prof_mc.Clone()
+    
     error_band_mc.SetFillColor(14)
     error_band_mc.SetFillStyle(3004)
     error_band_mc.SetLineColor(ROOT.kWhite)
+    error_band_mc.SetMarkerColor(ROOT.kRed)
     error_band_mc.SetMarkerStyle(20)
+
+    for ibinx in range(prof_data.GetNbinsX()+1):
+        if prof_data.GetBinError(ibinx) == 0:
+            prof_data.SetBinContent(ibinx, -999)
+        print prof_mc.GetBinError(ibinx)
+        if prof_mc.GetBinError(ibinx) == 0:
+            prof_mc.SetBinContent(ibinx, -999)
+            error_band_mc.SetBinContent(ibinx, -999)
 
     c = ROOT.TCanvas("c" + reg ,"c" + reg, 800, 800)
 
 
     prof_data.Draw()
-    prof_mc.Draw("e2same")
+#    prof_mc.Draw("e2same")
     error_band_mc.Draw("e2same")
 
-    legend1 = ROOT.TLegend(0.7, 0.75, 0.95, 0.92, "", "brNDC")
+    legend1 = ROOT.TLegend(0.7, 0.75, 0.95, 0.88, "", "brNDC")
     legend1.SetBorderSize(0)
     legend1.SetFillColor(0)
+    legend1.SetTextSize(0.03)
     legend1.AddEntry(prof_data, "Data", "p")
     legend1.AddEntry(error_band_mc, "Expectation", "p")
     legend1.AddEntry(error_band_mc, "MC stat+sys", "f")
@@ -163,12 +199,18 @@ for reg in regs:
     
     cut = "CMS Preliminary"
     
-    std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}" # (" + reg + ")"                                                       
-    
-    textlabel = std_txt
-    latex.DrawLatex(0.15, 0.975, textlabel)
-    
-    c.SaveAs("profile_plots/profile_" + histname + "_" + reg + ".pdf")
+    std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}"                                                       
+    cat_txt = regs[reg]
+
+    latex.DrawLatex(0.15, 0.97, std_txt)
+    latex.DrawLatex(0.71, 0.89, cat_txt)
+
+
+    outfilename = "profile_plots/profile_" + histname + "_" + reg 
+    if do_sys_v2:
+        outfilename = outfilename + "_sysV2"
+
+    c.SaveAs( outfilename + ".png")
     c.Close()
 
 #    c[var].SaveAs("plots/" + var + "_" + reg + ".pdf")                                                                      
