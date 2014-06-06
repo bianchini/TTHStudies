@@ -118,17 +118,24 @@ def get_profile_sys( mc_nominal, mc_sys):
  
     return sum_sys
 
-def get_profile_sys2( mc_nominal, mc_sys, xrange):
+def get_profile_sys2( mc_nominal, mc_sys, xrange, doProfileY):
     print "---------get_profile2 ----------"
     
     mc_nominal_2 = mc_nominal.Clone("mc_nominal_2")
-    prof_nominal_2 = mc_nominal_2.ProfileY()
+
+    if doProfileY:
+        prof_nominal_2 = mc_nominal_2.ProfileY()
+    else:
+        prof_nominal_2 = mc_nominal_2.ProfileX()
 
 
     prof_sys = {}
     for sys in mc_sys:
-        prof_sys[sys] = mc_sys[sys].ProfileY()
-        
+        if doProfileY:
+            prof_sys[sys] = mc_sys[sys].ProfileY()
+        else:
+            prof_sys[sys] = mc_sys[sys].ProfileX()
+
 #    print range
     sys_tot = 0
 
