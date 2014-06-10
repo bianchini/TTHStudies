@@ -4,10 +4,10 @@ tdrstyle.tdrstyle()
 from collections import OrderedDict as dict
 import argparse
 import math
+
 from systematics import systematics_list_profile as systematics_list
 from systematics import get_profile_sys, get_profile_sys2
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)                                                       
-
 
 infilepath = "../datacards/June03_PAS/2D_corr/controlPlots/"
 
@@ -33,8 +33,9 @@ regs = {
     "cat3_L": "SL cat. 3 (L)",
     "cat6_H": "DL (H)",
     "cat6_L": "DL (L)", 
-         }
+    }
 
+omit_low_stat_bins = True # Dont show bins with only 1 entry -- error of the mean is 0 --> looks bad
 do_sys_v2 = False # sum systematics of profiles, false for adding systematics to 2D histogram bin-by-bin
 
 for reg in regs:
@@ -112,12 +113,13 @@ for reg in regs:
         mc_up = get_profile_sys(mc_nominal, mc_sys_up)
         mc_down = get_profile_sys(mc_nominal, mc_sys_down)
 
+        error_mc = mc_nominal.Clone("error_mc")
         for ibinx in range(mc_nominal.GetNbinsX() + 1):
             for ibiny in range(mc_nominal.GetNbinsY() + 1):
                 err_sys = max(mc_up.GetBinContent(ibinx+1, ibiny+1), mc_down.GetBinContent(ibinx+1, ibiny+1))
                 err_stat = mc_nominal.GetBinError(ibinx+1, ibiny+1)
 
-                mc_nominal.SetBinError(ibinx+1, ibiny+1, math.sqrt( err_stat**2 + err_sys**2) )
+                error_mc.SetBinError(ibinx+1, ibiny+1, math.sqrt( err_stat**2 + err_sys**2) )
 
         if doProfileY:
             prof_data = data.ProfileY()
@@ -146,36 +148,43 @@ for reg in regs:
         prof_mc.SetLineColor(ROOT.kRed)
         prof_mc.SetFillColor(14)
         prof_mc.SetFillStyle(3004)
-        prof_mc.SetLineColor(ROOT.kWhite)
+        prof_mc.SetLineColor(ROOT.kRed)
         prof_mc.SetMarkerStyle(20)
 
+
+#        for ibin in range(1,prof_mc.GetNbinsX() + 1):
+#            print "bin " + str(ibin) + ": " + str(prof_mc.GetBinEntries(ibin)) + "+-" + str(prof_mc.GetBinError(ibin))
+#            print "bin " + str(ibin) + ": " + str(prof_mc.GetBinEffectiveEntries(ibin)) + "+-" + str(prof_mc.GetBinError(ibin))
+#            print "bin " + str(ibin) + ": " + str(prof_data.GetBinEntries(ibin)) + "+-" + str(prof_data.GetBinError(ibin))
 
 
         if do_sys_v2:
             xrange =  [mc_nominal.GetXaxis().GetXmin(), mc_nominal.GetXaxis().GetXmax()]
             error_band_mc = get_profile_sys2(mc_nominal, mc_sys_up, xrange, doProfileY)
         else:
-            error_band_mc = prof_mc.Clone()
-    
+            if doProfileY:
+                error_band_mc = error_mc.ProfileY()
+            else:
+                error_band_mc = error_mc.ProfileX()
+
         error_band_mc.SetFillColor(14)
         error_band_mc.SetFillStyle(3004)
         error_band_mc.SetLineColor(ROOT.kWhite)
         error_band_mc.SetMarkerColor(ROOT.kRed)
         error_band_mc.SetMarkerStyle(20)
 
-        for ibinx in range(prof_data.GetNbinsX()+1):
-            if prof_data.GetBinError(ibinx) == 0:
-                prof_data.SetBinContent(ibinx, -999)
-            print prof_mc.GetBinError(ibinx)
-            if prof_mc.GetBinError(ibinx) == 0:
-                prof_mc.SetBinContent(ibinx, -999)
-                error_band_mc.SetBinContent(ibinx, -999)
+        if omit_low_stat_bins:
+            for ibinx in range(prof_data.GetNbinsX()+1):
+                if prof_data.GetBinError(ibinx) == 0:
+                    prof_data.SetBinContent(ibinx, -999)
+                if prof_mc.GetBinError(ibinx) == 0:
+                    prof_mc.SetBinContent(ibinx, -999)
+                    error_band_mc.SetBinContent(ibinx, -999)
 
         c = ROOT.TCanvas("c" + reg ,"c" + reg, 800, 800)
 
-
         prof_data.Draw()
-    #    prof_mc.Draw("e2same")
+#        prof_mc.Draw("epsame")
         error_band_mc.Draw("e2same")
 
         legend1 = ROOT.TLegend(0.7, 0.75, 0.95, 0.88, "", "brNDC")
@@ -202,7 +211,7 @@ for reg in regs:
         latex.DrawLatex(0.71, 0.89, cat_txt)
         
 
-        outfilename = "profile_plots_v2/profile_" + histname + "_" + reg 
+        outfilename = "profile_plots_rebin/profile_" + histname + "_" + reg 
         if do_sys_v2:
             outfilename = outfilename + "_sysV2"
 
