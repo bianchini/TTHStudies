@@ -5,6 +5,7 @@ from collections import OrderedDict as dict
 import argparse
 import math
 
+from array import array
 from histlib import get_ratio
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
@@ -35,9 +36,11 @@ infile_mc = ROOT.TFile(infilename_mc)
 infile_data =ROOT.TFile(infilename_data)
 
 prh = {} # dictionary of 8 purity histograms for each category 
+step=0.6
+binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #variable bin size
 
 #purity_hist = ROOT.TH1F("purity","purity", 8, -7., -1.)
-purity_hist = ROOT.TH1F("purity","purity", 10, -6.5, -1.)
+purity_hist = ROOT.TH1F("purity","purity", len(binning)-1,  array('d', binning) )
 purity_hist_lin = purity_hist.Clone("purity_hist_lin")
 purity_hist_bkg = purity_hist.Clone("purity_hist_bkg")
 purity_hist_signal = purity_hist.Clone("purity_hist_signal")
@@ -74,6 +77,8 @@ for i in range(1,3): # SL/DL
             for ibin in range(1,bkg.GetNbinsX()+1):
                 if bkg.GetBinContent(ibin) != 0:
                     pur_bin = math.log(signal.GetBinContent(ibin)/bkg.GetBinContent(ibin)) #purity at bin in log scale
+                    if pur_bin > -2.7:
+                        print "SL/DL = " + str(i) + ", cat = " + str(j) + ", in bin " + str(ibin) + ", purity = " + str(pur_bin) + ", nr signal = " + str(signal_pf.GetBinContent(ibin)) + ", nr bkg = " + str(bkg.GetBinContent(ibin)) + ", nr data = " + str(data.GetBinContent(ibin)) 
                     pur_list.append(pur_bin)
                 else:
                     print "Warning no bkg present in the bin"
@@ -102,8 +107,8 @@ st.Add(purity_hist_signal)
 
 purity_lin = purity_hist.Clone("purity_lin")
 #------------------ purity by bin -----------------------
-for ibin in range(1, purity_hist.GetNbinsX()+1):
-    purity_lin.SetBinContent(ibin,purity_hist_signal.GetBinContent(ibin)/purity_hist_bkg.GetBinContent(ibin) )
+#for ibin in range(1, purity_hist.GetNbinsX()+1):
+#    purity_lin.SetBinContent(ibin,purity_hist_signal.GetBinContent(ibin)/purity_hist_bkg.GetBinContent(ibin) )
 
 
 #-------------- get error band and ratio -------------------
@@ -114,8 +119,8 @@ for ibin in range(1, purity_hist.GetNbinsX()+1): # For data-only error-bars on r
     purity_hist_bkg.SetBinError(ibin, 0)
     data_purity_hist_for_ratio.SetBinError(ibin,0)
 
-data_mc_ratio = get_ratio(data_purity_hist, purity_hist_bkg, ymin=0., ymax = 3., ratio_ytitle="Data/MC")
-data_mc_ratio_sb = get_ratio(purity_hist, purity_hist_bkg, ymin=0., ymax = 3., ratio_ytitle="")
+data_mc_ratio = get_ratio(data_purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="Data/MC")
+data_mc_ratio_sb = get_ratio(purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="")
 
 error_band = get_ratio(data_purity_hist_for_ratio, purity_hist, ymin=0., ymax = 2., ratio_ytitle= "")
 
@@ -127,8 +132,8 @@ purity_hist.GetXaxis().SetLabelSize(0.0375)
 purity_hist.GetYaxis().SetLabelSize(0.0375)
 purity_hist.SetStats(False)
 purity_hist.SetLineWidth(2)
-purity_hist.SetMaximum(10*max(purity_hist.GetMaximum(), data_purity_hist.GetMaximum()) )
-purity_hist.SetMinimum(1)
+purity_hist.SetMaximum(2*max(purity_hist.GetMaximum(), data_purity_hist.GetMaximum()) )
+purity_hist.SetMinimum(20)
 
 purity_lin.SetLineWidth(2)
 purity_lin.SetLineColor(ROOT.kRed)
@@ -162,10 +167,10 @@ error_band_main.Draw("e2same")
 data_purity_hist.Draw("epsame")
 
 
-legend1 = ROOT.TLegend(0.7, 0.75, 0.95, 0.88, "", "brNDC")
+legend1 = ROOT.TLegend(0.6, 0.75, 0.95, 0.88, "", "brNDC")
 legend1.SetBorderSize(0)
 legend1.SetFillColor(0)
-legend1.SetTextSize(0.03)
+legend1.SetTextSize(0.0375)
 legend1.AddEntry(data_purity_hist, "Data", "p")
 legend1.AddEntry(purity_hist, "Expectation", "l")
 legend1.AddEntry(purity_hist_signal, "Signal (#mu = 0.67)", "f")
@@ -174,7 +179,7 @@ legend1.Draw()
 
 latex = ROOT.TLatex()
 latex.SetNDC()
-latex.SetTextSize(0.03)
+latex.SetTextSize(0.0375)
 latex.SetTextAlign(31)
 latex.SetTextAlign(11)
         
@@ -183,7 +188,7 @@ cut = "CMS Preliminary"
 std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}"                                                       
 #cat_txt = regs[reg]
 
-latex.DrawLatex(0.15, 0.97, std_txt)
+latex.DrawLatex(0.15, 0.96, std_txt)
 #latex.DrawLatex(0.71, 0.89, cat_txt)
 
 c.cd()
