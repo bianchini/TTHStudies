@@ -15,11 +15,23 @@ ADDJETPT40CUT = 0
 # min nr jets with pt>40 
 NR_PT40_JETS  = 4
 
-# blind
+
+##########################################
+##########################################
+
+## -1 ==> data_obs = bkg + sgn
+##  0 ==> data_obs = bkg
+## +1 ==> data_obs = Run2012
+
 RUNONDATA      = 1
 extraNameBlind = ""
 if RUNONDATA==0:
     extraNameBlind = "_MC"
+if RUNONDATA<0:
+    extraNameBlind = "_MC-sb"
+
+###########################################
+###########################################
 
 # baseline
 cat = cms.PSet(
@@ -29,7 +41,7 @@ cat = cms.PSet(
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/files/byLLR/Apr23_2014/"),
-    directory = cms.string("PreApproval"),
+    directory = cms.string("PreApproval/checks"),
     cut       = cms.string(""),
     category  = cms.string(""),
     varname   = cms.string(""),
@@ -39,8 +51,10 @@ cat = cms.PSet(
     factbb    = cms.double(0),
     lumiScale = cms.double(19.51/12.1), #19.04
     nBins     = cms.int32(6),
+    nBinsY    = cms.untracked.int32(1),
     splitFirstBin = cms.int32(0),
     binvec        = cms.vdouble(),
+    binvecY       = cms.vdouble(),
     samples       = cms.vstring( "TTV", "SingleT", "DiBoson", "TTJetsBB",
                                  "TTJetsBJ", "TTJetsCC", "TTJetsJJ", "TTH125", "EWK",
                                  "Run2012_SingleMu", "Run2012_SingleElectron"),
@@ -75,6 +89,16 @@ cut_cat3_L = "type==2 && flag_type2<=999 && btag_LR<0.995 && btag_LR>=0.970"
 cut_cat6_H = "type==6 && btag_LR>=0.925"
 cut_cat6_L = "type==6 && btag_LR<0.925 && btag_LR>=0.850"
 
+#################### category variable
+
+var_cat1_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+1.200000*(0.005916*p_125_all_b_ttbb+85.645287*p_125_all_b_ttjj))"
+var_cat1_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+1.200000*(0.006597*p_125_all_b_ttbb+3.056202*p_125_all_b_ttjj))"
+var_cat2_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.013812*p_125_all_b_ttbb+68.346115*p_125_all_b_ttjj))"
+var_cat2_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+1.800000*(0.003168*p_125_all_b_ttbb+1.346579*p_125_all_b_ttjj))"
+var_cat3_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.012640*p_125_all_b_ttbb+64.279221*p_125_all_b_ttjj))"
+var_cat3_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001554*p_125_all_b_ttbb+1.565640*p_125_all_b_ttjj))"
+var_cat6_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001497*p_125_all_b_ttbb+0.018406*p_125_all_b_ttjj))"
+var_cat6_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.014056*p_125_all_b_ttbb+6.107426*p_125_all_b_ttjj))"
 
 #################### ttbb vs ttjj discrimination
 
