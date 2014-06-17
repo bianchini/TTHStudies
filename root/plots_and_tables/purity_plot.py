@@ -84,16 +84,16 @@ for i in range(1,3): # SL/DL
                     print "Warning no bkg present in the bin"
                     pur_bin = 0 #log1
 
-                purity_hist.Fill(pur_bin, bkg.GetBinContent(ibin) + signal_pf.GetBinContent(ibin))
-  
                 purity_hist_bkg.Fill(pur_bin, bkg.GetBinContent(ibin) )
-                purity_hist_signal.Fill(pur_bin, signal_pf.GetBinContent(ibin))
+                purity_hist_signal.Fill(pur_bin, signal.GetBinContent(ibin)) # SM xs signal
+#                purity_hist_signal.Fill(pur_bin, signal_pf.GetBinContent(ibin)) # fitted normalization signal
                 data_purity_hist.Fill(pur_bin, data.GetBinContent(ibin))
 
+purity_hist = purity_hist_bkg.Clone("purity_hist")
+purity_hist.Add(purity_hist_signal)
 
 print "Purity values: "
 print sorted(pur_list)
-
 
 #----------- create signal + bkg stack --------------------
 st = ROOT.THStack("st","")
@@ -173,7 +173,7 @@ legend1.SetFillColor(0)
 legend1.SetTextSize(0.0375)
 legend1.AddEntry(data_purity_hist, "Data", "p")
 legend1.AddEntry(purity_hist, "Expectation", "l")
-legend1.AddEntry(purity_hist_signal, "Signal (#mu = 0.67)", "f")
+legend1.AddEntry(purity_hist_signal, "Signal (#mu = 1)", "f")
 legend1.AddEntry(purity_hist_bkg, "Background", "f")
 legend1.Draw()
 

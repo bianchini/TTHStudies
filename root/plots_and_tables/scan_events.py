@@ -34,9 +34,9 @@ dMu_trigger = "( (Vtype==0 || Vtype==4) && ( triggerFlags[22]>0 || triggerFlags[
 dEl_trigger = "(Vtype==1 && ( triggerFlags[6]>0 ) )"
 Zll_veto = "( (Vtype<=1 && abs(Mll-91.2)>8. && Mll>15.) || Vtype > 1)"
 
-scan = "Vtype:btag_LR: numJets: numBTagM: jet_csv[2]: jet_csv[5]: jet_csv[6]: jet_csv[7]: jet_csv[3]: jet_csv[4]: jet_eta[2]: jet_eta[5]: jet_eta[6]: jet_eta[7]: jet_eta[3]: jet_eta[4]: lepton_pt[0]: lepton_eta[0]: MET_pt: Mll: MTln"
+scan = "EVENT.run:EVENT.event:Vtype:btag_LR: numJets: numBTagM: jet_csv[2]: jet_csv[5]: jet_csv[6]: jet_csv[7]: jet_csv[3]: jet_csv[4]: jet_eta[2]: jet_eta[5]: jet_eta[6]: jet_eta[7]: jet_eta[3]: jet_eta[4]: lepton_pt[0]: lepton_eta[0]: MET_pt: Mll: MTln"
 
-precision=3
+precision=10
 
 for cut in cuts:
     print "---------------------------------------------"

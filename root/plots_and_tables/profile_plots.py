@@ -52,14 +52,14 @@ for reg in regs:
     infile = ROOT.TFile(infilename_full)
 
     histnames = { #histname: [xaxis, yaxis, [xmin, xmax], [ymin,ymax], doProfileY]
-        "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 40], [0,45], False],
-        "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-5, 20], [-10, 10], False],
+        "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 35], [0,40], False],
+        "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-5, 20], [-10, 15], False],
 
-        "MEM_logPbvslogPbb": ["log(#omega_{1})", "log(L_{bb}^{b-tag})", [0,40], [-5,15], False],
-        "MEM_logPbvslogPjj": ["log(#omega_{1})","log(L_{jj}^{b-tag})", [0,40], [-10, 5], False],
+        "MEM_logPbvslogPbb": ["log(#omega_{1})", "log(L_{bb}^{b-tag})", [0,35], [-5,20], False],
+        "MEM_logPbvslogPjj": ["log(#omega_{1})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
 
-        "MEM_logPsvslogPbb": ["log(#omega_{0})","log(L_{bb}^{b-tag})", [0,40], [-5, 15], False],
-        "MEM_logPsvslogPjj": ["log(#omega_{0})","log(L_{jj}^{b-tag})", [0,40], [-10, 5], False],
+        "MEM_logPsvslogPbb": ["log(#omega_{0})","log(L_{bb}^{b-tag})", [0,35], [-5, 20], False],
+        "MEM_logPsvslogPjj": ["log(#omega_{0})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
         }
 
     
