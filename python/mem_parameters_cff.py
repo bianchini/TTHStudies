@@ -7,8 +7,8 @@ from Bianchi.TTHStudies.samples_cff import *
 ###############################################
 
 # path to file
-#pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
-pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
+pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
+#pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
 ordering   = 'DiJetPt_'
 
 # luminosity
@@ -31,14 +31,14 @@ evLimits = cms.vint32(0, -1),
 ntuplizeAll = 0
 
 # print intermediate steps
-printout    = 1
+printout    = 0
 
 # verbosity [0,1,2,3]
 debug       = 0
 
 # systematics
-systematics = cms.vint32(0,3,4,5,6)
-#systematics = cms.vint32(0)
+#systematics = cms.vint32(0,3,4,5,6)
+systematics = cms.vint32(0)
 
 
 ############################################### Object definition
@@ -184,7 +184,7 @@ integralOption2_niter     = 1
 integralOption2_nevalfact = 1.0
 
 # switch off ME calculation
-speedup              = 0
+speedup              = 1
 
 # switch off OL calculation
 switchoffOL          = 0

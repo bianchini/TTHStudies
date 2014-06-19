@@ -1658,7 +1658,7 @@ void plot_category(string dir  = "Mar25_2014",
     if( (it->second) )  delete (it->second);
   }
 
-  if(1){
+  if(0){
     c1->SaveAs(  ("datacards/"+dir+"/Plot_"+cat+"_"+fname+"_"+tag+".pdf").c_str() );
     f->Close();
   }
@@ -1935,6 +1935,7 @@ void plot_comp(TString file_1 = "",
 
   if(1){
     c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+".pdf");
+    c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+".png");
     delete c1;
   }
 
@@ -1947,6 +1948,40 @@ void plot_compAll(){
 
   TString dir = "May25_2014_195fb";
 
+
+  plot_comp("datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "MEM_best_1_pt_b1", "MEM_best_1_pt_b1", 
+	    "ttbarPlusBBbar", "ttbar", 
+	    "nominal", "nominal", 
+	    "tt+bb","tt+jj", 
+	    "SL Cat 1", "cat1_pt_b1_TTJetsHFbb_vs_TTJetsLF");
+
+  plot_comp("datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "MEM_best_1_pt_b2", "MEM_best_1_pt_b2", 
+	    "ttbarPlusBBbar", "ttbar", 
+	    "nominal", "nominal", 
+	    "tt+bb","tt+jj", 
+	    "SL Cat 1", "cat1_pt_b2_TTJetsHFbb_vs_TTJetsLF");
+
+  plot_comp("datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "MEM_best_1_eta_b1", "MEM_best_1_eta_b1", 
+	    "ttbarPlusBBbar", "ttbar", 
+	    "nominal", "nominal", 
+	    "tt+bb","tt+jj", 
+	    "SL Cat 1", "cat1_eta_b1_TTJetsHFbb_vs_TTJetsLF");
+
+  plot_comp("datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "datacards/PreApproval/controlPlots/MEM_New_rec_std_cat1.root", 
+	    "MEM_best_1_eta_b2", "MEM_best_1_eta_b2", 
+	    "ttbarPlusBBbar", "ttbar", 
+	    "nominal", "nominal", 
+	    "tt+bb","tt+jj", 
+	    "SL Cat 1", "cat1_eta_b2_TTJetsHFbb_vs_TTJetsLF");
+
+  return;
 
   for(int cat = 1; cat<7 ; cat++){
     
@@ -1999,6 +2034,52 @@ void plot_compAll(){
 	      "t#bar{t}+jj", "t#bar{t}H",
 	      catNameL.c_str(),
 	      Form("cat%d_L_TTH125_vs_TTJetsLF", cat));
+
+
+
+
+    plot_comp("datacards/"+dir+"/MEM_New_rec_std_sb.root" , "datacards/"+dir+"/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTJetsHFb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b", "t#bar{t}H",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTH125_vs_TTJetsHFb", cat));
+
+ 
+    plot_comp("datacards/"+dir+"/MEM_New_rec_std_sb.root" , "datacards/"+dir+"/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTJetsHFb", "TTH125", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b", "t#bar{t}H",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTH125_vs_TTJetsHFb", cat));
+
+
+
+
+
+
+    plot_comp("datacards/"+dir+"/MEM_New_rec_std_sb.root" , "datacards/"+dir+"/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
+	      "TTJetsHFb", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b", "t#bar{t}+bb",
+	      catNameH.c_str(),
+	      Form("cat%d_H_TTJetsHFbb_vs_TTJetsHFb", cat));
+
+ 
+    plot_comp("datacards/"+dir+"/MEM_New_rec_std_sb.root" , "datacards/"+dir+"/MEM_New_rec_std_sb.root" , 
+	      Form("MEM_cat%d_L",cat),    Form("MEM_cat%d_L",cat), 
+	      "TTJetsHFb", "TTJetsHFbb", 
+	      "nominal", "nominal", 
+	      "t#bar{t}+b", "t#bar{t}+bb",
+	      catNameL.c_str(),
+	      Form("cat%d_L_TTJetsHFbb_vs_TTJetsHFb", cat));
+
+
+
+
 
     plot_comp("datacards/"+dir+"/MEM_New_rec_std_sb.root" , "datacards/"+dir+"/MEM_New_rec_std_sb.root" , 
 	      Form("MEM_cat%d_H",cat),    Form("MEM_cat%d_H",cat), 
@@ -2097,6 +2178,234 @@ void plot_compAll(){
 
 
 }
+
+
+
+
+void plot_comp_nice(TString file_1 = "",
+		    TString file_2 = "",
+		    TString cat_1  = "cat1",
+		    TString cat_2  = "cat1",
+		    TString proc_1 = "TTH125",
+		    TString proc_2 = "TTH125",
+		    TString syst_1 = "nominal",
+		    TString syst_2 = "nominal",
+		    TString header_1 = "",
+		    TString header_2 = "",
+		    TString header = "",
+		    TString fname  = "",
+		    TString titleX = "P_{s/b}",
+		    int mergeFirstBins = 1
+		    ){
+  
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.07);
+  gStyle->SetTitleFontSize(0.08);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.2,"y");
+
+  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  c1->SetGrid(0,0);
+  c1->SetFillStyle(4000);
+  c1->SetFillColor(10);
+  c1->SetTicky();
+  c1->SetObjectStat(0);
+
+  TLegend* leg = new TLegend(0.605,0.622,0.896,0.888,NULL,"brNDC");
+  leg->SetFillStyle(0);
+  leg->SetBorderSize(0);
+  leg->SetFillColor(10);
+  leg->SetTextSize(0.05); 
+
+
+  TH1F* h_1 = 0;
+  TFile* f_1 = TFile::Open(file_1);
+  if(f_1==0 || f_1->IsZombie() ){
+    cout << "Could not open file1=" << string(file_1.Data()) << endl;
+    return;
+  }
+  TString syst_1_nickname = string(syst_1.Data()).find("nominal")!=string::npos ? "" : "_"+syst_1;
+  cout << string((cat_1+"/"+proc_1+syst_1_nickname).Data()) << endl;
+  h_1 = (TH1F*)f_1->Get(cat_1+"/"+proc_1+syst_1_nickname);
+
+  if(h_1==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
+  h_1->SetLineWidth(1);
+  h_1->SetLineStyle(kSolid);
+  h_1->SetLineColor(kBlack);
+
+
+  TH1F* h_2 = 0;
+  TFile* f_2 = TFile::Open(file_2);
+  if(f_2==0 || f_2->IsZombie() ){
+    cout << "Could not open file1=" << string(file_2.Data()) << endl;
+    return;
+  }
+  TString syst_2_nickname = string(syst_2.Data()).find("nominal")!=string::npos ? "" : "_"+syst_2;
+  cout << string((cat_2+"/"+proc_2+syst_2_nickname).Data()) << endl;
+  h_2 = (TH1F*)f_2->Get(cat_2+"/"+proc_2+syst_2_nickname);
+  if(h_2==0){
+    cout << "Missing histo" << endl;
+    return;
+  }
+  h_2->SetLineWidth(1);
+  h_2->SetLineColor(kRed);
+
+  //h_2->SetFillStyle(3004);
+  //h_2->SetFillColor(kRed);
+
+  if( mergeFirstBins ){
+
+    int nBins = h_1->GetNbinsX();
+
+    TH1F* h_1_new = new TH1F( "h_1_new", "", nBins-1, 0, 1);
+    for(int b = 1; b <= nBins; b++){
+      if(b<=2){
+	float err1 = h_1->GetBinError(1);
+	float err2 = h_1->GetBinError(2);
+	float bin1 = h_1->GetBinContent(1);
+	float bin2 = h_1->GetBinContent(2);
+	h_1_new->SetBinContent(b, bin1+bin2 );
+	h_1_new->SetBinError  (b, sqrt(err1*err1 + err2*err2) );
+      }
+      else{
+	float err1 = h_1->GetBinError(b); 
+	float bin1 = h_1->GetBinContent(b);
+	h_1_new->SetBinContent(b-1, bin1 );
+	h_1_new->SetBinError  (b-1, err1 );
+      }
+    }
+
+    TH1F* h_2_new = new TH1F( "h_2_new", "", nBins-1, 0, 1);
+    for(int b = 1; b <= nBins; b++){
+      if(b<=2){
+	float err1 = h_2->GetBinError(1);
+	float err2 = h_2->GetBinError(2);
+	float bin1 = h_2->GetBinContent(1);
+	float bin2 = h_2->GetBinContent(2);
+	h_2_new->SetBinContent(b, bin1+bin2 );
+	h_2_new->SetBinError  (b, sqrt(err1*err1 + err2*err2) );
+      }
+      else{
+	float err1 = h_2->GetBinError(b); 
+	float bin1 = h_2->GetBinContent(b);
+	h_2_new->SetBinContent(b-1, bin1 );
+	h_2_new->SetBinError  (b-1, err1 );
+      }
+    }
+
+    h_1 = h_1_new;
+    h_2 = h_2_new;
+
+    h_1->SetLineWidth(3);
+    h_1->SetLineStyle(kDashed);
+    h_1->SetLineColor(kBlue);    
+    //h_1->SetFillStyle(3005);
+    //h_1->SetFillColor(kBlue);
+    h_2->SetLineWidth(3);
+    h_2->SetLineColor(kRed);    
+    //h_2->SetFillStyle(3004);
+    //h_2->SetFillColor(kRed);
+  }
+
+  leg->AddEntry( h_1, header_1 , "L");
+  leg->AddEntry( h_2, header_2 , "L");
+
+
+  h_1->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
+  h_1->SetTitleSize(0.05,"X");
+  h_1->SetTitleSize(0.05,"Y");
+  h_1->SetXTitle( titleX );
+  h_1->GetXaxis()->SetTitleOffset(0.85);
+  h_1->GetYaxis()->SetTitleOffset(0.88);
+  h_1->SetYTitle("normalized to unity");
+
+  h_1->Scale( 1./h_1->Integral() );
+  h_2->Scale( 1./h_2->Integral() );
+
+  //h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.4 );h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.4 );
+  h_1->SetMaximum( 0.7 );
+  h_1->SetMinimum(0);
+  h_1->Draw("HIST");
+  h_2->Draw("HISTSAME");
+  
+  TH1D* h_1_clone = (TH1D*)h_1->Clone("h_1_clone");
+  h_1_clone  ->SetFillColor(kBlue);
+  h_1_clone  ->SetFillStyle( 3001 );
+  h_1_clone  ->SetLineWidth(1);
+  h_1_clone  ->Draw("E2SAME");
+  
+  TH1D* h_2_clone = (TH1D*)h_2->Clone("h_2_clone");
+  h_2_clone  ->SetFillColor(kRed);
+  h_2_clone  ->SetFillStyle( 3001 );
+  h_2_clone  ->SetLineWidth(1);
+  h_2_clone  ->Draw("E2SAME");
+
+  TH1D* h_3_clone = (TH1D*)h_1->Clone("h_3_clone");
+  h_3_clone->Reset();
+  h_3_clone  ->SetLineWidth(1);
+  h_3_clone  ->SetLineStyle(kSolid);
+  h_3_clone  ->SetLineColor(kBlack);
+  h_3_clone  ->SetFillColor(kBlack);
+  h_3_clone  ->SetFillStyle( 3001 );
+  leg->AddEntry( h_3_clone, "MC stat." , "F");
+
+  cout << "*********" << endl;
+  cout << "h_1 := " << h_1->Integral() << ", mu = " << h_1->GetMean() << endl;
+  cout << "h_2 := " << h_2->Integral() << ", mu = " << h_2->GetMean() << endl;
+  cout << "*********" << endl;
+
+  leg->SetHeader( header );
+  leg->Draw();
+
+  if(1){
+    c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+"_nice.pdf");
+    c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+"_nice.png");
+    delete c1;
+  }
+
+}
+
+void plot_comp_niceAll(){
+
+  plot_comp_nice("datacards/PreApproval/MEM_New_rec_std_sb.root", "datacards/PreApproval/MEM_New_rec_std_sb.root", 
+		 "MEM_cat1_H", "MEM_cat1_H", 
+		 "ttbarPlusBBbar", "ttH_hbb", 
+		 "nominal", "nominal", 
+		 "t#bar{t}+bb","t#bar{t}H", 
+		 "SL Cat-1 (H)", "cat1_H_TTH125_vs_TTJetsHFbb", "P_{s/b}", 1);
+
+  plot_comp_nice("datacards/PreApproval/MEM_New_rec_std_sb.root", "datacards/PreApproval/MEM_New_rec_std_sb.root", 
+		 "MEM_cat2_H", "MEM_cat2_H", 
+		 "ttbarPlusBBbar", "ttH_hbb", 
+		 "nominal", "nominal", 
+		 "t#bar{t}+bb","t#bar{t}H", 
+		 "SL Cat-2 (H)", "cat2_H_TTH125_vs_TTJetsHFbb", "P_{s/b}", 1);
+
+  plot_comp_nice("datacards/PreApproval/MEM_New_rec_std_sb.root", "datacards/PreApproval/MEM_New_rec_std_sb.root", 
+		 "MEM_cat3_H", "MEM_cat3_H", 
+		 "ttbarPlusBBbar", "ttH_hbb", 
+		 "nominal", "nominal", 
+		 "t#bar{t}+bb","t#bar{t}H", 
+		 "SL Cat-3 (H)", "cat3_H_TTH125_vs_TTJetsHFbb", "P_{s/b}", 1);
+
+  plot_comp_nice("datacards/PreApproval/MEM_New_rec_std_sb.root", "datacards/PreApproval/MEM_New_rec_std_sb.root", 
+		 "MEM_cat6_H", "MEM_cat6_H", 
+		 "ttbarPlusBBbar", "ttH_hbb", 
+		 "nominal", "nominal", 
+		 "t#bar{t}+bb","t#bar{t}H", 
+		 "DL (H)", "cat6_H_TTH125_vs_TTJetsHFbb", "P_{s/b}", 1);
+}
+
 
 
 
@@ -3158,18 +3467,18 @@ void plot2DwoBBB( TString fname="mlfitMEM_COMB_New_rec_std_sb",
 
 void plot2DwoBBBAll(){
   plot2DwoBBB( "mlfitMEM_COMB_New_rec_std_sb", "covariance_fit_s", "Combined fit (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_SL_New_rec_std_sb",   "covariance_fit_s", "SL fit (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_DL_New_rec_std_sb",   "covariance_fit_s", "DL fit (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat1_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.1 (H) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat1_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.1 (L) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat2_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.2 (H) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat2_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.2 (L) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat3_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.3 (H) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat3_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.3 (L) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat6_H_New_rec_std_sb", "covariance_fit_s", "DL (H) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat6_L_New_rec_std_sb", "covariance_fit_s", "DL (L) (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat1_New_rec_std_sb", "covariance_fit_s", "SL Cat. 1 (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat2_New_rec_std_sb", "covariance_fit_s", "SL Cat. 2 (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat3_New_rec_std_sb", "covariance_fit_s", "SL Cat. 3 (s+b)"); 
-  plot2DwoBBB( "mlfitMEM_cat6_New_rec_std_sb", "covariance_fit_s", "DL (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_SL_New_rec_std_sb",   "covariance_fit_s", "SL fit (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_DL_New_rec_std_sb",   "covariance_fit_s", "DL fit (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat1_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.1 (H) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat1_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.1 (L) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat2_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.2 (H) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat2_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.2 (L) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat3_H_New_rec_std_sb", "covariance_fit_s", "SL Cat.3 (H) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat3_L_New_rec_std_sb", "covariance_fit_s", "SL Cat.3 (L) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat6_H_New_rec_std_sb", "covariance_fit_s", "DL (H) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat6_L_New_rec_std_sb", "covariance_fit_s", "DL (L) (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat1_New_rec_std_sb", "covariance_fit_s", "SL Cat. 1 (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat2_New_rec_std_sb", "covariance_fit_s", "SL Cat. 2 (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat3_New_rec_std_sb", "covariance_fit_s", "SL Cat. 3 (s+b)"); 
+  //plot2DwoBBB( "mlfitMEM_cat6_New_rec_std_sb", "covariance_fit_s", "DL (s+b)"); 
 }

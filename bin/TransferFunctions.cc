@@ -84,8 +84,9 @@ int main(int argc, const char* argv[])
 
   TString reg =  argc>2 ? TString(argv[2]) : "_std"  ; // default is standard reco
   TString gen =  argc>3 ? TString(argv[3]) : "_part" ; // default is parton
+  TString tag =  argc>4 ? TString(argv[4]) : "" ;
 
-  TString extraname =  "TEST"+reg+gen;
+  TString extraname =  "TEST"+reg+gen+tag;
 
   TFile* fout = 0;
   fout = new TFile("./root/ControlPlots"+extraname+".root","RECREATE");
@@ -637,67 +638,79 @@ int main(int argc, const char* argv[])
 
 
 
+  vector<TString> taggers;
+  taggers.push_back("csv_rec");
+  taggers.push_back("csv_std_rec");
+  taggers.push_back("csv_mva_rec");
 
 
   RooRealVar flavor("flavor",  "flavor",        -6, 6);
   RooRealVar eta   ("eta_part","eta_part",      -3, 3);
 
-  RooRealVar csvRecoLight("csv_rec","csv", 0., 1.0);  //0.6, 1.0 10 bins
-  csvRecoLight.setBins(25);
-  RooDataSet datasetBtagLight_Bin0("datasetBtagLight_Bin0","dataset", RooArgSet(csvRecoLight,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)!=4 && abs(flavor)!=5 && TMath::Abs(eta_part)<1.0 && csv_rec>-1") ); //0.6
-  RooDataSet datasetBtagLight_Bin1("datasetBtagLight_Bin1","dataset", RooArgSet(csvRecoLight,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)!=4 && abs(flavor)!=5 && TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && csv_rec>-1") );
+  for( unsigned int i = 0 ; i < taggers.size() ; i++){
 
-  RooRealVar csvRecoCharm("csv_rec","csv", 0., 1.0);  //0.6, 1.0 10 bins
-  csvRecoCharm.setBins(25);
-  RooDataSet datasetBtagCharm_Bin0("datasetBtagCharm_Bin0","dataset", RooArgSet(csvRecoCharm,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)==4 && TMath::Abs(eta_part)<1.0 && csv_rec>-1") ); //0.6
-  RooDataSet datasetBtagCharm_Bin1("datasetBtagCharm_Bin1","dataset", RooArgSet(csvRecoCharm,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)==4 && TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && csv_rec>-1") );
+    cout << "Doing tagger #" << i << endl;
 
-  RooKeysPdf pdfCsvLight_Bin0("pdfCsvLight_Bin0","", csvRecoLight, datasetBtagLight_Bin0, RooKeysPdf::NoMirror, 1.); //1.5
-  RooKeysPdf pdfCsvLight_Bin1("pdfCsvLight_Bin1","", csvRecoLight, datasetBtagLight_Bin1, RooKeysPdf::NoMirror, 1.);
+    TString tagger = taggers[i];
+    TString min = i<2 ? "-1" : "-1" ; // this is to veto events with the spike at ~0.4 
 
-  w->import( pdfCsvLight_Bin0 );
-  w->import( pdfCsvLight_Bin1 );
-
-  RooKeysPdf pdfCsvCharm_Bin0("pdfCsvCharm_Bin0","", csvRecoCharm, datasetBtagCharm_Bin0, RooKeysPdf::NoMirror, 1.);
-  RooKeysPdf pdfCsvCharm_Bin1("pdfCsvCharm_Bin1","", csvRecoCharm, datasetBtagCharm_Bin1, RooKeysPdf::NoMirror, 1.);
-
-  w->import( pdfCsvCharm_Bin0 );
-  w->import( pdfCsvCharm_Bin1 );
-  
-
-  RooRealVar csvRecoHeavy("csv_rec","csv", 0., 1.0); //0.679, 1.0  30 bins
-  csvRecoHeavy.setBins(100);
-  RooDataSet datasetBtagHeavy_Bin0("datasetBtagHeavy_Bin0","dataset", RooArgSet(csvRecoHeavy,flavor,eta), Import( *treeJetsHeavy ), Cut("TMath::Abs(eta_part)<1.0 && csv_rec>-1") ); //0.679
-  RooDataSet datasetBtagHeavy_Bin1("datasetBtagHeavy_Bin1","dataset", RooArgSet(csvRecoHeavy,flavor,eta), Import( *treeJetsHeavy ), Cut("TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && csv_rec>-1") );
-  //RooKeysPdf pdfCsvHeavy_Bin0("pdfCsvHeavy_Bin0","", csvRecoHeavy, datasetBtagHeavy_Bin0);
-  //RooKeysPdf pdfCsvHeavy_Bin1("pdfCsvHeavy_Bin1","", csvRecoHeavy, datasetBtagHeavy_Bin1);
-
-  RooDataHist datahistBtagHeavy_Bin0("datahistBtagHeavy_Bin0","datahistBtagHeavy_Bin0", RooArgSet(csvRecoHeavy), datasetBtagHeavy_Bin0, 1.0);
-  RooDataHist datahistBtagHeavy_Bin1("datahistBtagHeavy_Bin1","datahistBtagHeavy_Bin1", RooArgSet(csvRecoHeavy), datasetBtagHeavy_Bin1, 1.0);
-
-  RooHistPdf  pdfCsvHeavy_Bin0  ("pdfCsvHeavy_Bin0", "pdfCsvHeavy_Bin0",  RooArgSet(csvRecoHeavy), datahistBtagHeavy_Bin0);
-  RooHistPdf  pdfCsvHeavy_Bin1  ("pdfCsvHeavy_Bin1", "pdfCsvHeavy_Bin1",  RooArgSet(csvRecoHeavy), datahistBtagHeavy_Bin1);
-
-
-  w->import( pdfCsvHeavy_Bin0 );
-  w->import( pdfCsvHeavy_Bin1 );
-
-  // Binning(30,0.679, 1.0 )
-
-  TH1F* csv_b_Bin0 = (TH1F*)pdfCsvHeavy_Bin0.createHistogram("csv_b_Bin0", csvRecoHeavy, Binning(100,0., 1.0 ));
-  csv_b_Bin0->Scale( 1./csv_b_Bin0->Integral()/csv_b_Bin0->GetBinWidth(1));
-  TH1F* csv_b_Bin1 = (TH1F*)pdfCsvHeavy_Bin1.createHistogram("csv_b_Bin1", csvRecoHeavy, Binning(100,0., 1.0 ));
-  csv_b_Bin1->Scale( 1./csv_b_Bin1->Integral()/csv_b_Bin1->GetBinWidth(1));
-
-  TH1F* csv_l_Bin0 = (TH1F*)pdfCsvLight_Bin0.createHistogram("csv_l_Bin0", csvRecoLight, Binning(100,0., 1.0 ));
-  csv_l_Bin0->Scale( 1./csv_l_Bin0->Integral()/csv_l_Bin0->GetBinWidth(1));
-  TH1F* csv_l_Bin1 = (TH1F*)pdfCsvLight_Bin1.createHistogram("csv_l_Bin1", csvRecoLight, Binning(100,0., 1.0 ));
-  csv_l_Bin1->Scale( 1./csv_l_Bin1->Integral()/csv_l_Bin1->GetBinWidth(1));
-
-  TH1F* csv_c_Bin0 = (TH1F*)pdfCsvCharm_Bin0.createHistogram("csv_c_Bin0", csvRecoCharm, Binning(100,0., 1.0 ));
-  csv_c_Bin0->Scale( 1./csv_c_Bin0->Integral()/csv_c_Bin0->GetBinWidth(1));
-  TH1F* csv_c_Bin1 = (TH1F*)pdfCsvCharm_Bin1.createHistogram("csv_c_Bin1", csvRecoCharm, Binning(100,0., 1.0 ));
-  csv_c_Bin1->Scale( 1./csv_c_Bin1->Integral()/csv_c_Bin1->GetBinWidth(1));
+    RooRealVar csvRecoLight(tagger,tagger, 0., 1.0);  //0.6, 1.0 10 bins
+    csvRecoLight.setBins(25);
+    RooDataSet datasetBtagLight_Bin0("datasetBtagLight_Bin0","dataset", RooArgSet(csvRecoLight,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)!=4 && abs(flavor)!=5 && TMath::Abs(eta_part)<1.0 && "+tagger+">"+min) ); //0.6
+    RooDataSet datasetBtagLight_Bin1("datasetBtagLight_Bin1","dataset", RooArgSet(csvRecoLight,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)!=4 && abs(flavor)!=5 && TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && "+tagger+">"+min) );
+    RooKeysPdf pdfCsvLight_Bin0("pdf"+tagger+"Light_Bin0","", csvRecoLight, datasetBtagLight_Bin0, RooKeysPdf::NoMirror, 1.); //1.5
+    RooKeysPdf pdfCsvLight_Bin1("pdf"+tagger+"Light_Bin1","", csvRecoLight, datasetBtagLight_Bin1, RooKeysPdf::NoMirror, 1.);
+    w->import( pdfCsvLight_Bin0 );
+    w->import( pdfCsvLight_Bin1 );
+    
+    RooRealVar csvRecoCharm(tagger,tagger, 0., 1.0);  //0.6, 1.0 10 bins
+    csvRecoCharm.setBins(25);
+    RooDataSet datasetBtagCharm_Bin0("datasetBtagCharm_Bin0","dataset", RooArgSet(csvRecoCharm,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)==4 && TMath::Abs(eta_part)<1.0 && "+tagger+">"+min) ); //0.6
+    RooDataSet datasetBtagCharm_Bin1("datasetBtagCharm_Bin1","dataset", RooArgSet(csvRecoCharm,flavor,eta), Import( *treeJetsLight ), Cut("abs(flavor)==4 && TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && "+tagger+">"+min) );
+    RooKeysPdf pdfCsvCharm_Bin0("pdf"+tagger+"Charm_Bin0","", csvRecoCharm, datasetBtagCharm_Bin0, RooKeysPdf::NoMirror, 1.);
+    RooKeysPdf pdfCsvCharm_Bin1("pdf"+tagger+"Charm_Bin1","", csvRecoCharm, datasetBtagCharm_Bin1, RooKeysPdf::NoMirror, 1.);
+    w->import( pdfCsvCharm_Bin0 );
+    w->import( pdfCsvCharm_Bin1 );
+    
+    RooRealVar csvRecoHeavy(tagger,tagger, 0., 1.0); //0.679, 1.0  30 bins
+    csvRecoHeavy.setBins(100);
+    RooDataSet datasetBtagHeavy_Bin0("datasetBtagHeavy_Bin0","dataset", RooArgSet(csvRecoHeavy,flavor,eta), Import( *treeJetsHeavy ), Cut("TMath::Abs(eta_part)<1.0 && "+tagger+">"+min) ); //0.679
+    RooDataSet datasetBtagHeavy_Bin1("datasetBtagHeavy_Bin1","dataset", RooArgSet(csvRecoHeavy,flavor,eta), Import( *treeJetsHeavy ), Cut("TMath::Abs(eta_part)>1.0 && TMath::Abs(eta_part)<2.5 && "+tagger+">"+min) );
+    RooDataHist datahistBtagHeavy_Bin0("datahistBtagHeavy_Bin0","datahistBtagHeavy_Bin0", RooArgSet(csvRecoHeavy), datasetBtagHeavy_Bin0, 1.0);
+    RooDataHist datahistBtagHeavy_Bin1("datahistBtagHeavy_Bin1","datahistBtagHeavy_Bin1", RooArgSet(csvRecoHeavy), datasetBtagHeavy_Bin1, 1.0);
+    RooHistPdf  pdfCsvHeavy_Bin0  ("pdf"+tagger+"Heavy_Bin0", "pdfCsvHeavy_Bin0",  RooArgSet(csvRecoHeavy), datahistBtagHeavy_Bin0);
+    RooHistPdf  pdfCsvHeavy_Bin1  ("pdf"+tagger+"Heavy_Bin1", "pdfCsvHeavy_Bin1",  RooArgSet(csvRecoHeavy), datahistBtagHeavy_Bin1);
+    
+    w->import( pdfCsvHeavy_Bin0 );
+    w->import( pdfCsvHeavy_Bin1 );
+    
+    // Binning(30,0.679, 1.0 )
+    
+    TH1F* csv_b_Bin0 = (TH1F*)pdfCsvHeavy_Bin0.createHistogram("csv_b_Bin0", csvRecoHeavy, Binning(100,0., 1.0 ));
+    csv_b_Bin0->Scale( 1./csv_b_Bin0->Integral()/csv_b_Bin0->GetBinWidth(1));
+    TH1F* csv_b_Bin1 = (TH1F*)pdfCsvHeavy_Bin1.createHistogram("csv_b_Bin1", csvRecoHeavy, Binning(100,0., 1.0 ));
+    csv_b_Bin1->Scale( 1./csv_b_Bin1->Integral()/csv_b_Bin1->GetBinWidth(1));
+    
+    TH1F* csv_l_Bin0 = (TH1F*)pdfCsvLight_Bin0.createHistogram("csv_l_Bin0", csvRecoLight, Binning(100,0., 1.0 ));
+    csv_l_Bin0->Scale( 1./csv_l_Bin0->Integral()/csv_l_Bin0->GetBinWidth(1));
+    TH1F* csv_l_Bin1 = (TH1F*)pdfCsvLight_Bin1.createHistogram("csv_l_Bin1", csvRecoLight, Binning(100,0., 1.0 ));
+    csv_l_Bin1->Scale( 1./csv_l_Bin1->Integral()/csv_l_Bin1->GetBinWidth(1));
+    
+    TH1F* csv_c_Bin0 = (TH1F*)pdfCsvCharm_Bin0.createHistogram("csv_c_Bin0", csvRecoCharm, Binning(100,0., 1.0 ));
+    csv_c_Bin0->Scale( 1./csv_c_Bin0->Integral()/csv_c_Bin0->GetBinWidth(1));
+    TH1F* csv_c_Bin1 = (TH1F*)pdfCsvCharm_Bin1.createHistogram("csv_c_Bin1", csvRecoCharm, Binning(100,0., 1.0 ));
+    csv_c_Bin1->Scale( 1./csv_c_Bin1->Integral()/csv_c_Bin1->GetBinWidth(1));
+    
+    fout->cd();
+    
+    csv_b_Bin0->Write("",TObject::kOverwrite);
+    csv_b_Bin1->Write("",TObject::kOverwrite);
+    csv_l_Bin0->Write("",TObject::kOverwrite);
+    csv_l_Bin1->Write("",TObject::kOverwrite);
+    csv_c_Bin0->Write("",TObject::kOverwrite);
+    csv_c_Bin1->Write("",TObject::kOverwrite);
+    
+  }
 
 
   ///////////////////////////////////////////////////////////////////////////////////////////
@@ -775,10 +788,9 @@ int main(int argc, const char* argv[])
 
 
 
-
-
   w->writeToFile((outFileName+string(extraname.Data())+".root").c_str(),kTRUE);
 
+  /*
   TCanvas *c1CsvLight_Bin0 = new TCanvas("c1CsvLight_Bin0","canvas",10,30,650,600);
   RooPlot* plotCsvLight_Bin0 = csvRecoLight.frame(Bins(10),Title("cvs light, Bin0"));
   datasetBtagLight_Bin0.plotOn(plotCsvLight_Bin0);
@@ -809,6 +821,7 @@ int main(int argc, const char* argv[])
   RooPlot* plotCsvHeavy_Bin1 = csvRecoHeavy.frame(Bins(30),Title("cvs light, Bin1"));
   datasetBtagHeavy_Bin1.plotOn(plotCsvHeavy_Bin1);
   pdfCsvHeavy_Bin1.plotOn(plotCsvHeavy_Bin1);
+  */
 
   TCanvas *c1BetaWHad = new TCanvas("c1BetaWHad","canvas",10,30,650,600);
   RooPlot* plotBetaWHad = BetaWHad.frame(Bins(20),Title("BetaWHad"));
@@ -832,6 +845,7 @@ int main(int argc, const char* argv[])
   
   fout->cd();
 
+  /*
   c1CsvLight_Bin0->cd();
   plotCsvLight_Bin0->Draw();
   c1CsvLight_Bin0->Write("",TObject::kOverwrite);
@@ -855,7 +869,8 @@ int main(int argc, const char* argv[])
   c1CsvHeavy_Bin1->cd();
   plotCsvHeavy_Bin1->Draw();
   c1CsvHeavy_Bin1->Write("",TObject::kOverwrite);
-  
+  */
+
   c1BetaWHad->cd();
   plotBetaWHad->Draw();
   c1BetaWHad->Write("",TObject::kOverwrite);
@@ -891,12 +906,7 @@ int main(int argc, const char* argv[])
   resolG1HeavyBin1->Write("",TObject::kOverwrite);
   resolG2HeavyBin1->Write("",TObject::kOverwrite);
 
-  csv_b_Bin0->Write("",TObject::kOverwrite);
-  csv_b_Bin1->Write("",TObject::kOverwrite);
-  csv_l_Bin0->Write("",TObject::kOverwrite);
-  csv_l_Bin1->Write("",TObject::kOverwrite);
-  csv_c_Bin0->Write("",TObject::kOverwrite);
-  csv_c_Bin1->Write("",TObject::kOverwrite);
+ 
 
   hWidthsPxResol->Write("",TObject::kOverwrite);
   

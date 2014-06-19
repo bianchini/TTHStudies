@@ -97,8 +97,8 @@ var_cat2_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.013812*p_125_all_b_
 var_cat2_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+1.800000*(0.003168*p_125_all_b_ttbb+1.346579*p_125_all_b_ttjj))"
 var_cat3_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.012640*p_125_all_b_ttbb+64.279221*p_125_all_b_ttjj))"
 var_cat3_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001554*p_125_all_b_ttbb+1.565640*p_125_all_b_ttjj))"
-var_cat6_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001497*p_125_all_b_ttbb+0.018406*p_125_all_b_ttjj))"
-var_cat6_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.014056*p_125_all_b_ttbb+6.107426*p_125_all_b_ttjj))"
+var_cat6_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.014056*p_125_all_b_ttbb+6.107426*p_125_all_b_ttjj))"
+var_cat6_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001497*p_125_all_b_ttbb+0.018406*p_125_all_b_ttjj))"
 
 #################### ttbb vs ttjj discrimination
 

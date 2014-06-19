@@ -465,9 +465,9 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
   string cat_to_string = string(category.Data());
   
   // what kind of analysis
-  bool isStandardObservable = cat_to_string.find("_best")==string::npos &&
+  bool isStandardObservable = cat_to_string.find("best_")==string::npos &&
     !( cat_to_string.find(":")!=string::npos && cat_to_string.find("::")==string::npos);
-  bool isBestObservable = cat_to_string.find("_best")!=string::npos;
+  bool isBestObservable = cat_to_string.find("best_")!=string::npos;
   bool is2DObservable   = cat_to_string.find(":")!=string::npos && cat_to_string.find("::")==string::npos;
   
   TTreeFormula* treeobservable1 = 0;
@@ -1189,8 +1189,10 @@ int main(int argc, const char* argv[])
   float factbb            =  ( in.getParameter<double>  ("factbb" ) );
   float lumiScale         =  ( in.getParameter<double>  ("lumiScale" ) );
   int nBins               =  ( in.getParameter<int>     ("nBins" ) );
+  int nBinsY              =  ( in.getUntrackedParameter<int> ("nBinsY", 1 ) );
   int splitFirstBin       =  ( in.getParameter<int>     ("splitFirstBin" ) );
   vector<double> binvec   =  ( in.getParameter<vector<double> >  ("binvec" ) );
+  vector<double> binvecY  =  ( in.getParameter<vector<double> >  ("binvecY" ) );
   vector<string> samples  =  ( in.getParameter<vector<string> >  ("samples" ) );
   int nparts              =  ( in.getParameter<int>    ("nparts" ) );
   int part                =  ( in.getParameter<int>    ("part" ) );
@@ -1470,9 +1472,15 @@ int main(int argc, const char* argv[])
   
 
   // fix the binning
-  TArrayF bins (nBins+1);
-  TArrayF bins2(nBins+2);
-  if(VERBOSE) cout << "Making histograms with " << nBins << " bins:" << endl;
+  TArrayF bins  (nBins+1);
+  TArrayF binsY (nBinsY+1);
+  TArrayF bins2 (nBins+2);
+  if(VERBOSE){
+    if(!do2Dplots) 
+      cout << "Making histograms with " << nBins << " bins:" << endl;
+    else 
+      cout << "Making histograms with " << nBins << " x " << nBinsY << " bins:" << endl;
+  }
 
   // if do not split, then...
   if( normalbinning ){
@@ -1484,8 +1492,16 @@ int main(int argc, const char* argv[])
     }
     // else, read from binvec what are the axis bins
     else if(binvec.size()==(nBins+1)){
-      for(int b = 0; b < nBins+1; b++)
-	bins[b] = (binvec)[b];
+      for(int b = 0; b < nBins+1; b++) bins[b] = (binvec)[b];
+      if( do2Dplots ){
+	if( binvecY.size()==(nBinsY+1) ) 
+	  for(int b = 0; b < nBinsY+1; b++) binsY[b] = (binvecY)[b];
+	else{
+	  cout << "WATCH OUT!! Mismatch nBinsY/binvecY" << endl;
+	  return 1;
+	}
+      }
+
     }
     // sanity check
     else{
@@ -1512,7 +1528,7 @@ int main(int argc, const char* argv[])
 		 normalbinning ? bins.GetArray() : bins2.GetArray());
   else
     h = new TH2F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
-		 nBins, bins.GetArray(),nBins, bins.GetArray() );
+		 nBins, bins.GetArray(),nBinsY, binsY.GetArray() );
 
   // the observable when doing the ME analysis for cat2 (workaround)
   TString var("");
@@ -2091,24 +2107,31 @@ int main(int argc, const char* argv[])
     // add the histogram to the map
     aMap[all_datacard_samples[s]] = h_tmp;
 
-    if(runOnData==0 && 
-       string(all_datacard_samples[s].Data()).find("data_obs")==string::npos && 
-       string(all_datacard_samples[s].Data()).find("TTH")==string::npos){
+    if(runOnData<=0 && 
+       string(all_datacard_samples[s].Data()).find("data_obs")==string::npos){
 
       // add the histogram to the asymov dataset
-      h_data->Add( h_tmp );
+      if( runOnData==0 && string(all_datacard_samples[s].Data()).find("TTH")==string::npos)
+	h_data->Add( h_tmp );
+      else if( runOnData<0 )
+	h_data->Add( h_tmp );
+      else{ /* ... */ }
 
       // add the histogram yield to the asymov dataset
       observation +=  h_tmp->Integral();
 
       cout << "   ( h_data++ : " << h_data->Integral()  << " )" << endl; 
     }
-    else if(runOnData){
+
+    else if(runOnData>0){
       if(string(all_datacard_samples[s].Data()).find("data_obs")!=string::npos){
 	h_data->Add( h_tmp );
 	observation +=  h_tmp->Integral();
       }
-    }    
+    }
+
+    else{ /* ... */ }
+
   }
 
   if(errFlag>0){
@@ -2123,7 +2146,7 @@ int main(int argc, const char* argv[])
 
   //cout << "************************" << endl;
 
-  if(runOnData==0){
+  if(runOnData<=0){
 
     // approximate to integer precision
     observation = int(observation);
