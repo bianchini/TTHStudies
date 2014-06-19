@@ -183,7 +183,16 @@ void getNormalizations(RooAbsPdf *pdf, const RooArgSet &obs, RooArgSet &out,
   typedef std::map<std::string,ShapeAndNorm>::const_iterator IT;
   typedef std::map<std::string,TH1*>::const_iterator IH;
   // create directory structure for shapes
-  TDirectory *shapeDir = fOut && true ? fOut->mkdir((std::string("shapes")+postfix).c_str()) : 0;
+  TDirectory *shapeDir = 0;
+  if(fOut && fOut->GetDirectory((std::string("shapes")+postfix).c_str())!=0 )
+    shapeDir = fOut->GetDirectory((std::string("shapes")+postfix).c_str());
+  else if(fOut && fOut->GetDirectory((std::string("shapes")+postfix).c_str())==0){
+    shapeDir = fOut->mkdir((std::string("shapes")+postfix).c_str());
+  }
+  else{
+    return; 
+  }
+
   std::map<std::string,TDirectory*> shapesByChannel;
   if (shapeDir) {
     for (IT it = snm.begin(), ed = snm.end(); it != ed; ++it) {
@@ -362,12 +371,31 @@ int main(int argc, const char* argv[])
   PythonProcessDesc builder(argv[1]);
   const edm::ParameterSet& in = builder.processDesc()->getProcessPSet()->getParameter<edm::ParameterSet>("fwliteInput");
   string path2Workspace     =  ( in.getParameter<string>  ("path2Workspace"   ) );
+  string path2Datacard      =  ( in.getParameter<string>  ("path2Datacard"   ) );
   string path2FitResults    =  ( in.getParameter<string>  ("path2FitResults"   ) );
   string outputName         =  ( in.getParameter<string>  ("outputName"  ) );
   string dirName            =  ( in.getParameter<string>  ("dirName" ) );
 
-  TFile* f_out    = new TFile(outputName.c_str(),"RECREATE");
-  TDirectory* dir =  f_out->mkdir( dirName.c_str() ); 
+  if( path2Workspace=="NONE" ){
+    cout << "Creating the workspace on the fly..." ;
+    gSystem->Exec( ("text2workspace.py "+path2Datacard+" -o mytest.root").c_str() );
+    path2Workspace = "mytest.root";
+    cout << "done! The workspace is called " << path2Workspace << endl;
+  }
+  else{
+    cout << "Using the workspace " << path2Workspace << endl;
+  }
+
+
+  TFile* f_out    = new TFile(outputName.c_str(),"UPDATE");
+  TDirectory* dir = f_out->GetDirectory( dirName.c_str() );
+  if(!dir){
+    cout << "The directory " << dirName << " has been created." << endl;
+    dir = f_out->mkdir( dirName.c_str() ); 
+  }
+  else{
+    cout << "The directory " << dirName << " already exists." << endl;
+  }
 
   TFile* f_fit = new TFile( path2FitResults.c_str() );
   if(!f_fit){
