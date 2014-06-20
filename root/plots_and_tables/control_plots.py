@@ -62,8 +62,8 @@ if args.mode == "DL":
 
 if args.mode == "SL":
     regs = {
-        "SL_5j": ["btag_LR"],
-        "SL_6j": ["btag_LR"],
+#        "SL_5j": ["btag_LR"],
+#        "SL_6j": ["btag_LR"],
 #        "SL_g6jg2t": ["btag_LR"],
 #        "SL_5jg2t": ["btag_LR"],
 

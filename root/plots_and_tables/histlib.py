@@ -84,18 +84,15 @@ def style_axes(hist, xTitle="", yTitle="", is_ratio=False, is_jet_count=False):
 
   return hist
 
-def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False):
+def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.5,1.5]):
   if is_data:
     hist.SetMarkerStyle(20);
     hist.SetMarkerSize(1.5);
     hist.SetMarkerColor(ROOT.kBlack);
     hist.SetLineColor(ROOT.kBlack);
     hist.SetLineWidth(2);
+
 #    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
-    print hist.GetBinErrorOption()
-    for ibin in range(hist.GetNbinsX()):
-      print "err up =" + str(hist.GetBinErrorLow(ibin))
-      print "err down = " + str(hist.GetBinErrorUp(ibin))
 
   elif is_signal:
     hist.SetLineColor(ROOT.kBlue+2)
@@ -105,6 +102,8 @@ def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=Fa
 
   elif is_error_band:
     hist.SetMarkerSize(0)
+    hist.SetMinimum(yRange[0])
+    hist.SetMaximum(yRange[1])
     if color != 0:
       hist.SetFillColor(color)
       hist.SetFillStyle(1001)
@@ -132,6 +131,55 @@ def style_legend(legend):
     legend.SetTextSize(0.04)
 
     return legend
+
+def get_poisson_err(hist):
+    poissonErr = ROOT.TGraphAsymmErrors(hist)
+
+    alpha = 1-0.6827
+    for i in range(0,poissonErr.GetN()):
+      N = poissonErr.GetY()[i]
+
+      if N != 0:
+        L = ROOT.Math.gamma_quantile(alpha/2,N,1.)
+      else:
+        L = 0
+
+      U = ROOT.Math.gamma_quantile_c(alpha/2,N+1,1.)
+
+      poissonErr.SetPointEYlow(i, N-L)
+      poissonErr.SetPointEYhigh(i, U-N)
+      print "low = " + str(N-L)
+      print "high = " + str(U-N)
+
+    return poissonErr
+
+def get_poisson_ratio(hist1_poisson,hist1,hist2):
+    gr = ROOT.TGraphAsymmErrors( hist1_poisson.GetN() )
+
+    for iBin in range(0,hist1.GetNbinsX()):
+      xPoint = hist1.GetBinCenter(iBin+1)
+      xWidth = 0.5*hist1.GetBinWidth(iBin+1)
+
+      yG = hist1_poisson.GetY()[iBin]
+      yG_low = hist1_poisson.GetEYlow()[iBin]
+      yG_high = hist1_poisson.GetEYhigh()[iBin]
+      y1 = hist1.GetBinContent(iBin+1)
+      y2 = hist2.GetBinContent(iBin+1)
+
+      if y2 > 0:
+        yG_ratio = yG/y2
+        yG_ratio_low = yG_low/y2
+        yG_ratio_high = yG_high/y2
+
+      if y1 > 0:
+        gr.SetPoint(iBin, xPoint, yG_ratio)
+        gr.SetPointEYlow(iBin, yG_ratio_low)
+        gr.SetPointEYhigh(iBin, yG_ratio_high)
+
+        gr.SetPointEXlow(iBin, xWidth)
+        gr.SetPointEXhigh(iBin, xWidth)
+
+    return gr
 
 def get_ratio(hist1, hist2, ymin=0., ymax=2, is_band = False, ratio_ytitle = ""):
     """
@@ -192,6 +240,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     for proc in mc:
         mc[proc] = style_hist(mc[proc], color = colors[proc])
     dataSum = style_hist(dataSum, is_data=True)
+    dataSumPoisson = get_poisson_err(dataSum)
 
     sum = ROOT.THStack("sum","")
 
@@ -270,7 +319,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     error_band_mc.Draw("e2same")
     signal.Draw("histsame")
-    dataSum.Draw("epsame")
+#    dataSum.Draw("epsame")
+    dataSumPoisson.Draw("epsame")
 
     #-------------------- legend ----------------------------
 
@@ -317,19 +367,27 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     else:
         hist_ratio = style_axes(hist_ratio, yTitle="Data/MC", is_ratio=True, is_jet_count=True)
 
+    hist_ratio_poisson = get_poisson_ratio(dataSumPoisson, dataSum, h_sumMC)
+    hist_ratio_poisson = style_hist(hist_ratio_poisson, is_data=True, is_error_band=True)
+
     #------Draw and style error band----
     ratio_up = get_ratio(h_sumMC+h_sumMCup, h_sumMC, is_band = True)
     ratio_down = get_ratio(h_sumMC-h_sumMCdown, h_sumMC, is_band = True)
     error_band = get_error_band(ratio_up, ratio_down, 1)
     error_band = style_hist(error_band, color=ROOT.kGreen, is_error_band=True)
+    error_band = style_axes(error_band, is_ratio=True)
 
     one = error_band.Clone("one")
     one = style_hist(one, line=True)
 
-    hist_ratio.Draw("pe1")
-    error_band.DrawCopy("e2same")
+
+#    hist_ratio.Draw("pe1")
+    error_band.Draw("e2same")
+    hist_ratio_poisson.Draw("pe1same")
+
+
     one.Draw("histsame")
-    hist_ratio.Draw("pe1same")
+#    hist_ratio.Draw("pe1same")
 
     #-----------------------------------
 
