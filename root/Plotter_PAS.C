@@ -2199,6 +2199,8 @@ void plot_comp_nice(TString file_1 = "",
 		    ){
   
   gStyle->SetOptStat(0);
+
+  gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
   gStyle->SetCanvasBorderMode(0);
   gStyle->SetCanvasColor(0);
@@ -2206,17 +2208,38 @@ void plot_comp_nice(TString file_1 = "",
   gStyle->SetPadColor(0);
   gStyle->SetTitleFillColor(0);
   gStyle->SetTitleBorderSize(0);
-  gStyle->SetTitleH(0.07);
-  gStyle->SetTitleFontSize(0.08);
+  gStyle->SetTitleH(0.04);
   gStyle->SetTitleStyle(0);
-  gStyle->SetTitleOffset(1.2,"y");
+  gStyle->SetTitleOffset(1.3,"y");
 
-  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
-  c1->SetGrid(0,0);
-  c1->SetFillStyle(4000);
-  c1->SetFillColor(10);
-  c1->SetTicky();
-  c1->SetObjectStat(0);
+  TCanvas *c1 = new TCanvas("c1","",5,30,640,580);
+  //c1->SetGrid(0,0);
+  //c1->SetFillStyle(4000);
+  //c1->SetFillColor(10);
+  //c1->SetTicky();
+  //c1->SetObjectStat(0);
+  TPad *p1 = new TPad("p1","",0,0,1,1);
+  p1->SetGrid(0,0);
+  p1->SetFillStyle(4000);
+  p1->SetFillColor(10);
+  p1->SetTicky();
+  p1->SetObjectStat(0);
+  p1->SetLogy(0);
+  p1->Draw();
+  p1->cd();
+  p1->SetTopMargin(0.05);
+
+  TString cmsinfo = "";
+  if(RUNONDATA==0) cmsinfo = "Simulation                                  #sqrt{s}=8 TeV, L=19.5 fb^{-1}";
+  else cmsinfo = "CMS Preliminary                                                  #sqrt{s}=8 TeV";
+
+  TPaveText *pt_title = new TPaveText(0.1, 0.952, 0.9, 1.0,"brNDC");
+  pt_title->SetFillStyle(1001);
+  pt_title->SetBorderSize(0);
+  pt_title->SetFillColor(0);
+  pt_title->SetTextFont(42); 
+  pt_title->SetTextSize(0.04); 
+  pt_title->AddText(cmsinfo);
 
   TLegend* leg = new TLegend(0.605,0.622,0.896,0.888,NULL,"brNDC");
   leg->SetFillStyle(0);
@@ -2321,7 +2344,7 @@ void plot_comp_nice(TString file_1 = "",
   leg->AddEntry( h_2, header_2 , "L");
 
 
-  h_1->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
+  //h_1->SetTitle("CMS Simulation #sqrt{s}=8 TeV");
   h_1->SetTitleSize(0.05,"X");
   h_1->SetTitleSize(0.05,"Y");
   h_1->SetXTitle( titleX );
@@ -2335,6 +2358,11 @@ void plot_comp_nice(TString file_1 = "",
   //h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.4 );h_1->SetMaximum( TMath::Max( float(h_1->GetMaximum()), float(h_2->GetMaximum()) )*1.4 );
   h_1->SetMaximum( 0.7 );
   h_1->SetMinimum(0);
+
+  h_1->GetXaxis()->SetTitleFont(62);
+  h_1->GetYaxis()->SetTitleFont(62);
+
+
   h_1->Draw("HIST");
   h_2->Draw("HISTSAME");
   
@@ -2366,6 +2394,9 @@ void plot_comp_nice(TString file_1 = "",
 
   leg->SetHeader( header );
   leg->Draw();
+
+  pt_title->Draw();
+
 
   if(1){
     c1->SaveAs("Plots/PAS/Plot_Comp_"+fname+"_nice.pdf");
@@ -2419,16 +2450,52 @@ void plot_limit(string version = "_New",
 		){
 
   gStyle->SetPaintTextFormat("g");
+  gStyle->SetOptStat(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetCanvasBorderMode(0);
+  gStyle->SetCanvasColor(0);
+  gStyle->SetPadBorderMode(0);
+  gStyle->SetPadColor(0);
+  gStyle->SetTitleFillColor(0);
+  gStyle->SetTitleBorderSize(0);
+  gStyle->SetTitleH(0.04);
+  gStyle->SetTitleStyle(0);
+  gStyle->SetTitleOffset(1.3,"y");
 
-  TCanvas *c1 = new TCanvas("c1","",5,30,650,600);
+  TCanvas *c1 = new TCanvas("c1","",5,30,640,580);
+  /*
   c1->SetGrid(0,0);
   c1->SetFillStyle(4000);
   c1->SetFillColor(10);
   c1->SetTicky();
   c1->SetObjectStat(0);
   c1->SetLogy(!doMLFit);
+  */
+
+  TPad *p1 = new TPad("p1","",0,0,1,1);
+  p1->SetGrid(0,0);
+  p1->SetFillStyle(4000);
+  p1->SetFillColor(10);
+  p1->SetTicky();
+  p1->SetObjectStat(0);
+  p1->SetLogy(!doMLFit);
+  p1->Draw();
+  p1->cd();
+  p1->SetTopMargin(0.05);
+
+  TString cmsinfo = "";
+  if(RUNONDATA==0) cmsinfo = "Simulation                                  #sqrt{s}=8 TeV, L=19.5 fb^{-1}";
+  else cmsinfo = "CMS Preliminary                           #sqrt{s}=8 TeV, L=19.5 fb^{-1}";
+
+  TPaveText *pt_title = new TPaveText(0.1, 0.952, 0.9, 1.0,"brNDC");
+  pt_title->SetFillStyle(1001);
+  pt_title->SetBorderSize(0);
+  pt_title->SetFillColor(0);
+  pt_title->SetTextFont(42); 
+  pt_title->SetTextSize(0.04); 
+  pt_title->AddText(cmsinfo);
   
-  TLegend* leg = new TLegend(0.121,0.154,0.32, 0.29, NULL,"brNDC");
+  TLegend* leg = new TLegend(0.12,0.17,0.32, 0.36, NULL,"brNDC");
   leg->SetBorderSize(0);
   leg->SetTextSize(0.04);
   leg->SetFillColor(0);
@@ -2582,13 +2649,14 @@ void plot_limit(string version = "_New",
   }
 
   TMultiGraph *mg = new TMultiGraph();
-  mg->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
+  //mg->SetTitle("CMS Preliminary #sqrt{s}=8 TeV, L=19.5 fb^{-1}");
 
-  TGraphAsymmErrors* observed = new TGraphAsymmErrors(15, X, obsY, expXs ,expXs,  expYs,   expYs);
-  TGraphAsymmErrors* expected = new TGraphAsymmErrors(15, X, expY, expXs ,expXs,  expYs,   expYs);
-  TGraphAsymmErrors* oneSigma = new TGraphAsymmErrors(15, X, expY, expXs, expXs,  expY1sL, expY1sH);
-  TGraphAsymmErrors* twoSigma = new TGraphAsymmErrors(15, X, expY, expXs, expXs,  expY2sL, expY2sH);
 
+  TGraphAsymmErrors* observed  = new TGraphAsymmErrors(15, X, obsY, expXs ,expXs,  expYs,   expYs);
+  TGraphAsymmErrors* expected  = new TGraphAsymmErrors(15, X, expY, expXs ,expXs,  expYs,   expYs);
+  TGraphAsymmErrors* oneSigma  = new TGraphAsymmErrors(15, X, expY, expXs, expXs,  expY1sL, expY1sH);
+  TGraphAsymmErrors* twoSigma  = new TGraphAsymmErrors(15, X, expY, expXs, expXs,  expY2sL, expY2sH);
+  TGraphAsymmErrors* signalInj = new TGraphAsymmErrors(15, X, obsSIY, expXs ,expXs,  expYs,   expYs);
 
   oneSigma->SetMarkerColor(kBlack);
   oneSigma->SetMarkerStyle(kOpenCircle);
@@ -2622,9 +2690,10 @@ void plot_limit(string version = "_New",
 
   mg->Draw("a2");  
   expected->Draw("pSAME");
+
   if( doExpOnly==0  && !doMLFit)
     observed->Draw("pSAME");
-  
+
 
   TH1F* hT = new TH1F("hT", "", nBins, 0, nBins);
   for(int k = 1; k <= hT->GetNbinsX(); k++){
@@ -2638,6 +2707,7 @@ void plot_limit(string version = "_New",
 
   TH1F* hTSI = new TH1F("hTSI", "", nBins, 0, nBins);
   if( doSignalInjected ){
+    /*
     for(int k = 1; k <= hTSI->GetNbinsX(); k++){
       string val(Form("%.1f", obsSIY[k-1] ));
       hTSI->SetBinContent(k,  atof(val.c_str())   );
@@ -2646,9 +2716,19 @@ void plot_limit(string version = "_New",
     hTSI->SetMarkerSize(1.0);
     hTSI->SetMarkerStyle(kOpenCircle);
     hTSI->SetLineWidth(2);
+    hTSI->SetLineStyle(kDashed);
     hTSI->SetLineColor(kRed);
     hTSI->SetMarkerColor(kRed);
-    hTSI->Draw("pSAME");
+    */
+
+    signalInj->SetMarkerSize(1.0);
+    signalInj->SetMarkerStyle(kOpenCircle);
+    signalInj->SetLineWidth(2);
+    signalInj->SetLineStyle(kDashed);
+    signalInj->SetLineColor(kRed);
+    signalInj->SetMarkerColor(kRed);
+    
+    signalInj->Draw("pSAME");
   }
 
 
@@ -2682,6 +2762,7 @@ void plot_limit(string version = "_New",
   if(compare) lineTTH->Draw("SAME");
 
   c1->cd();
+  p1->cd();
   gPad->Modified();
 
 
@@ -2696,30 +2777,36 @@ void plot_limit(string version = "_New",
   }
 
 
+  mg->GetXaxis()->SetTitleFont(62);
+  mg->GetYaxis()->SetTitleFont(62);
   mg->GetXaxis()->SetTitleSize(0.05);
   mg->GetYaxis()->SetTitleSize(0.05);
   mg->GetYaxis()->SetTitleOffset(0.80);
+  mg->GetXaxis()->SetLabelSize(0.06);
   mg->SetMinimum( minY );
   mg->SetMaximum( maxY );
   mg->GetXaxis()->SetTitle("");
   if(!doMLFit) 
     mg->GetYaxis()->SetTitle("95% CL upper limit on #mu = #sigma/#sigma_{SM}");
   else
-    mg->GetYaxis()->SetTitle("ML fit of #mu = #sigma/#sigma_{SM}");
+    mg->GetYaxis()->SetTitle("Best fit of #mu = #sigma/#sigma_{SM}");
 
 
 
   if( doExpOnly==0 && !doMLFit ){
-    leg->AddEntry( expected, "Expected (post-fit)", "P");
+    //leg->AddEntry( expected, "Median exp.", "PL");
+    leg->AddEntry( oneSigma, "Exp. 68%", "PFL");
+    leg->AddEntry( twoSigma, "Exp. 95%", "PFL");
     if( doSignalInjected ){
-      leg->AddEntry( hTSI , "Expected (signal injected)", "P");
+      leg->AddEntry( signalInj /*hTSI*/ , "Median exp. (signal injected)", "PL");
     }
-    leg->AddEntry( observed, "Observed", "P");
+    leg->AddEntry( observed, "Observed", "PL");
   }
   else if(!doMLFit)
     leg->AddEntry( expected, "Expected (pre-fit)", "P");
-  else 
-    leg->AddEntry( expected, "Observed", "P");
+  else{
+    //leg->AddEntry( expected, "Observed", "P");
+  }
 
 
   if(compare){
@@ -2727,8 +2814,11 @@ void plot_limit(string version = "_New",
     leg->AddEntry( lineML,  "HIG-13-020 (post-fit)", "L");
   }
 
+  if(!doMLFit)
+    leg->Draw();
 
-  leg->Draw();
+  pt_title->Draw();
+
 
   TPaveText *pt = new TPaveText(0.106811,0.155594,0.407121,0.286713,"brNDC");
   pt->SetFillStyle(0);
@@ -2761,7 +2851,7 @@ void plot_limit(string version = "_New",
   del2->Draw("SAME");
 
 
-  if(1){
+  if( 1 ){
     c1->SaveAs("datacards/PreApproval/Limits"+TString(version.c_str())+"_"+TString(label.c_str())+".pdf");
   }
 
@@ -2778,9 +2868,9 @@ void plot_limitAll(){
   //return;
 
   plot_limit("_New_rec_std_sb",    0  , 0  , 0.8  , 25  , 0, "limit_comb", 1, 1);
-  plot_limit("_New_rec_std_sb",    0  , 0  , 0.8  , 80  , 0, "limit_all",  0, 1);
+  //plot_limit("_New_rec_std_sb",    0  , 0  , 0.8  , 80  , 0, "limit_all",  0, 1);
 
-  //plot_limit("_New_rec_std_sb",    0  , 1  , -15  , 15  , 0, "mlfit_comb", 1);
+  plot_limit("_New_rec_std_sb",    0  , 1  , -10  , 10  , 0, "mlfit_comb", 1);
   //plot_limit("_New_rec_std_sb",    0  , 1  , -25  , 25  , 0, "mlfit_all",  0);
 
 }
