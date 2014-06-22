@@ -95,7 +95,7 @@ def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=Fa
 #    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
 
   elif is_signal:
-    hist.SetLineColor(ROOT.kBlue+2)
+    hist.SetLineColor(colors["TTH125"])
 #    signal.SetLineStyle(ROOT.kDashed)
     hist.SetLineWidth(4)
     hist.SetFillStyle(0)
@@ -131,6 +131,20 @@ def style_legend(legend):
     legend.SetTextSize(0.04)
 
     return legend
+
+def add_cms_info(lumi=19.5, com=8):
+  latex = ROOT.TLatex()
+  latex.SetNDC()
+  latex.SetTextSize(0.038)
+  latex.SetTextAlign(31)
+  latex.SetTextAlign(11)
+  
+  cut = "CMS Preliminary"
+
+  std_txt = cut + "                  #sqrt{s}=" + str(com) + " TeV, L=" + str(lumi) + " fb^{-1}" # (" + reg + ")"                      
+
+  textlabel = std_txt
+  latex.DrawLatex(0.16, 0.96, textlabel)
 
 def get_poisson_err(hist):
     poissonErr = ROOT.TGraphAsymmErrors(hist)
@@ -352,7 +366,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     p2 = {}
     p2[var] = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
     p2[var].SetTopMargin(0.0)
-    p2[var].SetGrid();
+#    p2[var].SetGrid();
     p2[var].SetFillStyle(0);
     p2[var].Draw()
     p2[var].cd()

@@ -6,7 +6,7 @@ import argparse
 import math
 
 from array import array
-from histlib import get_ratio
+from histlib import get_ratio, colors, style_hist, style_axes, get_poisson_err, get_poisson_ratio, add_cms_info
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
 infilepath = "../datacards/June03_PAS/control_final_fit/"
@@ -89,6 +89,9 @@ for i in range(1,3): # SL/DL
 #                purity_hist_signal.Fill(pur_bin, signal_pf.GetBinContent(ibin)) # fitted normalization signal
                 data_purity_hist.Fill(pur_bin, data.GetBinContent(ibin))
 
+data_purity_hist_poisson = get_poisson_err(data_purity_hist)
+data_purity_hist_poisson = style_hist(data_purity_hist_poisson, is_data=True)
+
 purity_hist = purity_hist_bkg.Clone("purity_hist")
 purity_hist.Add(purity_hist_signal)
 
@@ -100,8 +103,8 @@ st = ROOT.THStack("st","")
 
 purity_hist_bkg.SetFillColor(14)
 purity_hist_bkg.SetLineColor(14)
-purity_hist_signal.SetFillColor(ROOT.kRed)
-purity_hist_signal.SetLineColor(ROOT.kRed)
+purity_hist_signal.SetFillColor(colors["TTH125"])
+purity_hist_signal.SetLineColor(colors["TTH125"])
 st.Add(purity_hist_bkg)
 st.Add(purity_hist_signal)
 
@@ -121,32 +124,33 @@ for ibin in range(1, purity_hist.GetNbinsX()+1): # For data-only error-bars on r
 
 data_mc_ratio = get_ratio(data_purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="Data/MC")
 data_mc_ratio_sb = get_ratio(purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="")
+data_mc_ratio_poisson = get_poisson_ratio(data_purity_hist_poisson, data_purity_hist, purity_hist_bkg)
 
 error_band = get_ratio(data_purity_hist_for_ratio, purity_hist, ymin=0., ymax = 2., ratio_ytitle= "")
 
 #--------------------- style --------------------
-purity_hist.GetXaxis().SetTitle("log(S/B)")
-purity_hist.GetXaxis().SetTitleSize(0.0375)
+data_mc_ratio_poisson = style_hist(data_mc_ratio_poisson, is_data=True)
+
+purity_hist = style_axes(purity_hist, xTitle="log(S/B)", yTitle="Events") 
 purity_hist.GetXaxis().SetNdivisions(8)
-purity_hist.GetXaxis().SetLabelSize(0.0375)
-purity_hist.GetYaxis().SetLabelSize(0.0375)
+
 purity_hist.SetStats(False)
-purity_hist.SetLineWidth(2)
+purity_hist.SetLineWidth(1)
 purity_hist.SetMaximum(2*max(purity_hist.GetMaximum(), data_purity_hist.GetMaximum()) )
 purity_hist.SetMinimum(20)
 
 purity_lin.SetLineWidth(2)
-purity_lin.SetLineColor(ROOT.kRed)
+purity_lin.SetLineColor(colors["TTH125"])
 
+data_mc_ratio = style_hist(data_mc_ratio, is_data=True)
 data_mc_ratio.SetTitle("log(S/B)")
-data_mc_ratio.SetMarkerColor(1)
-data_mc_ratio.SetMarkerStyle(20)
-data_mc_ratio.SetMarkerSize(1)
 
-error_band_main.SetLineColor(ROOT.kBlack)
-error_band_main.SetFillColor(ROOT.kBlack)
-error_band_main.SetMarkerStyle(1)
-error_band_main.SetFillStyle(3004)
+error_band_main = style_hist(error_band_main, is_error_band=True)
+
+#error_band_main.SetLineColor(ROOT.kBlack)
+#error_band_main.SetFillColor(ROOT.kBlack)
+#error_band_main.SetMarkerStyle(1)
+#error_band_main.SetFillStyle(3004)
 
 #------------------- plot -----------------------
 c = ROOT.TCanvas("pur" , "pur", 800, 1000)
@@ -155,7 +159,7 @@ p1 = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
 p1.SetBottomMargin(0)
 
 p1.Draw()
-p1.SetTicks(1, 1);
+p1.SetTicks(0, 0);
 p1.SetFillStyle(0);
 p1.SetLogy()
 p1.cd()
@@ -164,54 +168,59 @@ purity_hist.Draw()
 st.Draw("histsame")
 purity_hist.Draw("histsame")
 error_band_main.Draw("e2same")
-data_purity_hist.Draw("epsame")
+data_purity_hist_poisson.Draw("epsame")
 
 
-legend1 = ROOT.TLegend(0.6, 0.75, 0.95, 0.88, "", "brNDC")
+legend1 = ROOT.TLegend(0.65, 0.75, 0.95, 0.9, "", "brNDC")
 legend1.SetBorderSize(0)
 legend1.SetFillColor(0)
 legend1.SetTextSize(0.0375)
-legend1.AddEntry(data_purity_hist, "Data", "p")
-legend1.AddEntry(purity_hist, "Expectation", "l")
+legend1.AddEntry(data_purity_hist, "Data", "lpe")
+#legend1.AddEntry(purity_hist, "Expectation", "l")
 legend1.AddEntry(purity_hist_signal, "Signal (#mu = 1)", "f")
 legend1.AddEntry(purity_hist_bkg, "Background", "f")
+legend1.AddEntry(error_band_main, "Bkg. Unc.", "f")
 legend1.Draw()
 
-latex = ROOT.TLatex()
-latex.SetNDC()
-latex.SetTextSize(0.0375)
-latex.SetTextAlign(31)
-latex.SetTextAlign(11)
+#latex = ROOT.TLatex()
+#latex.SetNDC()
+#latex.SetTextSize(0.0375)
+#latex.SetTextAlign(31)
+#latex.SetTextAlign(11)
         
-cut = "CMS Preliminary"
+#cut = "CMS Preliminary"
 
-std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}"                                                       
+#std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}"                                                       
 #cat_txt = regs[reg]
 
-latex.DrawLatex(0.15, 0.96, std_txt)
+#latex.DrawLatex(0.15, 0.96, std_txt)
 #latex.DrawLatex(0.71, 0.89, cat_txt)
+add_cms_info(lumi=19.5, com=8)
 
 c.cd()
 
 p2 = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
 p2.SetTopMargin(0.0)
-p2.SetGrid();
+#p2.SetGrid();
 p2.SetFillStyle(0);
 p2.Draw()
 p2.cd()
 
-data_mc_ratio.Draw("ep")
-data_mc_ratio_sb.SetLineWidth(2)
-data_mc_ratio_sb.SetLineColor(ROOT.kRed)
-data_mc_ratio_sb.Draw("histsame")
 
-error_band.SetLineColor(ROOT.kBlack)
-error_band.SetLineWidth(2)
-error_band.DrawCopy("histsame")
-error_band.SetFillColor(ROOT.kBlack)
-error_band.SetMarkerStyle(1)
-error_band.SetFillStyle(3004)
+
+#data_mc_ratio_sb.SetLineWidth(2)
+#data_mc_ratio_sb.SetLineColor(colors["TTH125"])
+data_mc_ratio_sb = style_axes(data_mc_ratio_sb, yTitle = "Data/MC", is_ratio=True)
+data_mc_ratio_sb = style_hist(data_mc_ratio_sb, is_signal=True)
+error_band = style_hist(error_band, is_error_band=True)
+one = error_band.Clone("one")
+one = style_hist(one, line=True)
+
+
+data_mc_ratio_sb.Draw("hist")
+one.Draw("histsame")
 error_band.Draw("e2same")
+data_mc_ratio_poisson.Draw("epsame")
 
 #purity_lin.Draw("histsame") # to add purity on the ratio band
 
