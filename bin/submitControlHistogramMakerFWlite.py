@@ -1,4 +1,4 @@
-0import FWCore.ParameterSet.Config as cms
+import FWCore.ParameterSet.Config as cms
 from submitDataCardMakerFWlite import submitDataCardMakerFWlite_all
 from numpy import arange
 
@@ -89,7 +89,7 @@ cuts_SL = {
 
 cuts_DL = {
     #--------------------------- standard preselection ------------------------
-    "DL_g2jg2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=2 && numBTagM >= 2",
+#    "DL_g2jg2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=2 && numBTagM >= 2",
     
 #    "DL_g4j": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4", #btagLR, numBtag
 #    "DL_g4j_z": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4", #btagLR, numBtag
@@ -128,9 +128,9 @@ variables = {
 
 #    "nPVs": [0, 40, 40],
 
-    "lepton_pt": [20, 250, 20], #30
-    "lepton_eta": [-2.5, 2.5, 10], #nbins/2 15
-    "lepton_rIso": [0, 0.12, 20],
+#    "lepton_pt": [20, 250, 20], #30
+#    "lepton_eta": [-2.5, 2.5, 10], #nbins/2 15
+#    "lepton_rIso": [0, 0.12, 20],
 #    "lepton_dxy": [0, 0.025, 30],
 
 #    "Vtype":[0,6,6],
@@ -141,14 +141,14 @@ variables = {
 #    "jetsAboveCut": [0, 10, 10],
 #    "numBTagM": [0, 7, 7], #Fixme -- need to change to allow int values
 
-#    "bjet_pt": [30, 350, 30],
-#    "bjet_eta": [-2.5, 2.5, 15],
-#    "leadjet_pt": [30, 350, 30],
-#    "leadjet_eta": [-2.5, 2.5, 15],
+ #   "bjet_pt": [30, 350, 30],
+ #   "bjet_eta": [-2.5, 2.5, 15],
+    "leadjet_pt": [30, 350, 30],
+ #   "leadjet_eta": [-2.5, 2.5, 15],
 
     }
 
-do_muon = True
+do_muon = False
 do_electron = False
 
 print "Read input files from: " + inpath
