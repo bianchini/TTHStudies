@@ -526,6 +526,9 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
   int   perm_to_jet_s[99];
   int   perm_to_jet_b[99];
 
+  // DL or SL
+  int Vtype;
+
   // the event-dependent weight
   float weight;
   float PUweight;
@@ -560,22 +563,28 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
     t->SetBranchAddress("mH_scan",      mH_scan);
     t->SetBranchAddress("mT_scan",      mT_scan);
   }
-  if( analysis==4 && string(category.Data()).find("best_")!=string::npos ){
-    t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
-    t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
-    t->SetBranchAddress("p_tt_bb",      p_tt_bb);
-    t->SetBranchAddress("p_tt_jj",      p_tt_jj);
-    t->SetBranchAddress("nPermut_s",    &nPermut_s);
-    t->SetBranchAddress("nPermut_b",    &nPermut_b);
-    t->SetBranchAddress("nMassPoints",  &nMassPoints);
-    t->SetBranchAddress("mH_scan",      mH_scan);
-    t->SetBranchAddress("mT_scan",      mT_scan);
+  if( analysis==4 ){
+    t->SetBranchAddress("Vtype",        &Vtype);
     t->SetBranchAddress("jet_pt",       jet_pt);
     t->SetBranchAddress("jet_eta",      jet_eta);
-    t->SetBranchAddress("jet_phi",      jet_phi);
-    t->SetBranchAddress("jet_m",        jet_m);
-    t->SetBranchAddress("perm_to_jet_s",perm_to_jet_s);
-    t->SetBranchAddress("perm_to_jet_b",perm_to_jet_b);
+    
+    if( string(category.Data()).find("best_")!=string::npos ){
+      t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
+      t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
+      t->SetBranchAddress("p_tt_bb",      p_tt_bb);
+      t->SetBranchAddress("p_tt_jj",      p_tt_jj);
+      t->SetBranchAddress("nPermut_s",    &nPermut_s);
+      t->SetBranchAddress("nPermut_b",    &nPermut_b);
+      t->SetBranchAddress("nMassPoints",  &nMassPoints);
+      t->SetBranchAddress("mH_scan",      mH_scan);
+      t->SetBranchAddress("mT_scan",      mT_scan);
+      t->SetBranchAddress("jet_pt",       jet_pt);
+      t->SetBranchAddress("jet_eta",      jet_eta);
+      t->SetBranchAddress("jet_phi",      jet_phi);
+      t->SetBranchAddress("jet_m",        jet_m);
+      t->SetBranchAddress("perm_to_jet_s",perm_to_jet_s);
+      t->SetBranchAddress("perm_to_jet_b",perm_to_jet_b);
+    }
   }
   t->SetBranchAddress("weight",       &weight);
   t->SetBranchAddress("PUweight",     &PUweight);
@@ -907,6 +916,32 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
 	h->Fill( eval, fill_weight);
 	continue;
       }
+      else if( string(category.Data()).find("bjet_")!=string::npos || string(category.Data()).find("leadjet_")!=string::npos){
+        float eval = 0.;
+	
+	float lead_jet_pt = 0;
+        float lead_jet_eta = -99;
+        for( unsigned int i = 2; i != 8; i++){
+          //      std::cout<<"i = " <<i<<", Vtype = "<<Vtype<<", jet_pt = " << jet_pt[i]<<std::endl;
+	  if( ( (Vtype==2 || Vtype==3) || ((Vtype<2 || Vtype==4) && (i==2 || i>4)) ) && ( jet_pt[i] > lead_jet_pt ) )
+	    {
+	      lead_jet_pt = jet_pt[i];
+	      lead_jet_eta = jet_eta[i];
+	    }
+          //std::cout<<"lead jet pt = " << lead_jet_pt << std::endl;
+        }
+
+
+        if ( category=="bjet_pt" )     eval = jet_pt[2];
+        if ( category=="bjet_eta" )    eval = jet_eta[2];
+        if ( category=="leadjet_pt")   eval = lead_jet_pt;
+        if ( category=="leadjet_eta")  eval = lead_jet_eta;
+
+        h->Fill( eval, fill_weight);
+	std::cout<<"eval = " <<eval<<std::endl;
+        continue;
+      }
+
       else if( is2DObservable ){
 	double eval1  = treeobservable1->EvalInstance();
 	double eval2  = treeobservable2->EvalInstance();
