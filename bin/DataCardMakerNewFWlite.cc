@@ -1069,14 +1069,19 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
       else{
 	
 	// sanity check
-	if( param->size()!= 5 ){
+	if( param->size()<5 ){
 	  cout << "Problem in fill..." << endl;
 	  return;
 	}
 	
 	// if w<cutval, do a 2D analyses LR_sb vs LR_bj
-	float cutval = h->GetBinLowEdge( 3 );
-	
+	float cutval  = h->GetBinLowEdge( 3 );
+	float cutval2 = 0.;
+	if( param->size()==5 ) 
+	  cutval2 = cutval;
+	else if( param->size()==6 )
+	  cutval2 = h->GetBinLowEdge( 5 );
+
 	// prepare the bj likelihood ratio ingredients
 	double wbjDen = p_125_all_b_ttbb + (*param)[3]*p_125_all_b_ttjj;
 	double wbjNum = p_125_all_b_ttbb ;
@@ -1085,15 +1090,27 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = 
 	double wbj = wbjDen>0 ? wbjNum/wbjDen : 0.;
 	
 	// is above the cut for 2D analysis, just do 1D analysis
-	if( w >= cutval )  h->Fill( w, fill_weight);
+	if( w >= cutval2 )  h->Fill( w, fill_weight);
 
 	// else fill out two bins...
 	else{
-	  // if LR_bj is below the cut value param[4], fill the first bin...
-	  if( wbj <= (*param)[4] )  h->Fill(   cutval/4. , fill_weight);
-	  // if LR_bj is above the cut value param[4], fill the second first...
-	  if( wbj >  (*param)[4] )  h->Fill( 3*cutval/4. , fill_weight);
-	}       		
+
+	  if( w <= cutval ){
+	    // if LR_bj is below the cut value param[4], fill the first bin...
+	    if( wbj <= (*param)[4] )  h->Fill(   cutval/4. , fill_weight);
+	    // if LR_bj is above the cut value param[4], fill the second first...
+	    if( wbj >  (*param)[4] )  h->Fill( 3*cutval/4. , fill_weight);
+	  }
+	  else if( w > cutval &&  w < cutval2 ){
+	    // if LR_bj is below the cut value param[4], fill the first bin...
+	    if( wbj <= (*param)[4] )  h->Fill(  cutval +   (cutval2-cutval)/4. , fill_weight);
+	    // if LR_bj is above the cut value param[4], fill the second first...
+	    if( wbj >  (*param)[4] )  h->Fill(  cutval + 3*(cutval2-cutval)/4. , fill_weight);
+	  }
+	  else{ /* ... */ }
+
+	}  
+     		
       }
       
     }
@@ -1418,9 +1435,11 @@ int main(int argc, const char* argv[])
       param.push_back( TMath::Abs(fact2)<=1 ? (1+fact2)*S_bb/B_jj : 0.0);
     }
 
-    if(abs(doMEM)==2 && splitFirstBin){
+    if(abs(doMEM)==2 && splitFirstBin>=1){
       param.push_back( B_bb/B_jj );
       param.push_back( factbb );
+      if(splitFirstBin>1)
+	param.push_back( factbb );
     }
 
   }
@@ -1457,6 +1476,7 @@ int main(int argc, const char* argv[])
 
   // if true, read binning from input, or just take unformly distributed bins [0,1]
   bool normalbinning = ( param.size()==3 || abs(doMEM)!=2 );
+  int n_split_bins   = param.size()>=5 ? param.size()-4 : 0;
 
   // clean output file (if any)
   //gSystem->Exec("rm ../root/datacards/"+directory+"/"+fname+"_"+name+version+extraname+".root");
@@ -1474,10 +1494,14 @@ int main(int argc, const char* argv[])
   // fix the binning
   TArrayF bins  (nBins+1);
   TArrayF binsY (nBinsY+1);
-  TArrayF bins2 (nBins+2);
+  TArrayF bins2 (nBins+1+n_split_bins);
   if(VERBOSE){
-    if(!do2Dplots) 
-      cout << "Making histograms with " << nBins << " bins:" << endl;
+    if(!do2Dplots){
+      if( normalbinning )
+	cout << "Making histograms with " << nBins << " bins:" << endl;
+      else
+	cout << "Making histograms with " << nBins+n_split_bins << " bins:" << endl;
+    }
     else 
       cout << "Making histograms with " << nBins << " x " << nBinsY << " bins:" << endl;
   }
@@ -1511,9 +1535,11 @@ int main(int argc, const char* argv[])
   }
   // else, split the first bin into two...
   else{
-    for(int b = 0; b < nBins+2; b++){
-      if(b<=2) bins2[b] = b*0.5/(nBins);
-      else     bins2[b] = (b-1)*1.0/(nBins);
+    for(int b = 0; b < nBins+1+n_split_bins; b++){
+      if(b<=(1+n_split_bins)) 
+	bins2[b] = b*0.5/(nBins);
+      else
+	bins2[b] = (b-n_split_bins)*1.0/(nBins);
       if(VERBOSE) cout <<  bins2[b] << ", ";
     }
     if(VERBOSE) cout << endl;
@@ -1524,7 +1550,7 @@ int main(int argc, const char* argv[])
 
   if(do2Dplots==0)
     h = new TH1F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
-		 normalbinning ? nBins : nBins+1 ,  
+		 normalbinning ? nBins : nBins+n_split_bins ,  
 		 normalbinning ? bins.GetArray() : bins2.GetArray());
   else
     h = new TH2F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
