@@ -197,7 +197,12 @@ void getNormalizations(RooAbsPdf *pdf, const RooArgSet &obs, RooArgSet &out,
   if (shapeDir) {
     for (IT it = snm.begin(), ed = snm.end(); it != ed; ++it) {
       TDirectory *& sub = shapesByChannel[it->second.channel];
-      if (sub == 0) sub = shapeDir->mkdir(it->second.channel.c_str());
+      if (sub == 0){
+	if( shapeDir->GetDirectory( it->second.channel.c_str() )==0 )
+	  sub = shapeDir->mkdir(it->second.channel.c_str());
+	else
+	  sub = shapeDir->GetDirectory( it->second.channel.c_str() );
+      }
     }
   }
   // now let's start with the central values
@@ -340,13 +345,13 @@ void getNormalizations(RooAbsPdf *pdf, const RooArgSet &obs, RooArgSet &out,
     RooRealVar *val = new RooRealVar(( false ? pair->first : pair->second.channel+"/"+pair->second.process).c_str(), "", vals[i]);
     val->setError(sumx2[i]);
     out.addOwned(*val); 
-    if (shapes[i]) shapesByChannel[pair->second.channel]->WriteTObject(shapes[i]);
+    if (shapes[i]) shapesByChannel[pair->second.channel]->WriteTObject(shapes[i],0, "Overwrite");
   }
   if (fOut) {
     fOut->WriteTObject(&out, (std::string("norm")+postfix).c_str());
-    for (IH h = totByCh.begin(), eh = totByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second); }
-    for (IH h = sigByCh.begin(), eh = sigByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second); }
-    for (IH h = bkgByCh.begin(), eh = bkgByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second); }
+    for (IH h = totByCh.begin(), eh = totByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second,0, "Overwrite"); }
+    for (IH h = sigByCh.begin(), eh = sigByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second,0, "Overwrite"); }
+    for (IH h = bkgByCh.begin(), eh = bkgByCh.end(); h != eh; ++h) { shapesByChannel[h->first]->WriteTObject(h->second,0, "Overwrite"); }
   }
 }
 
@@ -376,7 +381,12 @@ int main(int argc, const char* argv[])
   string outputName         =  ( in.getParameter<string>  ("outputName"  ) );
   string dirName            =  ( in.getParameter<string>  ("dirName" ) );
 
-  if( path2Workspace=="NONE" ){
+  if( argc==4 ){
+    path2Datacard = string( argv[2] );
+    dirName       = string( argv[3] );
+  }
+
+  if( path2Workspace=="NONE" || path2Workspace==""){
     cout << "Creating the workspace on the fly..." ;
     gSystem->Exec( ("text2workspace.py "+path2Datacard+" -o mytest.root").c_str() );
     path2Workspace = "mytest.root";
@@ -402,12 +412,12 @@ int main(int argc, const char* argv[])
     cout << "Cannot find file with fit" << endl;
     return 1;
   }
-  RooFitResult* fit = (RooFitResult*)f_fit->Get("fit_s");
+  RooFitResult* fit = (RooFitResult*)f_fit->Get("fit_b");
   if(!fit){
     cout << "Cannot find fit_s" << endl;
     return 1;
   }
-  fit->Print();
+  //fit->Print();
   CovarianceReSampler* sampler = new CovarianceReSampler( fit );
 
 
