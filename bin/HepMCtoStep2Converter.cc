@@ -502,6 +502,13 @@ int main(int argc, const char* argv[])
   Float_t vLepton_genPhi    [2];
   Float_t vLepton_charge    [2];
   Float_t vLepton_pfCorrIso [2];
+  Float_t vLepton_wp80      [2];
+  Float_t vLepton_wp95      [2];
+  Float_t vLepton_wp70      [2];
+  Float_t vLepton_idMVAtrig [2];  
+  Float_t vLepton_dxy       [2];
+  Float_t vLepton_dz        [2];
+
   Float_t aJet_pt           [NJETSMAX];
   Float_t aJet_eta          [NJETSMAX];
   Float_t aJet_phi          [NJETSMAX];
@@ -513,6 +520,7 @@ int main(int argc, const char* argv[])
   Float_t aJet_nLs          [NJETSMAX];
    
   Float_t aJet_puJetIdL     [NJETSMAX];
+  Float_t aJet_csv          [NJETSMAX];
   Float_t aJet_csv_nominal  [NJETSMAX];
   Float_t aJet_csv_upBC     [NJETSMAX];
   Float_t aJet_csv_downBC   [NJETSMAX];
@@ -557,6 +565,13 @@ int main(int argc, const char* argv[])
   tree->Branch("vLepton_genPhi",   vLepton_genPhi,    "vLepton_genPhi[nvlep]/F");
   tree->Branch("vLepton_pfCorrIso",vLepton_pfCorrIso, "vLepton_pfCorrIso[nvlep]/F");
   tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/I");
+  tree->Branch("vLepton_wp80",     vLepton_wp80,      "vLepton_wp80[nvlep]/F");
+  tree->Branch("vLepton_wp95",     vLepton_wp95,      "vLepton_wp95[nvlep]/F");
+  tree->Branch("vLepton_wp70",     vLepton_wp70,      "vLepton_wp70[nvlep]/F");
+  tree->Branch("vLepton_idMVAtrig",vLepton_idMVAtrig, "vLepton_idMVAtrig[nvlep]/F");
+  tree->Branch("vLepton_dxy",      vLepton_dxy,       "vLepton_dxy[nvlep]/F");
+  tree->Branch("vLepton_dz",       vLepton_dz,        "vLepton_dz[nvlep]/F");
+
 
   tree->Branch("aJet_pt",          aJet_pt,         "aJet_pt[naJets]/F");    
   tree->Branch("aJet_eta",         aJet_eta,        "aJet_eta[naJets]/F");    
@@ -570,6 +585,7 @@ int main(int argc, const char* argv[])
 
   tree->Branch("aJet_puJetIdL",    aJet_puJetIdL,   "aJet_puJetIdL[naJets]/F");
   tree->Branch("aJet_csv_nominal", aJet_csv_nominal,"aJet_csv_nominal[naJets]/F");
+  tree->Branch("aJet_csv",         aJet_csv,        "aJet_csv[naJets]/F");
   tree->Branch("aJet_csv_upBC",    aJet_csv_upBC,   "aJet_csv_upBC[naJets]/F");
   tree->Branch("aJet_csv_downBC",  aJet_csv_downBC, "aJet_csv_downBC[naJets]/F");
   tree->Branch("aJet_csv_upL",     aJet_csv_upL,    "aJet_csv_upL[naJets]/F");
@@ -1380,6 +1396,12 @@ int main(int argc, const char* argv[])
 	  vLepton_genPhi[l]    = leptons[l].Phi();
 	  vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];	 
 	  vLepton_pfCorrIso[l] = leptonsiso[l];
+	  vLepton_wp80[l] = 1.; 
+	  vLepton_wp70[l] = 1.; 
+	  vLepton_wp95[l] = 1.; 
+	  vLepton_idMVAtrig[l] = 1.; 
+	  vLepton_dxy[l] = 0.; 
+	  vLepton_dz[l]  = 0.; 
 	}
 	
 
@@ -1424,6 +1446,7 @@ int main(int argc, const char* argv[])
 	
 	  aJet_puJetIdL[j]   = 1.0;
 	  aJet_csv_nominal[j]= 1.0;
+	  aJet_csv[j]= 1.0;
 	  aJet_csv_upBC[j]   = 1.0;
 	  aJet_csv_downBC[j] = 1.0;
 	  aJet_csv_upL[j]    = 1.0;
