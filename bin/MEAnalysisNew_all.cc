@@ -615,13 +615,16 @@ int main(int argc, const char* argv[])
 
   // num of b-hadrons inside jets (backward compatibility)
   int nMatchSimBsOld_;
-  // num of b-hadrons inside jets
+
   // gen_eta < 5, gen_pt > 20
   int nMatchSimBs_v1_;
+
   // gen_eta <2.5, gen_pt > 20
   int nMatchSimBs_v2_;
+
   // gen_eta < 2.5, gen_pt > 20, reco_pt > 30
   int nMatchSimBs_;
+
   // num of c-hadrons inside jets
   int nMatchSimCs_v1_;
   int nMatchSimCs_v2_;

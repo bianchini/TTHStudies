@@ -5,15 +5,18 @@ import commands
 import re
 import os
 
+SHIFT=2
+extra='MH90_nC_'
 
-file = open('log.txt')
+file = open('log.txt', 'r')
 
 for line in file.readlines():
     if re.search("MEAnalysis", line)!=None:
         split = line.split("_")
-        sample = split[4]
-        job    = (split[5].split("."))[0]
+        #print split
+        sample = split[4+SHIFT]
+        job    = (split[5+SHIFT].split("."))[0]
         print sample,job
-        command = 'qsub -q main job_all_rec_std_'+sample+'_'+job+'.sh'
+        command = 'qsub -q main job_all_'+extra+'rec_std_'+sample+'_'+job+'.sh'
         print command
         os.system(command)

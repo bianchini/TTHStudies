@@ -1,10 +1,10 @@
 #! /bin/sh
 
-data=$(ls MEAnalysisNew_MHscan_SL_VType2*v4*)
+data=$(ls MEAnalysisNew_*csvVH*)
 
 for name in ${data}
 do
-    new="$(echo $name | sed 's/SL_VType2/SL/')"
+    new="$(echo $name | sed 's/csvVH_rec_std/ntuplizeAll_csvVH_rec_std/')"
     echo $name "-->" $new
     mv $name $new
 done

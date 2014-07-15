@@ -392,7 +392,7 @@ double GetCSVweight(const std::vector<JetObservable>& iJets,
     int flavor       = TMath::Abs( iJet->flavour );
 
     int iPt = -1; int iEta = -1;
-    if (jetPt >=24.99 && jetPt<40) iPt = 0;
+    if (jetPt >=19.99 && jetPt<40) iPt = 0; //used to be 24.99, used to be 30
     else if (jetPt >=40 && jetPt<60) iPt = 1;
     else if (jetPt >=60 && jetPt<100) iPt = 2;
     else if (jetPt >=100 && jetPt<160) iPt = 3;

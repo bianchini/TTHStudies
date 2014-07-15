@@ -322,48 +322,48 @@ def submitFullMEAnalysisNew_all( analysis ):
             ]
     else:
         toBeRun = [
-            ['TTH125',        499, ''], #499
-            ['TTJetsSemiLept',499,''], #499
-            ['TTJetsFullLept',499,''], #499
-            ['TTJetsFullHad',   5,''],
-            ['DYJets10to50',    1,''],
-            ['DYJets50',        1,''], # 1
-            ['WJets',           1,''],
-            ['TtW',             2,''],
-            ['Tt',              1,''],
-            ['Ts',              1,''],
-            ['TbartW',          2,''],
-            ['Tbart',           1,''],
-            ['Tbars',           1,''],
-            ['WW',              1,''], #  1
-            ['WZ',              1,''], #  1
-            ['ZZ',              5,''], #  1
-            ['TTZ',            40,''], # 40
-            ['TTW',            10,''], # 10
-            ['Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',                1, ''],
-            ['Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',           1, ''],
-            ['Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               12, ''],
-            ['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1', 4, ''],
-            ['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2', 4, ''],
-            ['Run2012_DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, ''],
-            ['Run2012_DoubleElectronRun2012CAug24RerecoEdmV42',                       4, ''],
-            ['Run2012_DoubleElectronRun2012D',                                        6, ''],        
-            ['Run2012_SingleElectronRun2012AAug06EdmV42',                             1, ''],
-            ['Run2012_SingleElectronRun2012AJul13EdmV42b',                            1, ''],
-            ['Run2012_SingleElectronRun2012BJul13EdmV42',                            18, ''],
-            ['Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, ''],
-            ['Run2012_SingleElectronRun2012CAug24RerecoEdmV42',                       4, ''],
-            ['Run2012_SingleElectronRun2012CPromptv2EdmV42',                          8, ''],
-            ['Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42',                     8, ''],
-            ['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, ''],  #40              
-            ['Run2012_SingleMuRun2012AAug06',                                         1, ''],
-            ['Run2012_SingleMuRun2012AJul13',                                         1, ''],
-            ['Run2012_SingleMuRun2012BJul13',                                        18, ''],
-            ['Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',                  1, ''],
-            ['Run2012_SingleMuRun2012CAug24Rereco',                                   4, ''],
-            ['Run2012_SingleMuRun2012CPromptv2',                                      8, ''],
-            ['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, ''],
-            ['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, ''], #40   
+            ['TTH125',         49, ''], #499
+            ['TTJetsSemiLept', 49, ''], #499
+            ['TTJetsFullLept', 49, ''], #499
+            ['TTJetsFullHad',    5, ''], #5
+            #['DYJets10to50',    1,''],
+            #['DYJets50',        1,''], # 1
+            #['WJets',           1,''],
+            #['TtW',             2,''],
+            #['Tt',              1,''],
+            #['Ts',              1,''],
+            #['TbartW',          2,''],
+            #['Tbart',           1,''],
+            #['Tbars',           1,''],
+            #['WW',              1,''], #  1
+            #['WZ',              1,''], #  1
+            #['ZZ',              5,''], #  1
+            #['TTZ',            40,''], # 40
+            #['TTW',            10,''], # 10
+            #['Run2012_DoubleElectron_Run2012A-13Jul2012-v1_ProcFIXED',                1, ''],
+            #['Run2012_DoubleElectron_Run2012A-recover-06Aug2012-v1_ProcV2',           1, ''],
+            #['Run2012_DoubleElectron_Run2012B-13Jul2012-v1_ProcFIXED',               12, ''],
+            #['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV1', 4, ''],
+            #['Run2012_DoubleElectron_Run2012C-PromptReco-v2_HBB_EDMNtupleV42_ProcV2', 4, ''],
+            #['Run2012_DoubleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, ''],
+            #['Run2012_DoubleElectronRun2012CAug24RerecoEdmV42',                       4, ''],
+            #['Run2012_DoubleElectronRun2012D',                                        6, ''],        
+            #['Run2012_SingleElectronRun2012AAug06EdmV42',                             1, ''],
+            #['Run2012_SingleElectronRun2012AJul13EdmV42b',                            1, ''],
+            #['Run2012_SingleElectronRun2012BJul13EdmV42',                            18, ''],
+            #['Run2012_SingleElectronRun2012C-EcalRecover_11Dec2012-v1_v2',            1, ''],
+            #['Run2012_SingleElectronRun2012CAug24RerecoEdmV42',                       4, ''],
+            #['Run2012_SingleElectronRun2012CPromptv2EdmV42',                          8, ''],
+            #['Run2012_SingleElectronRun2012CPromptV2TopUpEdmV42',                     8, ''],
+            #['Run2012_SingleElectronRun2012D-PromptReco-v1_v3',                      40, ''],  #40              
+            #['Run2012_SingleMuRun2012AAug06',                                         1, ''],
+            #['Run2012_SingleMuRun2012AJul13',                                         1, ''],
+            #['Run2012_SingleMuRun2012BJul13',                                        18, ''],
+            #['Run2012_SingleMuRun2012C-EcalRecover_11Dec2012-v1_v2',                  1, ''],
+            #['Run2012_SingleMuRun2012CAug24Rereco',                                   4, ''],
+            #['Run2012_SingleMuRun2012CPromptv2',                                      8, ''],
+            #['Run2012_SingleMuRun2012CPromptV2TopUp',                                 8, ''],
+            #['Run2012_SingleMuRun2012D-PromptReco-v1',                               40, ''], #40   
 
 #            ['QCD_Pt-30To50_bEnriched',                                                1, ''],
 #            ['QCD_Pt-50To150_bEnriched',                                               1, ''],
@@ -397,8 +397,8 @@ def submitFullMEAnalysisNew_all( analysis ):
 ###########################################
 ###########################################
 
-analyses = ['all']
-#analyses = ['all_ntuplizeAll_v3']
+analyses = ['all_testPt25']
+#analyses = ['all_MH90_nC']
 
 for analysis in analyses:
     if doGenLevelAnalysis:

@@ -35,7 +35,7 @@ process.fwliteInput = cms.PSet(
     samples  =   cms.VPSet(
 
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -43,7 +43,7 @@ process.fwliteInput = cms.PSet(
     ),
     
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -261,7 +261,7 @@ process.fwliteInput = cms.PSet(
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts
-    ntuplizeAll         = cms.untracked.int32(1),
+    ntuplizeAll         = cms.untracked.int32(0),
     
     )
 

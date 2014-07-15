@@ -135,7 +135,8 @@ Samples::Samples(string pathToFile, string ordering,
     for(unsigned int k = 0 ; k < numOfFiles ; k++){
 
       TString fileName(fileList[k].c_str());
-      TString pfn = "dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/"+pathToFile+"/"+ordering+fileName+".root";
+      //TString pfn = "dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/"+pathToFile+"/"+ordering+fileName+".root";
+      TString pfn = pathToFile+"/"+ordering+fileName+".root";
       if(verbose_) std::cout << string(pfn.Data()) << std::endl;
 
       TFile *f = TFile::Open(pfn,"READ");
