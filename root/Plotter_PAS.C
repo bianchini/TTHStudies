@@ -43,6 +43,8 @@
 
 #define RUNONDATA 1
 
+#define SPLITCC   0
+
 string version   =  "_all_rec_std" ;
 string inputpath = "files/byLLR/Apr07_2014/";
 string tag       = "New_all_rec_std";
@@ -1372,7 +1374,7 @@ void plot_category(string dir  = "Mar25_2014",
 		   string fname  = "",
 		   TString title = "S/(S+B)",
 		   int    drawseparation = 1,
-		   float xMax = -1,
+		   float  xMax = -1,
 		   float  rescaleTTbb = 1.,
 		   float  rescaleTTb  = 1.,
 		   float  rescaleTTjj = 1.
@@ -1431,6 +1433,8 @@ void plot_category(string dir  = "Mar25_2014",
   samples.push_back("EWK");
   samples.push_back("TTJetsHFbb");
   samples.push_back("TTJetsHFb");
+  if( SLPITCC )
+    samples.push_back("TTJetsLFcc");
   samples.push_back("TTJetsLF");
   samples.push_back("TTH125");
   samples.push_back("DiBoson");
@@ -1539,11 +1543,17 @@ void plot_category(string dir  = "Mar25_2014",
       h->SetLineColor( 17 );
       h->SetFillColor( 17 );
     }
-    if( samples[sample].find("TTJetsLF") != string::npos ){
-      leg->AddEntry(h, "t#bar{t} + jj", "F");
+    else if( SPLITCC && samples[sample].find("TTJetsLFcc") != string::npos ){
+      leg->AddEntry(h, "t#bar{t} + cc", "F");
       //h->Scale( rescaleTTjj );
       h->SetLineColor( 18 );
       h->SetFillColor( 18 );
+    } 
+    else if( samples[sample].find("TTJetsLF") != string::npos ){
+      leg->AddEntry(h, "t#bar{t} + jj", "F");
+      //h->Scale( rescaleTTjj );
+      h->SetLineColor( 18+SPLITCC );
+      h->SetFillColor( 18+SPLITCC );
     }    
     if( samples[sample].find("SingleT") != string::npos ){
       h->SetLineColor( kMagenta );

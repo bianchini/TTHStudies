@@ -31,14 +31,14 @@ evLimits = cms.vint32(0, -1),
 ntuplizeAll = 0
 
 # print intermediate steps
-printout    = 1
+printout    = 0
 
 # verbosity [0,1,2,3]
 debug       = 0
 
 # systematics
-systematics = cms.vint32(0,3,4,5,6)
-#systematics = cms.vint32(0)
+#systematics = cms.vint32(0,3,4,5,6)
+systematics = cms.vint32(0)
 
 
 ############################################### Object definition
@@ -80,7 +80,7 @@ max_n_trials       = 200000
 # jet preselection
 jetMultLoose   = 0
 jetPtLoose     = 40.
-jetPtThreshold = 30.
+jetPtThreshold = 25.  ################## !!!!!!!!!
 
 # lepton selection cut thresholds
 lepPtLoose   = 20.
@@ -129,8 +129,8 @@ nMaxJetsSLw1jType3 = 4
 ###############################################
 
 # central mass values
-#MH          = 125.00
-MH          =  90.00
+#MH          = 90.00
+MH          = 125.00
 MT          = 173.50
 
 # whuch mass values to scan
@@ -184,7 +184,7 @@ integralOption2_niter     = 1
 integralOption2_nevalfact = 1.0
 
 # switch off ME calculation
-speedup              = 0
+speedup              = 1
 
 # switch off OL calculation
 switchoffOL          = 0
