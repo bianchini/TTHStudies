@@ -7,8 +7,8 @@ from Bianchi.TTHStudies.samples_cff import *
 ###############################################
 
 # path to file
-#pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
-pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
+pathToFile = '/pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt'
+#pathToFile = '/hdfs/cms/store/user/liis/TTH_Ntuples_jsonUpdate/'
 ordering   = 'DiJetPt_'
 
 # luminosity

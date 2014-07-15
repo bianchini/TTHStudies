@@ -58,7 +58,7 @@ int main(int argc, const char* argv[])
   AutoLibraryLoader::enable();
 
   string target = argc>2 ? string(argv[2]) : "";
-  string extraname = "TEST"+target;
+  string extraname = argc>3 ? "TEST"+target+string(argv[3]) : "TEST"+target;
   fwlite::TFileService fs = fwlite::TFileService("./root/treeProducer"+extraname+".root");
 
   TTree* genTree          = fs.make<TTree>("genTree","event tree");
@@ -89,6 +89,8 @@ int main(int argc, const char* argv[])
   float etaRecoHeavy;
   float massRecoHeavy;
   float csvRecoHeavy;
+  float csvRecoStdHeavy;
+  float csvRecoMVAHeavy;
   float eRecoRegHeavy;
   float ptRecoRegHeavy;
   float ePartHeavy;
@@ -107,6 +109,8 @@ int main(int argc, const char* argv[])
   float etaRecoLight;
   float massRecoLight;
   float csvRecoLight;
+  float csvRecoStdLight;
+  float csvRecoMVALight;
   float eRecoRegLight;
   float ptRecoRegLight;
   float ePartLight;
@@ -125,6 +129,8 @@ int main(int argc, const char* argv[])
   float etaRecoGluon;
   float massRecoGluon;
   float csvRecoGluon;
+  float csvRecoStdGluon;
+  float csvRecoMVAGluon;
   float eRecoRegGluon;
   float ptRecoRegGluon;
   float ePartGluon;
@@ -160,6 +166,8 @@ int main(int argc, const char* argv[])
   genJetHeavyTree->Branch("eta_rec",     &etaRecoHeavy,  "eta_rec/F");
   genJetHeavyTree->Branch("phi_rec",     &phiRecoHeavy,  "phi_rec/F");
   genJetHeavyTree->Branch("csv_rec",     &csvRecoHeavy,  "csv_rec/F");
+  genJetHeavyTree->Branch("csv_std_rec", &csvRecoStdHeavy,"csv_std_rec/F");
+  genJetHeavyTree->Branch("csv_mva_rec", &csvRecoMVAHeavy,"csv_mva_rec/F");
   genJetHeavyTree->Branch("mass_rec",    &massRecoHeavy, "mass_rec/F");
   genJetHeavyTree->Branch("e_rec_reg",   &eRecoRegHeavy, "e_rec_reg/F");
   genJetHeavyTree->Branch("pt_rec_reg",  &ptRecoRegHeavy,"pt_rec_reg/F");
@@ -178,6 +186,8 @@ int main(int argc, const char* argv[])
   genJetLightTree->Branch("eta_rec",     &etaRecoLight,  "eta_rec/F");
   genJetLightTree->Branch("phi_rec",     &phiRecoLight,  "phi_rec/F");
   genJetLightTree->Branch("csv_rec",     &csvRecoLight,  "csv_rec/F");
+  genJetLightTree->Branch("csv_std_rec", &csvRecoStdLight,"csv_std_rec/F");
+  genJetLightTree->Branch("csv_mva_rec", &csvRecoMVALight,"csv_mva_rec/F");
   genJetLightTree->Branch("mass_rec",    &massRecoLight, "mass_rec/F");
   genJetLightTree->Branch("e_rec_reg",   &eRecoRegLight, "e_rec_reg/F");
   genJetLightTree->Branch("pt_rec_reg",  &ptRecoRegLight,"pt_rec_reg/F");
@@ -196,6 +206,8 @@ int main(int argc, const char* argv[])
   genJetGluonTree->Branch("eta_rec",     &etaRecoGluon,  "eta_rec/F");
   genJetGluonTree->Branch("phi_rec",     &phiRecoGluon,  "phi_rec/F");
   genJetGluonTree->Branch("csv_rec",     &csvRecoGluon,  "csv_rec/F");
+  genJetGluonTree->Branch("csv_std_rec", &csvRecoStdGluon,"csv_std_rec/F");
+  genJetGluonTree->Branch("csv_mva_rec", &csvRecoMVAGluon,"csv_mva_rec/F");
   genJetGluonTree->Branch("mass_rec",    &massRecoGluon, "mass_rec/F");
   genJetGluonTree->Branch("e_rec_reg",   &eRecoRegGluon, "e_rec_reg/F");
   genJetGluonTree->Branch("pt_rec_reg",  &ptRecoRegGluon,"pt_rec_reg/F");
@@ -271,6 +283,8 @@ int main(int argc, const char* argv[])
     Float_t hJet_phi          [999];
     Float_t hJet_e            [999];
     Float_t hJet_puJetIdL     [999];
+    Float_t hJet_csv          [999];
+    Float_t hJet_cmva         [999];
     Float_t hJet_csv_nominal  [999];
     Float_t hJet_csv_upBC     [999];
     Float_t hJet_csv_downBC   [999];
@@ -286,6 +300,8 @@ int main(int argc, const char* argv[])
     Float_t aJet_phi          [999];
     Float_t aJet_e            [999];
     Float_t aJet_puJetIdL     [999];
+    Float_t aJet_csv          [999];
+    Float_t aJet_cmva         [999];
     Float_t aJet_csv_nominal  [999];
     Float_t aJet_csv_upBC     [999];
     Float_t aJet_csv_downBC   [999];
@@ -311,12 +327,13 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("hJet_phi",         hJet_phi);    
     currentTree->SetBranchAddress("hJet_e",           hJet_e);    
     currentTree->SetBranchAddress("hJet_puJetIdL",    hJet_puJetIdL);
+    currentTree->SetBranchAddress("hJet_csv",         hJet_csv);
+    currentTree->SetBranchAddress("hJet_cmva",        hJet_cmva);
     currentTree->SetBranchAddress("hJet_csv_nominal", hJet_csv_nominal);
     currentTree->SetBranchAddress("hJet_csv_upBC",    hJet_csv_upBC);
     currentTree->SetBranchAddress("hJet_csv_downBC",  hJet_csv_downBC);
     currentTree->SetBranchAddress("hJet_csv_upL",     hJet_csv_upL);
     currentTree->SetBranchAddress("hJet_csv_downL",   hJet_csv_downL);
-    //currentTree->SetBranchAddress("hJet_JECUnc",      hJet_JECUnc);
     currentTree->SetBranchAddress("hJet_genPt",       hJet_genPt);
     currentTree->SetBranchAddress("hJet_genEta",      hJet_genEta);
     currentTree->SetBranchAddress("hJet_genPhi",      hJet_genPhi);
@@ -326,12 +343,13 @@ int main(int argc, const char* argv[])
     currentTree->SetBranchAddress("aJet_phi",         aJet_phi);    
     currentTree->SetBranchAddress("aJet_e",           aJet_e);    
     currentTree->SetBranchAddress("aJet_puJetIdL",    aJet_puJetIdL);
+    currentTree->SetBranchAddress("aJet_csv",         aJet_csv);
+    currentTree->SetBranchAddress("aJet_cmva",        aJet_cmva);
     currentTree->SetBranchAddress("aJet_csv_nominal", aJet_csv_nominal);
     currentTree->SetBranchAddress("aJet_csv_upBC",    aJet_csv_upBC);
     currentTree->SetBranchAddress("aJet_csv_downBC",  aJet_csv_downBC);
     currentTree->SetBranchAddress("aJet_csv_upL",     aJet_csv_upL);
     currentTree->SetBranchAddress("aJet_csv_downL",   aJet_csv_downL);
-    //currentTree->SetBranchAddress("aJet_JECUnc",      aJet_JECUnc);
     currentTree->SetBranchAddress("aJet_genPt",       aJet_genPt);
     currentTree->SetBranchAddress("aJet_genEta",      aJet_genEta);
     currentTree->SetBranchAddress("aJet_genPhi",      aJet_genPhi);
@@ -539,8 +557,12 @@ int main(int argc, const char* argv[])
 	  if( TMath::Abs(p4.Eta())>2.5 ) continue;
 
 	  // for csv systematics
-	  float csv_nominal =  (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj];
-	  float csv = TMath::Max(csv_nominal, float(0.0));
+	  float csv     = TMath::Max( (coll==0) ? hJet_csv_nominal[hj] : aJet_csv_nominal[hj], float(0.0));
+	  float csv_std = TMath::Max( (coll==0) ? hJet_csv[hj]  : aJet_csv[hj]  , float(0.0));
+	  float csv_mva = TMath::Max( (coll==0) ? hJet_cmva[hj] : aJet_cmva[hj] , float(0.0));
+
+	  // this is to avoid the spike
+	  if( csv_std<=0. ) csv_mva = 0.;
 
 	  // matches a gen b quark from t->bW or H->bb ?
 	  int matchesB = 0; 
@@ -572,6 +594,9 @@ int main(int argc, const char* argv[])
 	    phiRecoHeavy  = phi;
 	    massRecoHeavy = m;
 	    csvRecoHeavy  = csv;
+	    csvRecoStdHeavy  = csv_std;
+	    csvRecoMVAHeavy  = csv_mva;
+
 	    flavorHeavy   = abs(flavor);
 
 	    eGenHeavy     = eGen;
@@ -616,6 +641,8 @@ int main(int argc, const char* argv[])
 	    phiRecoLight  = phi;
 	    massRecoLight = m;
 	    csvRecoLight  = csv;
+	    csvRecoStdLight  = csv_std;
+	    csvRecoMVALight  = csv_mva;
 	    flavorLight   = abs(flavor);
 
 	    eGenLight     = eGen;
@@ -650,6 +677,8 @@ int main(int argc, const char* argv[])
 	    phiRecoGluon  = phi;
 	    massRecoGluon = m;
 	    csvRecoGluon  = csv;
+	    csvRecoStdGluon  = csv_std;
+	    csvRecoMVAGluon  = csv_mva;
 	    flavorGluon   = abs(flavor);
 
 	    eGenGluon     = eGen;

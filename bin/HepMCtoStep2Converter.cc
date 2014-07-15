@@ -487,7 +487,7 @@ int main(int argc, const char* argv[])
   EventInfo       EVENT;
   GenEventInfo    GENEVENT;
 
-  int             nvlep, nSimBs /*, nhJets*/, naJets /*, nPVs*/, Vtype;
+  int             nvlep, nalep, nSimBs /*, nhJets*/, naJets /*, nPVs*/, Vtype;
   //float           PUweight, PUweightP, PUweightM;
   //float           lheNj;
   //float           weightTrig2012;
@@ -502,6 +502,30 @@ int main(int argc, const char* argv[])
   Float_t vLepton_genPhi    [2];
   Float_t vLepton_charge    [2];
   Float_t vLepton_pfCorrIso [2];
+  Float_t vLepton_wp80      [2];
+  Float_t vLepton_wp95      [2];
+  Float_t vLepton_wp70      [2];
+  Float_t vLepton_idMVAtrig [2];  
+  Float_t vLepton_dxy       [2];
+  Float_t vLepton_dz        [2];
+
+  Int_t   aLepton_type      [99];
+  Float_t aLepton_mass      [99];
+  Float_t aLepton_pt        [99];
+  Float_t aLepton_eta       [99];
+  Float_t aLepton_phi       [99];
+  Float_t aLepton_genPt     [99];
+  Float_t aLepton_genEta    [99];
+  Float_t aLepton_genPhi    [99];
+  Float_t aLepton_charge    [99];
+  Float_t aLepton_pfCorrIso [99];
+  Float_t aLepton_wp80      [99];
+  Float_t aLepton_wp95      [99];
+  Float_t aLepton_wp70      [99];
+  Float_t aLepton_idMVAtrig [99];  
+  Float_t aLepton_dxy       [99];
+  Float_t aLepton_dz        [99];
+
   Float_t aJet_pt           [NJETSMAX];
   Float_t aJet_eta          [NJETSMAX];
   Float_t aJet_phi          [NJETSMAX];
@@ -512,7 +536,9 @@ int main(int argc, const char* argv[])
   Float_t aJet_nCs          [NJETSMAX];
   Float_t aJet_nLs          [NJETSMAX];
    
+  UChar_t aJet_id           [NJETSMAX];
   Float_t aJet_puJetIdL     [NJETSMAX];
+  Float_t aJet_csv          [NJETSMAX];
   Float_t aJet_csv_nominal  [NJETSMAX];
   Float_t aJet_csv_upBC     [NJETSMAX];
   Float_t aJet_csv_downBC   [NJETSMAX];
@@ -541,6 +567,7 @@ int main(int argc, const char* argv[])
   tree->Branch("naJets",           &naJets,           "naJets/I");
   tree->Branch("nSimBs",           &nSimBs,           "nSimBs/I");
   tree->Branch("nvlep",            &nvlep,            "nvlep/I");
+  tree->Branch("nalep",            &nalep,            "nalep/I");
   //tree->Branch("nPVs",             &nPVs,             "nPVs/I");
   tree->Branch("genB",             &genB,             "mass/F:pt/F:eta:phi/F:status/F:charge:momid/F");
   tree->Branch("genBbar",          &genBbar,          "mass/F:pt/F:eta:phi/F:status/F:charge:momid/F");
@@ -557,6 +584,30 @@ int main(int argc, const char* argv[])
   tree->Branch("vLepton_genPhi",   vLepton_genPhi,    "vLepton_genPhi[nvlep]/F");
   tree->Branch("vLepton_pfCorrIso",vLepton_pfCorrIso, "vLepton_pfCorrIso[nvlep]/F");
   tree->Branch("vLepton_type",     vLepton_type,      "vLepton_type[nvlep]/I");
+  tree->Branch("vLepton_wp80",     vLepton_wp80,      "vLepton_wp80[nvlep]/F");
+  tree->Branch("vLepton_wp95",     vLepton_wp95,      "vLepton_wp95[nvlep]/F");
+  tree->Branch("vLepton_wp70",     vLepton_wp70,      "vLepton_wp70[nvlep]/F");
+  tree->Branch("vLepton_idMVAtrig",vLepton_idMVAtrig, "vLepton_idMVAtrig[nvlep]/F");
+  tree->Branch("vLepton_dxy",      vLepton_dxy,       "vLepton_dxy[nvlep]/F");
+  tree->Branch("vLepton_dz",       vLepton_dz,        "vLepton_dz[nvlep]/F");
+
+  tree->Branch("aLepton_charge",   aLepton_charge,    "aLepton_charge[nalep]/F");
+  tree->Branch("aLepton_mass"  ,   aLepton_mass,      "aLepton_mass[nalep]/F");
+  tree->Branch("aLepton_pt"    ,   aLepton_pt,        "aLepton_pt[nalep]/F");
+  tree->Branch("aLepton_eta"   ,   aLepton_eta,       "aLepton_eta[nalep]/F");
+  tree->Branch("aLepton_phi"   ,   aLepton_phi,       "aLepton_phi[nalep]/F");
+  tree->Branch("aLepton_genPt" ,   aLepton_genPt,     "aLepton_genPt[nalep]/F");
+  tree->Branch("aLepton_genEta",   aLepton_genEta,    "aLepton_genEta[nalep]/F");
+  tree->Branch("aLepton_genPhi",   aLepton_genPhi,    "aLepton_genPhi[nalep]/F");
+  tree->Branch("aLepton_pfCorrIso",aLepton_pfCorrIso, "aLepton_pfCorrIso[nalep]/F");
+  tree->Branch("aLepton_type",     aLepton_type,      "aLepton_type[nalep]/I");
+  tree->Branch("aLepton_wp80",     aLepton_wp80,      "aLepton_wp80[nalep]/F");
+  tree->Branch("aLepton_wp95",     aLepton_wp95,      "aLepton_wp95[nalep]/F");
+  tree->Branch("aLepton_wp70",     aLepton_wp70,      "aLepton_wp70[nalep]/F");
+  tree->Branch("aLepton_idMVAtrig",aLepton_idMVAtrig, "aLepton_idMVAtrig[nalep]/F");
+  tree->Branch("aLepton_dxy",      aLepton_dxy,       "aLepton_dxy[nalep]/F");
+  tree->Branch("aLepton_dz",       aLepton_dz,        "aLepton_dz[nalep]/F");
+
 
   tree->Branch("aJet_pt",          aJet_pt,         "aJet_pt[naJets]/F");    
   tree->Branch("aJet_eta",         aJet_eta,        "aJet_eta[naJets]/F");    
@@ -568,8 +619,10 @@ int main(int argc, const char* argv[])
   tree->Branch("aJet_nCs",         aJet_nCs,        "aJet_nCs[naJets]/F");    
   tree->Branch("aJet_nLs",         aJet_nLs,        "aJet_nLs[naJets]/F");    
 
+  tree->Branch("aJet_id",          aJet_id,         "aJet_id[naJets]/b");
   tree->Branch("aJet_puJetIdL",    aJet_puJetIdL,   "aJet_puJetIdL[naJets]/F");
   tree->Branch("aJet_csv_nominal", aJet_csv_nominal,"aJet_csv_nominal[naJets]/F");
+  tree->Branch("aJet_csv",         aJet_csv,        "aJet_csv[naJets]/F");
   tree->Branch("aJet_csv_upBC",    aJet_csv_upBC,   "aJet_csv_upBC[naJets]/F");
   tree->Branch("aJet_csv_downBC",  aJet_csv_downBC, "aJet_csv_downBC[naJets]/F");
   tree->Branch("aJet_csv_upL",     aJet_csv_upL,    "aJet_csv_upL[naJets]/F");
@@ -1361,6 +1414,7 @@ int main(int argc, const char* argv[])
 	
 	// number of leptons
 	nvlep = leptons.size();
+	nalep = 0;
 
 	// if not enough leptons, continue (unless filter=False)
 	if( !(nvlep==1 || nvlep==2) && filter){
@@ -1380,6 +1434,12 @@ int main(int argc, const char* argv[])
 	  vLepton_genPhi[l]    = leptons[l].Phi();
 	  vLepton_charge[l]    = abs( leptonscharge[l] )/leptonscharge[l];	 
 	  vLepton_pfCorrIso[l] = leptonsiso[l];
+	  vLepton_wp80[l] = 1.; 
+	  vLepton_wp70[l] = 1.; 
+	  vLepton_wp95[l] = 1.; 
+	  vLepton_idMVAtrig[l] = 1.; 
+	  vLepton_dxy[l] = 0.; 
+	  vLepton_dz[l]  = 0.; 
 	}
 	
 
@@ -1422,8 +1482,10 @@ int main(int argc, const char* argv[])
 	  aJet_nCs[j] = jetsnCs[j];
 	  aJet_nLs[j] = jetsnLs[j];
 	
+	  aJet_id[j]   = 1;
 	  aJet_puJetIdL[j]   = 1.0;
 	  aJet_csv_nominal[j]= 1.0;
+	  aJet_csv[j]= 1.0;
 	  aJet_csv_upBC[j]   = 1.0;
 	  aJet_csv_downBC[j] = 1.0;
 	  aJet_csv_upL[j]    = 1.0;

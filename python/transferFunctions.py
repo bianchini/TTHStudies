@@ -6,7 +6,7 @@ process = cms.Process("TF")
 process.fwliteInput = cms.PSet(
 
     # the tree with jet kinematics and gen event information (pt_gen -> target)
-    pathToFile    = cms.string("./root/treeProducerTESTpt_gen.root"),
+    pathToFile    = cms.string("./root/treeProducerTESTpt_partMH120_allcsv.root"),
 
     #### the name of the out file with the RooWorkspace ###
     #
@@ -20,7 +20,7 @@ process.fwliteInput = cms.PSet(
     verbose       = cms.bool(False),
 
     # if 1, compute only jet TF
-    doOnlyJetTF   = cms.untracked.int32(1),
+    doOnlyJetTF   = cms.untracked.int32(0),
 
     # parameters of the 2G parametrization for b-jets
     relWeightBin0 = cms.untracked.double(0.65),

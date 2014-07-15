@@ -85,14 +85,12 @@ typedef TMatrixT<double> TMatrixD;
 // if doing ttbb/ttjj measurement, fit for ttbb as signal
 #define FITTTBB           0
 
-// needed to choose MH
-#define HIGGSMASS        125
-
 // split tt+jj into tt+cc
 #define SPLITCC            1
 
 // use combine convention
 #define USECOMBINENAMES    1 
+
 
 string DUMMY;
 
@@ -312,7 +310,7 @@ pair<double,double> getMaxValue( TH1F* hMassProb){
 }
 
 
-void bbb( TH1F* hin, TH1F* hout_Down, TH1F* hout_Up, int bin){
+void bbb( TH1* hin, TH1* hout_Down, TH1* hout_Up, int bin){
 
   // get the bin content shifted down and up by 1sigma
   float bin_down = hin->GetBinContent( bin ) - hin->GetBinError( bin );
@@ -447,7 +445,7 @@ TF1* getMETphiCorrection(TTree* tDATA=0, TTree* tMC=0, TCut cut = ""){
 
 
 
-void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight1=0, int pos_weight2=0, TString category="", string sample="" ){
+void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1* h = 0, TCut cut = "" , int analysis = 0, vector<float>* param = 0, TF1* xsec = 0, int isMC=1, int pos_weight1=0, int pos_weight2=0, TString category="", string sample="", float massH=125 ){
 
   // needed as usual to copy a tree
   //TFile* dummy = new TFile("/scratch/bianchi/dummy_"+TString(sample.c_str())+".root","RECREATE");
@@ -463,10 +461,40 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
   TTreeFormula* treeformula = new TTreeFormula("cat_selection", cut , t );
 
+  // the variable name
+  string cat_to_string = string(category.Data());
   
-  TTreeFormula* treeobservable = 0;
-  if(analysis==4) 
-    treeobservable = new TTreeFormula("cat_observable", category , t );
+  // what kind of analysis
+  bool isStandardObservable = cat_to_string.find("best_")==string::npos &&
+    !( cat_to_string.find(":")!=string::npos && cat_to_string.find("::")==string::npos);
+  bool isBestObservable = cat_to_string.find("best_")!=string::npos;
+  bool is2DObservable   = cat_to_string.find(":")!=string::npos && cat_to_string.find("::")==string::npos;
+  
+  TTreeFormula* treeobservable1 = 0;
+  TTreeFormula* treeobservable2 = 0;
+  if(analysis==4){
+
+    // a standard 1D variable (not a best_ analysis)
+    if( isStandardObservable )
+      treeobservable1 = new TTreeFormula("cat_observable1",   category , t );
+
+    // a 2D analysis
+    else if( is2DObservable ){
+
+      size_t size = cat_to_string.size();
+      size_t div  = cat_to_string.find(":");
+
+      string var1 = cat_to_string.substr(0,    div   );
+      string var2 = cat_to_string.substr(div+1,size  );
+
+      cout << var1 << ", " << var2 << endl;
+
+      treeobservable1 = new TTreeFormula("cat_observable1",   var1.c_str() , t );
+      treeobservable2 = new TTreeFormula("cat_observable2",   var2.c_str() , t );
+    }
+    else{ /* ... */ }
+
+  }
 
 
   if(VERBOSE) cout << " > cut: " << string(cut.GetTitle()) << endl;
@@ -497,6 +525,9 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   float jet_m  [8];
   int   perm_to_jet_s[99];
   int   perm_to_jet_b[99];
+
+  // DL or SL
+  int Vtype;
 
   // the event-dependent weight
   float weight;
@@ -532,22 +563,28 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
     t->SetBranchAddress("mH_scan",      mH_scan);
     t->SetBranchAddress("mT_scan",      mT_scan);
   }
-  if( analysis==4 && string(category.Data()).find("best_")!=string::npos ){
-    t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
-    t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
-    t->SetBranchAddress("p_tt_bb",      p_tt_bb);
-    t->SetBranchAddress("p_tt_jj",      p_tt_jj);
-    t->SetBranchAddress("nPermut_s",    &nPermut_s);
-    t->SetBranchAddress("nPermut_b",    &nPermut_b);
-    t->SetBranchAddress("nMassPoints",  &nMassPoints);
-    t->SetBranchAddress("mH_scan",      mH_scan);
-    t->SetBranchAddress("mT_scan",      mT_scan);
+  if( analysis==4 ){
+    t->SetBranchAddress("Vtype",        &Vtype);
     t->SetBranchAddress("jet_pt",       jet_pt);
     t->SetBranchAddress("jet_eta",      jet_eta);
-    t->SetBranchAddress("jet_phi",      jet_phi);
-    t->SetBranchAddress("jet_m",        jet_m);
-    t->SetBranchAddress("perm_to_jet_s",perm_to_jet_s);
-    t->SetBranchAddress("perm_to_jet_b",perm_to_jet_b);
+    
+    if( string(category.Data()).find("best_")!=string::npos ){
+      t->SetBranchAddress("p_vsMH_s",     p_vsMH_s);
+      t->SetBranchAddress("p_vsMT_b",     p_vsMT_b);
+      t->SetBranchAddress("p_tt_bb",      p_tt_bb);
+      t->SetBranchAddress("p_tt_jj",      p_tt_jj);
+      t->SetBranchAddress("nPermut_s",    &nPermut_s);
+      t->SetBranchAddress("nPermut_b",    &nPermut_b);
+      t->SetBranchAddress("nMassPoints",  &nMassPoints);
+      t->SetBranchAddress("mH_scan",      mH_scan);
+      t->SetBranchAddress("mT_scan",      mT_scan);
+      t->SetBranchAddress("jet_pt",       jet_pt);
+      t->SetBranchAddress("jet_eta",      jet_eta);
+      t->SetBranchAddress("jet_phi",      jet_phi);
+      t->SetBranchAddress("jet_m",        jet_m);
+      t->SetBranchAddress("perm_to_jet_s",perm_to_jet_s);
+      t->SetBranchAddress("perm_to_jet_b",perm_to_jet_b);
+    }
   }
   t->SetBranchAddress("weight",       &weight);
   t->SetBranchAddress("PUweight",     &PUweight);
@@ -779,7 +816,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
     if( analysis==4 ){
 
-      if( string(category.Data()).find("best_")!=string::npos ){
+      if( isBestObservable ){
 
 	int ttH    = string(category.Data()).find("best_0")!=string::npos ;
 
@@ -879,8 +916,42 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	h->Fill( eval, fill_weight);
 	continue;
       }
+      else if( string(category.Data()).find("bjet_")!=string::npos || string(category.Data()).find("leadjet_")!=string::npos){
+        float eval = 0.;
+	
+	float lead_jet_pt = 0;
+        float lead_jet_eta = -99;
+        for( unsigned int i = 2; i != 8; i++){
+          //      std::cout<<"i = " <<i<<", Vtype = "<<Vtype<<", jet_pt = " << jet_pt[i]<<std::endl;
+	  if( ( (Vtype==2 || Vtype==3) || ((Vtype<2 || Vtype==4) && (i==2 || i>4)) ) && ( jet_pt[i] > lead_jet_pt ) )
+	    {
+	      lead_jet_pt = jet_pt[i];
+	      lead_jet_eta = jet_eta[i];
+	    }
+          //std::cout<<"lead jet pt = " << lead_jet_pt << std::endl;
+        }
 
-      double eval  = treeobservable->EvalInstance();
+
+        if ( category=="bjet_pt" )     eval = jet_pt[2];
+        if ( category=="bjet_eta" )    eval = jet_eta[2];
+        if ( category=="leadjet_pt")   eval = lead_jet_pt;
+        if ( category=="leadjet_eta")  eval = lead_jet_eta;
+
+        h->Fill( eval, fill_weight);
+	std::cout<<"eval = " <<eval<<std::endl;
+        continue;
+      }
+
+      else if( is2DObservable ){
+	double eval1  = treeobservable1->EvalInstance();
+	double eval2  = treeobservable2->EvalInstance();
+	TH2F* h_cast  = dynamic_cast<TH2F*>(h); 
+	//cout << eval1 << ", " << eval2 << endl;
+	h_cast->Fill( eval1, eval2, fill_weight);
+	continue;
+      }
+
+      double eval  = treeobservable1->EvalInstance();
       h->Fill( eval, fill_weight);
       continue;
     }
@@ -979,7 +1050,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 
 	// skip other mass values...
 	float mH =  mH_scan[mH_it];
-	if(mH>(HIGGSMASS+1) || mH<(HIGGSMASS-1)) continue;
+	if(mH>(massH+1) || mH<(massH-1)) continue;
 	
 	// once we got the good Higgs mass, loop over permutations...
 	for( int perm_it = 0 ; perm_it<nPermut_s ; perm_it++){	
@@ -1033,14 +1104,19 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
       else{
 	
 	// sanity check
-	if( param->size()!= 5 ){
+	if( param->size()<5 ){
 	  cout << "Problem in fill..." << endl;
 	  return;
 	}
 	
 	// if w<cutval, do a 2D analyses LR_sb vs LR_bj
-	float cutval = h->GetBinLowEdge( 3 );
-	
+	float cutval  = h->GetBinLowEdge( 3 );
+	float cutval2 = 0.;
+	if( param->size()==5 ) 
+	  cutval2 = cutval;
+	else if( param->size()==6 )
+	  cutval2 = h->GetBinLowEdge( 5 );
+
 	// prepare the bj likelihood ratio ingredients
 	double wbjDen = p_125_all_b_ttbb + (*param)[3]*p_125_all_b_ttjj;
 	double wbjNum = p_125_all_b_ttbb ;
@@ -1049,15 +1125,27 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 	double wbj = wbjDen>0 ? wbjNum/wbjDen : 0.;
 	
 	// is above the cut for 2D analysis, just do 1D analysis
-	if( w >= cutval )  h->Fill( w, fill_weight);
+	if( w >= cutval2 )  h->Fill( w, fill_weight);
 
 	// else fill out two bins...
 	else{
-	  // if LR_bj is below the cut value param[4], fill the first bin...
-	  if( wbj <= (*param)[4] )  h->Fill(   cutval/4. , fill_weight);
-	  // if LR_bj is above the cut value param[4], fill the second first...
-	  if( wbj >  (*param)[4] )  h->Fill( 3*cutval/4. , fill_weight);
-	}       		
+
+	  if( w <= cutval ){
+	    // if LR_bj is below the cut value param[4], fill the first bin...
+	    if( wbj <= (*param)[4] )  h->Fill(   cutval/4. , fill_weight);
+	    // if LR_bj is above the cut value param[4], fill the second first...
+	    if( wbj >  (*param)[4] )  h->Fill( 3*cutval/4. , fill_weight);
+	  }
+	  else if( w > cutval &&  w < cutval2 ){
+	    // if LR_bj is below the cut value param[4], fill the first bin...
+	    if( wbj <= (*param)[4] )  h->Fill(  cutval +   (cutval2-cutval)/4. , fill_weight);
+	    // if LR_bj is above the cut value param[4], fill the second first...
+	    if( wbj >  (*param)[4] )  h->Fill(  cutval + 3*(cutval2-cutval)/4. , fill_weight);
+	  }
+	  else{ /* ... */ }
+
+	}  
+     		
       }
       
     }
@@ -1073,8 +1161,10 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
   //gSystem->Exec("rm /scratch/bianchi/dummy_"+TString(sample.c_str())+".root");
 
   delete treeformula;
-  if(treeobservable) 
-    delete treeobservable;
+  if(treeobservable1) 
+    delete treeobservable1;
+  if(treeobservable2) 
+    delete treeobservable2;
   delete hTmp;
 
   return;
@@ -1082,7 +1172,7 @@ void fill(  TTree* tFull = 0, int nparts=1, int part=0,  TH1F* h = 0, TCut cut =
 }
 
 
-void appendLogNSyst(TH1F* h=0, TDirectory* dir=0, string name="",  float err = 0., string& line = DUMMY ){
+void appendLogNSyst(TH1* h=0, TDirectory* dir=0, string name="",  float err = 0., string& line = DUMMY ){
 
   if(line.find("lnN")==string::npos) 
     line = name+"                  lnN  ";
@@ -1104,7 +1194,7 @@ void appendLogNSyst(TH1F* h=0, TDirectory* dir=0, string name="",  float err = 0
   h_Up->Write( (newname+"_"+name+"Up").c_str(), TObject::kOverwrite);
   
   TH1F* h_Down = (TH1F*)h->Clone( (newname+"_"+name+"Down").c_str());
-  h_Down->Scale( 1-err );
+  h_Down->Scale( 1./(1+err) );
   h_Down->Write( (newname+"_"+name+"Down").c_str(), TObject::kOverwrite);
   
   return;
@@ -1151,14 +1241,18 @@ int main(int argc, const char* argv[])
   float factbb            =  ( in.getParameter<double>  ("factbb" ) );
   float lumiScale         =  ( in.getParameter<double>  ("lumiScale" ) );
   int nBins               =  ( in.getParameter<int>     ("nBins" ) );
+  int nBinsY              =  ( in.getUntrackedParameter<int> ("nBinsY", 1 ) );
   int splitFirstBin       =  ( in.getParameter<int>     ("splitFirstBin" ) );
   vector<double> binvec   =  ( in.getParameter<vector<double> >  ("binvec" ) );
+  vector<double> binvecY  =  ( in.getParameter<vector<double> >  ("binvecY" ) );
   vector<string> samples  =  ( in.getParameter<vector<string> >  ("samples" ) );
   int nparts              =  ( in.getParameter<int>    ("nparts" ) );
   int part                =  ( in.getParameter<int>    ("part" ) );
   int analysis            =  ( in.getUntrackedParameter<int>    ("analysis", -1 ) );
   int doSystematics       =  ( in.getUntrackedParameter<int>    ("doSystematics", 1 ) );
   int runOnData           =  ( in.getUntrackedParameter<int>    ("runOnData", 1 ) );
+  double massH            =  ( in.getUntrackedParameter<double> ("massH", 125 ) );
+  int do2Dplots           =  ( in.getUntrackedParameter<int>    ("do2Dplots", 0 ) );
 
   string nJob = "";
   if( argc==3 )
@@ -1300,7 +1394,7 @@ int main(int argc, const char* argv[])
       Int_S_bb = 0;
       TTree* tS_cut = (TTree*)tS->CopyTree( TCut((basecut+" && nSimBs>=2").c_str()) );
       float p_125_all_s_ttbb;
-      tS_cut->SetBranchAddress(Form("p_%d_all_s_ttbb",HIGGSMASS),   &p_125_all_s_ttbb );
+      tS_cut->SetBranchAddress(Form("p_%d_all_s_ttbb",int(massH)),   &p_125_all_s_ttbb );
       tS_cut->SetBranchAddress("weight",             &weight);
       tS_cut->SetBranchAddress("PUweight",           &PUweight);
       tS_cut->SetBranchAddress("trigger",            &trigger);
@@ -1318,7 +1412,7 @@ int main(int argc, const char* argv[])
       Int_B_bb = 0;
       TTree* tBbb_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nMatchSimBs>=2 && nSimBs>2").c_str()) );
       float p_125_all_b_ttbb;
-      tBbb_cut->SetBranchAddress(Form("p_%d_all_b_ttbb",HIGGSMASS),   &p_125_all_b_ttbb );
+      tBbb_cut->SetBranchAddress(Form("p_%d_all_b_ttbb",int(massH)),   &p_125_all_b_ttbb );
       tBbb_cut->SetBranchAddress("weight",             &weight);
       tBbb_cut->SetBranchAddress("PUweight",           &PUweight);
       tBbb_cut->SetBranchAddress("trigger",            &trigger);
@@ -1336,7 +1430,7 @@ int main(int argc, const char* argv[])
       Int_B_jj = 0;
       TTree* tBjj_cut = (TTree*)tB->CopyTree( TCut((basecut+" && nSimBs==2").c_str()) );
       float p_125_all_b_ttjj;
-      tBjj_cut->SetBranchAddress(Form("p_%d_all_b_ttjj",HIGGSMASS),   &p_125_all_b_ttjj );
+      tBjj_cut->SetBranchAddress(Form("p_%d_all_b_ttjj",int(massH)),   &p_125_all_b_ttjj );
       tBjj_cut->SetBranchAddress("weight",             &weight);
       tBjj_cut->SetBranchAddress("PUweight",           &PUweight);
       tBjj_cut->SetBranchAddress("trigger",            &trigger); 
@@ -1376,9 +1470,11 @@ int main(int argc, const char* argv[])
       param.push_back( TMath::Abs(fact2)<=1 ? (1+fact2)*S_bb/B_jj : 0.0);
     }
 
-    if(abs(doMEM)==2 && splitFirstBin){
+    if(abs(doMEM)==2 && splitFirstBin>=1){
       param.push_back( B_bb/B_jj );
       param.push_back( factbb );
+      if(splitFirstBin>1)
+	param.push_back( factbb );
     }
 
   }
@@ -1415,6 +1511,7 @@ int main(int argc, const char* argv[])
 
   // if true, read binning from input, or just take unformly distributed bins [0,1]
   bool normalbinning = ( param.size()==3 || abs(doMEM)!=2 );
+  int n_split_bins   = param.size()>=5 ? param.size()-4 : 0;
 
   // clean output file (if any)
   //gSystem->Exec("rm ../root/datacards/"+directory+"/"+fname+"_"+name+version+extraname+".root");
@@ -1430,9 +1527,19 @@ int main(int argc, const char* argv[])
   
 
   // fix the binning
-  TArrayF bins (nBins+1);
-  TArrayF bins2(nBins+2);
-  if(VERBOSE) cout << "Making histograms with " << nBins << " bins:" << endl;
+  TArrayF bins  (nBins+1);
+  TArrayF binsY (nBinsY+1);
+  TArrayF bins2 (nBins+1+n_split_bins);
+  if(VERBOSE){
+    if(!do2Dplots){
+      if( normalbinning )
+	cout << "Making histograms with " << nBins << " bins:" << endl;
+      else
+	cout << "Making histograms with " << nBins+n_split_bins << " bins:" << endl;
+    }
+    else 
+      cout << "Making histograms with " << nBins << " x " << nBinsY << " bins:" << endl;
+  }
 
   // if do not split, then...
   if( normalbinning ){
@@ -1444,8 +1551,16 @@ int main(int argc, const char* argv[])
     }
     // else, read from binvec what are the axis bins
     else if(binvec.size()==(nBins+1)){
-      for(int b = 0; b < nBins+1; b++)
-	bins[b] = (binvec)[b];
+      for(int b = 0; b < nBins+1; b++) bins[b] = (binvec)[b];
+      if( do2Dplots ){
+	if( binvecY.size()==(nBinsY+1) ) 
+	  for(int b = 0; b < nBinsY+1; b++) binsY[b] = (binvecY)[b];
+	else{
+	  cout << "WATCH OUT!! Mismatch nBinsY/binvecY" << endl;
+	  return 1;
+	}
+      }
+
     }
     // sanity check
     else{
@@ -1455,19 +1570,26 @@ int main(int argc, const char* argv[])
   }
   // else, split the first bin into two...
   else{
-    for(int b = 0; b < nBins+2; b++){
-      if(b<=2) bins2[b] = b*0.5/(nBins);
-      else     bins2[b] = (b-1)*1.0/(nBins);
+    for(int b = 0; b < nBins+1+n_split_bins; b++){
+      if(b<=(1+n_split_bins)) 
+	bins2[b] = b*0.5/(nBins);
+      else
+	bins2[b] = (b-n_split_bins)*1.0/(nBins);
       if(VERBOSE) cout <<  bins2[b] << ", ";
     }
     if(VERBOSE) cout << endl;
   }
 
   // master histogram (all other histograms are a clone of this one)
-  TH1F* h = new TH1F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
-		     normalbinning ? nBins : nBins+1 ,  
-		     normalbinning ? bins.GetArray() : bins2.GetArray());
+  TH1* h = 0;
 
+  if(do2Dplots==0)
+    h = new TH1F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
+		 normalbinning ? nBins : nBins+n_split_bins ,  
+		 normalbinning ? bins.GetArray() : bins2.GetArray());
+  else
+    h = new TH2F("h","Simulation #sqrt{s}=8 TeV, "+fname+"; S/(S+B); units", 
+		 nBins, bins.GetArray(),nBinsY, binsY.GetArray() );
 
   // the observable when doing the ME analysis for cat2 (workaround)
   TString var("");
@@ -1483,13 +1605,13 @@ int main(int argc, const char* argv[])
   }
   else if(abs(doMEM)==2){
     var  = TString(Form("p_%d_all_s_ttbb/(p_125_all_s_ttbb+%f*(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj))", 
-			HIGGSMASS, param[0], param[1], param[2] ));
+			int(massH), param[0], param[1], param[2] ));
     if(VERBOSE) cout << "Variable = " << string(var.Data()) << endl;
     
   }
   if(abs(doMEM)==3){
     var2 = TString(Form("%f*p_%d_all_b_ttbb/(%f*p_125_all_b_ttbb+%f*p_125_all_b_ttjj)", 
-			param[1], HIGGSMASS, param[1], param[2] ));
+			param[1], int(massH), param[1], param[2] ));
     if(VERBOSE) cout << "Variable = " << string(var2.Data()) << endl;
   }
   else if(doMEM==4){
@@ -1786,7 +1908,11 @@ int main(int argc, const char* argv[])
       }
 
       // histogram for the particluar process/systematics
-      TH1F* h_tmp = (TH1F*)h->Clone(("h_"+datacard_name).c_str());
+      TH1* h_tmp = 0;
+      if(do2Dplots==0) 
+	h_tmp = (TH1F*)h->Clone(("h_"+datacard_name).c_str());
+      else 
+	h_tmp = (TH2F*)h->Clone(("h_"+datacard_name).c_str());
       h_tmp->Reset();
       h_tmp->Sumw2();
      
@@ -1801,11 +1927,11 @@ int main(int argc, const char* argv[])
       if(USECSVCALIBRATION){
 
 	// if doing JECUp, read element 1 of weightCSV
-	if( syst_name.find("JECUp")  !=string::npos )
+	if( syst_name.find("CMS_scale_jUp")  !=string::npos )
 	  pos_weight1 = 1;
 
 	// if doing JECDown, read element 2 of weightCSV
-	else if( syst_name.find("JECDown")!=string::npos )
+	else if( syst_name.find("CMS_scale_jDown")!=string::npos )
 	  pos_weight1 = 2;
 
 	// if doing any of the other csv systematics, shift by two units
@@ -1857,20 +1983,21 @@ int main(int argc, const char* argv[])
 
 
       // fill the histogram
-      fill( tree, nparts, part, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight1 , pos_weight2, varname, sample+"_"+extraname );
+      fill( tree, nparts, part, h_tmp, syst_sample_cut, doMEM, &param, xsec, isMC, pos_weight1 , pos_weight2, varname, sample+"_"+extraname , massH);
       
-      // add underflow bin to the first bin...
-      int firstBin              =  1;
-      float firstBinContent     =  h_tmp->GetBinContent( firstBin ); 
-      float underflowBinContent =  h_tmp->GetBinContent( firstBin-1 ); 
-      h_tmp->SetBinContent( firstBin, firstBinContent+underflowBinContent); 
-      
-      // add overflow bin into the last bin...
-      int lastBin              =  h_tmp->GetNbinsX();
-      float lastBinContent     =  h_tmp->GetBinContent( lastBin ); 
-      float overflowBinContent =  h_tmp->GetBinContent( lastBin+1 ); 
-      h_tmp->SetBinContent( lastBin, lastBinContent+overflowBinContent);    
-      
+      if(do2Dplots==0){
+	// add underflow bin to the first bin...
+	int firstBin              =  1;
+	float firstBinContent     =  h_tmp->GetBinContent( firstBin ); 
+	float underflowBinContent =  h_tmp->GetBinContent( firstBin-1 ); 
+	h_tmp->SetBinContent( firstBin, firstBinContent+underflowBinContent); 
+	
+	// add overflow bin into the last bin...
+	int lastBin              =  h_tmp->GetNbinsX();
+	float lastBinContent     =  h_tmp->GetBinContent( lastBin ); 
+	float overflowBinContent =  h_tmp->GetBinContent( lastBin+1 ); 
+	h_tmp->SetBinContent( lastBin, lastBinContent+overflowBinContent);    
+      }
       
       // scale to the target luminosity
       h_tmp->Scale( sample.find("Run2012")==string::npos          ? lumiScale*missing_job  : 1.0 );
@@ -1903,7 +2030,12 @@ int main(int argc, const char* argv[])
 	    h_tmp->Write(save_name.c_str(), TObject::kOverwrite);
 	  }
 	  if(countRun2012samples>=2){
-	    TH1F* h_tmp_tmp = (TH1F*)dir->FindObjectAny(save_name.c_str());
+	    TH1* h_tmp_tmp = 0;
+	    if(do2Dplots==0) 
+	      h_tmp_tmp = (TH1F*)dir->FindObjectAny(save_name.c_str());
+	    else 
+	      h_tmp_tmp = (TH2F*)dir->FindObjectAny(save_name.c_str());
+
 	    if( h_tmp_tmp==0 ) 
 	      cout << "Inconsistency (2) found when filling Run2012" << endl;
 	    else{
@@ -1938,9 +2070,11 @@ int main(int argc, const char* argv[])
 	continue;      
       }
       
-
+      
       // add bin-by-bin systematics
       for(int bin = 1; bin<=h_tmp->GetNbinsX(); bin++ ){
+
+	if(do2Dplots) continue;
 
 	TH1F* h_tmp_b_up   = (TH1F*)h->Clone(Form("h_tmp_%d_Up",  bin));
 	TH1F* h_tmp_b_down = (TH1F*)h->Clone(Form("h_tmp_%d_Down",bin));
@@ -1971,8 +2105,16 @@ int main(int argc, const char* argv[])
  
   }
 
+
+  // return if you don't want to create the datadacards
+  if( do2Dplots==1 ){
+    fout->Close();
+    return 1;
+  }
+
+
   // for later use, use a map between process name and histograms
-  std::map<TString, TH1F*> aMap;
+  std::map<TString, TH1*> aMap;
 
   // for the moment, use th sum of backgrounds as 'data' (asymov dataset)
   TH1F* h_data = (TH1F*)h->Clone("h_data");
@@ -2026,24 +2168,31 @@ int main(int argc, const char* argv[])
     // add the histogram to the map
     aMap[all_datacard_samples[s]] = h_tmp;
 
-    if(runOnData==0 && 
-       string(all_datacard_samples[s].Data()).find("data_obs")==string::npos && 
-       string(all_datacard_samples[s].Data()).find("TTH")==string::npos){
+    if(runOnData<=0 && 
+       string(all_datacard_samples[s].Data()).find("data_obs")==string::npos){
 
       // add the histogram to the asymov dataset
-      h_data->Add( h_tmp );
+      if( runOnData==0 && string(all_datacard_samples[s].Data()).find("TTH")==string::npos)
+	h_data->Add( h_tmp );
+      else if( runOnData<0 )
+	h_data->Add( h_tmp );
+      else{ /* ... */ }
 
       // add the histogram yield to the asymov dataset
       observation +=  h_tmp->Integral();
 
       cout << "   ( h_data++ : " << h_data->Integral()  << " )" << endl; 
     }
-    else if(runOnData){
+
+    else if(runOnData>0){
       if(string(all_datacard_samples[s].Data()).find("data_obs")!=string::npos){
 	h_data->Add( h_tmp );
 	observation +=  h_tmp->Integral();
       }
-    }    
+    }
+
+    else{ /* ... */ }
+
   }
 
   if(errFlag>0){
@@ -2058,7 +2207,7 @@ int main(int argc, const char* argv[])
 
   //cout << "************************" << endl;
 
-  if(runOnData==0){
+  if(runOnData<=0){
 
     // approximate to integer precision
     observation = int(observation);
@@ -2575,14 +2724,14 @@ int main(int argc, const char* argv[])
   
   // PDFs qq
   line="";
-  if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_qq", 0.00, line);
-  if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "pdf_qq", 0.00, line);
-  if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "pdf_qq", 0.00, line);
-  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "pdf_qq", 0.00, line);
-  if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "pdf_qq", 0.00, line);
-  if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "pdf_qq", 0.00, line);
-  if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "pdf_qq", 0.00, line);
-  if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "pdf_qq", 0.048,line);
+  if( isTTH125there )     appendLogNSyst( aMap["TTH125"],     dir, "pdf_qqbar", 0.00, line);
+  if( isTTJetsHFbbthere ) appendLogNSyst( aMap["TTJetsHFbb"], dir, "pdf_qqbar", 0.00, line);
+  if( isTTJetsHFbthere )  appendLogNSyst( aMap["TTJetsHFb"],  dir, "pdf_qqbar", 0.00, line);
+  if( isTTJetsLFccthere ) appendLogNSyst( aMap["TTJetsLFcc"], dir, "pdf_qqbar", 0.00, line);
+  if( isTTJetsLFthere )   appendLogNSyst( aMap["TTJetsLF"],   dir, "pdf_qqbar", 0.00, line);
+  if( isTTVthere )        appendLogNSyst( aMap["TTV"],        dir, "pdf_qqbar", 0.00, line);
+  if( isSingleTthere )    appendLogNSyst( aMap["SingleT"],    dir, "pdf_qqbar", 0.00, line);
+  if( isEWKthere )        appendLogNSyst( aMap["EWK"],        dir, "pdf_qqbar", 0.048,line);
   out<<line;
   out<<endl;
   

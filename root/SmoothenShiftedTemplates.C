@@ -38,12 +38,13 @@
 #include "TString.h"
 
 #define UPDATE 0
+#define SAVE   1
 
 void smoothen(TString dir   = "datacards/May25_2014_195fb/",
-	      TString input = "MEM_New_rec_std_sb",
-	      TString cat  = "MEM_cat1_L/",
-	      TString hist = "TTJetsLFcc",
-	      TString syst = "JEC"
+	      TString input = "MEM_New_rec_std_sb_smooth",
+	      TString cat   = "MEM_cat1_L",
+	      TString hist  = "TTJetsLFcc",
+	      TString syst  = "JEC"
 	      ){
 
   
@@ -65,6 +66,7 @@ void smoothen(TString dir   = "datacards/May25_2014_195fb/",
 
   if( !h || !h_u || !h_d ){
     cout << "Miss histo" << endl;
+    f->Close();
     return;
   }
 
@@ -182,8 +184,8 @@ void smoothen(TString dir   = "datacards/May25_2014_195fb/",
       x = h->GetBinLowEdge(2);      
     }
 
-    h3_u->SetBinContent( b, nominal*(pol4_u->Eval(x)/pol4->Eval(x) ));
-    h3_d->SetBinContent( b, nominal*(pol4_d->Eval(x)/pol4->Eval(x) ));
+    h3_u->SetBinContent( b, TMath::Max( nominal*(pol4_u->Eval(x)/pol4->Eval(x) ), double(0.1) ) );
+    h3_d->SetBinContent( b, TMath::Max( nominal*(pol4_d->Eval(x)/pol4->Eval(x) ), double(0.1) ) );
 
   }
 
@@ -192,6 +194,8 @@ void smoothen(TString dir   = "datacards/May25_2014_195fb/",
     h3_d->SetLineColor(kBlue); h3_d ->SetLineWidth(2);
     h_u->SetMarkerColor(kRed); h_u->SetMarkerStyle(kOpenCircle);
     h_d->SetMarkerColor(kBlue);h_d->SetMarkerStyle(kOpenCircle);
+
+    h->SetLineWidth(2);
 
     delete pol4; delete pol4_u; delete pol4_d;  
 
@@ -202,8 +206,10 @@ void smoothen(TString dir   = "datacards/May25_2014_195fb/",
     h_u->Draw("PSAME");
     h_d->Draw("PSAME");
 
-    gPad->SaveAs("Plots/Studies/Smoothen_"+cat+"_"+hist+"_"+syst+".png");
-    f->Close();
+    if(SAVE){
+      gPad->SaveAs("Plots/Studies/Smoothen_"+cat+"_"+hist+"_"+syst+".png");
+      f->Close();
+    }
   }
   else{
     f->cd(cat);
@@ -220,28 +226,49 @@ void smoothen(TString dir   = "datacards/May25_2014_195fb/",
 void smoothenAll(){
 
   vector<TString> hists;
-  hists.push_back("TTJetsLF");
-  hists.push_back("TTJetsLFcc");
-  hists.push_back("TTJetsHFbb");
-  hists.push_back("TTJetsHFb");
-  hists.push_back("TTH125");
-  hists.push_back("TTV");
+  //hists.push_back("ttbar");
+  //hists.push_back("ttbarPlusCCbar");
+  //hists.push_back("ttbarPlusBBbar");
+  //hists.push_back("ttbarPlusB");
+  //hists.push_back("ttH_hbb");
+  //hists.push_back("ttbarV");
+  hists.push_back("singlet");
 
   vector<TString> cats;
-  cats.push_back("MEM_cat1_H");
+  //cats.push_back("MEM_cat1_H");
   //cats.push_back("MEM_cat1_L");
-  cats.push_back("MEM_cat2_H");
+  //cats.push_back("MEM_cat2_H");
   //cats.push_back("MEM_cat2_L");
-  cats.push_back("MEM_cat3_H");
+  //cats.push_back("MEM_cat3_H");
   //cats.push_back("MEM_cat3_L");
-  cats.push_back("MEM_cat6_H");
-  //cats.push_back("MEM_cat6_L");
+  //cats.push_back("MEM_cat6_H");
+  cats.push_back("MEM_cat6_L");
   
   for(unsigned int i = 0 ; i < hists.size(); i++ ){
     for(unsigned int j = 0 ; j < cats.size(); j++ ){
-      smoothen("datacards/May25_2014_195fb/", "MEM_New_rec_std_sb",  cats[j], hists[i] , "JER");
-      smoothen("datacards/May25_2014_195fb/", "MEM_New_rec_std_sb",  cats[j], hists[i] , "JEC");
+
+      // the s/b discriminant
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb",  cats[j], hists[i] , "CMS_res_j");
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb",  cats[j], hists[i] , "CMS_scale_j");
+
+      // the s/b discriminant for MC and MC-sb
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb_MC",     cats[j], hists[i] , "CMS_res_j");                     
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb_MC",     cats[j], hists[i] , "CMS_scale_j"); 
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb_MC-sb",  cats[j], hists[i] , "CMS_res_j");
+      //smoothen("datacards/PreApproval/", "MEM_New_rec_std_sb_MC-sb",  cats[j], hists[i] , "CMS_scale_j");
+
+
+      // the s/b discriminant for MH=90
+      smoothen("datacards/PreApproval/", "MEM_New_MH90_rec_std_sb",  cats[j], hists[i] , "CMS_res_j");
+      smoothen("datacards/PreApproval/", "MEM_New_MH90_rec_std_sb",  cats[j], hists[i] , "CMS_scale_j");
+
+      // the s/b discriminant for MH=160
+      //smoothen("datacards/PreApproval/", "MEM_New_MH160_rec_std_sb",  cats[j], hists[i] , "CMS_res_j");
+      //smoothen("datacards/PreApproval/", "MEM_New_MH160_rec_std_sb",  cats[j], hists[i] , "CMS_scale_j");
+
     }
   }
+
+
 
 }

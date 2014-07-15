@@ -15,20 +15,20 @@ process.fwliteInput = cms.PSet(
     pathToFile    = cms.vstring(
     #'./root/S_1.hepmc2g',
     inputDir+'/sample_'+gen+'_'+proc+'_unweighted.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.1.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.2.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.3.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.4.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.5.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.6.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.7.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.8.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.9.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.1.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.2.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.3.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.4.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.5.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.6.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.7.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.8.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.9.hepmc2g',
     ),
 
     # output file name
-    outFileName   = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/DiJetPt_TTH125_sherpa_"+gen+"_unweighted_matchByAlgo_TauDecay.root"),
-    #outFileName   = cms.string("./root/TEST.root"),
+    #outFileName   = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/DiJetPt_TTH125_sherpa_"+gen+"_unweighted_matchByAlgo_TauDecay.root"),
+    outFileName   = cms.string("./root/TEST.root"),
 
     # print out intermediate steps
     verbose       = cms.bool(False),
@@ -61,10 +61,10 @@ process.fwliteInput = cms.PSet(
     overlapLep    = cms.double(0.5),
 
     # define jet flavour b/c if a b/c quark among jet const., else a gluon
-    jetFlavourByConst    = cms.bool(False),
+    jetFlavourByConst    = cms.bool(True),
    
     # define jet flavour b/c if a b/c quark matched with dR<jetFlavourAlgodR, else take highest-energy parton
-    jetFlavourByAlgo     = cms.bool(True),
+    jetFlavourByAlgo     = cms.bool(False),
     jetFlavourAlgodR     = cms.double(0.3),
     
     # define jet flavour by parton flavour closest in dR, with dR<=jetFlavourdR and |p_part-p_jet|/p_jet<jetFlavourPtRel

@@ -5,6 +5,7 @@ import re
 import os
 import ROOT
 import subprocess
+import string
 from time import sleep
 
 import sys
@@ -17,7 +18,7 @@ from Bianchi.TTHStudies.mem_categories_cff import *
 ###########################################
 ###########################################
 
-PSI  = 0
+PSI  = 1
 qsub = ''
 if PSI==1:
     qsub            = 'qsub -V -cwd -l h_vmem=2G -q all.q'
@@ -49,7 +50,7 @@ def addJetPt40Cut ( process, numJets ) :
 ###########################################
  
 
-def submitDataCardMakerFWlite_Limits(category):
+def submitDataCardMakerFWlite_Limits(category, version="_rec_std", massH=125):
 
     if len(sys.argv)<2:
         print "Specify how to run the job: [batch,local]"
@@ -58,7 +59,7 @@ def submitDataCardMakerFWlite_Limits(category):
     print "Overload datacardMakerFWlite.py..."
     os.system('cp ../python/datacardMakerFWlite.py ./')
 
-    from datacardMakerFWlite import process
+    from datacardMakerFWlite import process    
 
     if   category == "cat1_sb":
         process.fwliteInput = cat1_sb.clone()
@@ -116,6 +117,10 @@ def submitDataCardMakerFWlite_Limits(category):
     if ADDDIJETPTCUT:
         addDiJetPtCut( process.fwliteInput )
 
+    process.fwliteInput.version = cms.string( version )
+    process.fwliteInput.massH   = cms.untracked.double( massH )
+        
+
     scriptName = 'job_'+category+'.sh'
     jobName    = 'job_'+category
 
@@ -143,6 +148,7 @@ def submitDataCardMakerFWlite_Limits(category):
     if sys.argv[1]== "batch":
         print submitToQueue
         os.system(submitToQueue)
+        sleep(1)
     elif sys.argv[1]== "local":
         subprocess.call( ['DataCardMakerNewFWlite', jobName+'.py', category] )
     else:
@@ -259,7 +265,7 @@ def submitDataCardMakerFWlite_Limits_Optimization(category, extracut, trial, fac
 ###########################################
  
 
-def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname, nparts, part, binvec, analysis, inputpath="", version="", outdir=""):
+def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname, nparts, part, binvec, binvecY, analysis, inputpath="", version="", outdir="", do2Dplots=0):
 
     if len(sys.argv)<2:
         print "Specify how to run the job: [batch,local]"
@@ -281,7 +287,9 @@ def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname
     process.fwliteInput.nparts    = cms.int32(nparts)
     process.fwliteInput.part      = cms.int32(part)
     process.fwliteInput.binvec    = cms.vdouble(binvec)
+    process.fwliteInput.binvecY   = cms.vdouble(binvecY)
     process.fwliteInput.nBins     = cms.int32(len(binvec)-1)
+    process.fwliteInput.nBinsY    = cms.untracked.int32(len(binvecY)-1)
     if inputpath:
         process.fwliteInput.inputpath = cms.string(inputpath) #otherwise default
     if outdir:
@@ -302,7 +310,10 @@ def submitDataCardMakerFWlite(varname, category, cut, script, samples, extraname
 
     if ADDJETPT40CUT:
         addJetPt40Cut( process.fwliteInput, NR_PT40_JETS )
-        
+
+
+    process.fwliteInput.do2Dplots  = cms.untracked.int32(do2Dplots)
+    
     print "Creating the shell file for the batch..."
     scriptName = 'job_'+script+'.sh'
     jobName    = 'job_'+script
@@ -346,6 +357,7 @@ sampless_ALL = [
     [["DiBoson"], 1],
     [["TTJetsBB"],1],
     [["TTJetsBJ"],1],
+    [["TTJetsCC"],1],
     [["TTJetsJJ"],1],
     [["TTH125"],  1],
     [["EWK"],     1],
@@ -354,27 +366,35 @@ sampless_ALL = [
 
 
 sampless_SL = [
-    [["TTV", "SingleT", "DiBoson","EWK" ],          1],
-    [["TTJetsBB", "TTJetsBJ", "TTJetsJJ"],          1],
-    [["TTH125"],                                    1],
-    [["Run2012_SingleMu", "Run2012_SingleElectron"],1],
+    [["TTV", "SingleT", "DiBoson","EWK", "TTJetsBB", "TTJetsBJ", "TTJetsCC", "TTJetsJJ", "TTH125", "Run2012_SingleMu", "Run2012_SingleElectron"],          1],
+    #[["TTV", "SingleT", "DiBoson","EWK" ],          1],
+    #[["TTJetsBB", "TTJetsBJ", "TTJetsCC", "TTJetsJJ"],          1],
+    #[["TTH125"],                                    1],
+    #[["Run2012_SingleMu", "Run2012_SingleElectron"],1],
+
     ]
 
 sampless_DL = [
-    [["TTV", "SingleT", "DiBoson","EWK" ],          1],
-    [["TTJetsBB", "TTJetsBJ", "TTJetsJJ"],          1],
-    [["TTH125"],                                    1],
-    [["Run2012_SingleMu", "Run2012_DoubleElectron"],1],
+    [["TTV", "SingleT", "DiBoson","EWK", "TTJetsBB", "TTJetsBJ", "TTJetsCC", "TTJetsJJ", "TTH125", "Run2012_SingleMu", "Run2012_DoubleElectron"],          1],
+    #[["TTV", "SingleT", "DiBoson","EWK" ],          1],
+    #[["TTJetsBB", "TTJetsBJ", "TTJetsCC", "TTJetsJJ"],          1],
+    #[["TTH125"],                                    1],
+    #[["Run2012_SingleMu", "Run2012_DoubleElectron"],1],
     ]
 
-def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, analysis, sampless=[], inputpath="", version="", outdir=""):
+def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, binvecY, analysis, sampless=[], inputpath="", version="", outdir=""):
     """
     Optional arguments (otherwise use default values from ../python/mem_categories.py):
     inputpath -- path for inputfiles
     outdir -- directory, where the output root files are saved in ../root/datacards/
     version -- production version of MEM ntuples (e.g. '_ntuplizeAll_v3_rec_std')
     """
-    counter = 0
+    counter = 0    
+
+    do2Dplots = 0
+    if re.search(":", varname)!=None and re.search("::", varname)==None:
+        do2Dplots = 1
+        print "Doing a 2D plot for variable ", varname
 
     if sampless == []:
         if analysis==0:
@@ -394,7 +414,7 @@ def submitDataCardMakerFWlite_all( varname, category, cut, selection, binvec, an
             counter += 1
             script  = selection + "_" + category + "_p"+str(counter)
 
-            submitDataCardMakerFWlite( varname, category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, analysis, inputpath, version, outdir)
+            submitDataCardMakerFWlite( varname, category, cut, script, toBeRun, "_"+selection+"_"+outfile+"_"+str(split), samples[1], split, binvec, binvecY, analysis, inputpath, version, outdir, do2Dplots)
             sleep(1)
 
       
