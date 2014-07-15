@@ -41,7 +41,7 @@ cat = cms.PSet(
     extraname = cms.string(""),
     fname     = cms.string("MEM"),
     inputpath = cms.string("../root/files/byLLR/Apr23_2014/"),
-    directory = cms.string("PreApproval/checks"),
+    directory = cms.string("Approval/"),
     cut       = cms.string(""),
     category  = cms.string(""),
     varname   = cms.string(""),
@@ -99,6 +99,15 @@ var_cat3_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.012640*p_125_all_b_
 var_cat3_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001554*p_125_all_b_ttbb+1.565640*p_125_all_b_ttjj))"
 var_cat6_H = "p_125_all_s_ttbb/(p_125_all_s_ttbb+0.600000*(0.014056*p_125_all_b_ttbb+6.107426*p_125_all_b_ttjj))"
 var_cat6_L = "p_125_all_s_ttbb/(p_125_all_s_ttbb+2.000000*(0.001497*p_125_all_b_ttbb+0.018406*p_125_all_b_ttjj))"
+
+bbjj_cat1_L = "119.3"
+bbjj_cat2_L = "71.7"
+bbjj_cat3_L = "83.5"
+bbjj_cat6_L = "0.877762"
+bbjj_cat1_H = "19748.9"
+bbjj_cat2_H = "3063.46"
+bbjj_cat3_H = "1567.48"
+bbjj_cat6_H = "136.58"
 
 #################### ttbb vs ttjj discrimination
 
@@ -206,7 +215,7 @@ cat1_sb_H =  cat1_bj.clone(
     extraname     = cms.string("_sb"+extraNameBlind),
     doMEM         = cms.int32(2),
     fact1         = cms.double(1.2),
-    splitFirstBin = cms.int32(1),
+    splitFirstBin = cms.int32(1), ###### <========
     )
 
 
