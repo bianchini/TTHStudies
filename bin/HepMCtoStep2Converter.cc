@@ -138,6 +138,10 @@ public:
 class IsCquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if ( abs(p->pdg_id())==4 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
@@ -146,6 +150,10 @@ public:
 class IsBquark {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if ( abs(p->pdg_id())==5 && p->status()==1  && !p->end_vertex() ) return 1; // check here !!!
     return 0;
   }
@@ -155,12 +163,19 @@ class IsPartonForMatch {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
 
-    int status =  p->status();
-    int pdg    =  p->pdg_id();
-    int vtx    =  p->production_vertex() ? p->production_vertex()->id() : -99; 
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
 
-    if( abs(vtx)<4  &&  status==11               &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
-    if( abs(vtx)==4 && (status==11 || status==1) &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
+    int status =  p->status();
+    int pdg    =  abs(p->pdg_id());
+    int vtx    =  p->production_vertex() ? p->production_vertex()->id() : -99;    
+
+    // vtx < 4 is ME or hard decay
+    //if( abs(vtx)<4  &&  status==11               &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
+
+    // vtx = 4 is the PS 
+    //if( abs(vtx)==4 && (status==11 || status==1) &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
+    if( abs(vtx)==4 && status==11 &&  (pdg==1 || pdg==2 || pdg==3 || pdg==4 || pdg==5 || pdg==21) ) return 1;
 
     return 0;
   }
@@ -169,7 +184,16 @@ public:
 class IsLquarkME {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
+      
+      // vtx = 1 & status = 3 catches partons from ME in production vtx  
+      if ( (p->production_vertex()->id())==1 && abs( p->pdg_id() )<4 && p->status()==3   ) return 1; // check here !!!
+
+      // vtx = 3 & status = 11 catches partons from ME in hard decay  
       if ( (p->production_vertex()->id())==3 && abs( p->pdg_id() )<4 && p->status()==11  ) return 1; // check here !!!
     }
     return 0;
@@ -179,7 +203,12 @@ public:
 class IsCquarkME {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
+      if ( (p->production_vertex()->id())==1 && abs(p->pdg_id())==4 && p->status()==3   ) return 1; // check here !!!
       if ( (p->production_vertex()->id())==3 && abs(p->pdg_id())==4 && p->status()==11  ) return 1; // check here !!!
     }
     return 0;
@@ -189,7 +218,12 @@ public:
 class IsBquarkME {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
+      if ( (p->production_vertex()->id())==1 &&  abs(p->pdg_id())==5 && p->status()==3   ) return 1; // check here !!!
       if ( (p->production_vertex()->id())==3 &&  abs(p->pdg_id())==5 && p->status()==11  ) return 1; // check here !!!
     }
     return 0;
@@ -200,6 +234,10 @@ public:
 class IsLquarkHad {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
       if ( (p->production_vertex()->id())==4 && ( abs( p->pdg_id() )<4 || p->pdg_id()==21) && p->status()==11  ) return 1; // check here !!!
     }
@@ -210,6 +248,10 @@ public:
 class IsCquarkHad {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
       if ( (p->production_vertex()->id())==4 && abs(p->pdg_id())==4 && p->status()==11  ) return 1; // check here !!!
     }
@@ -220,6 +262,10 @@ public:
 class IsBquarkHad {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    if( p->momentum().perp()<1e-03 ) return 0;
+
     if( p->production_vertex() ){
       if ( (p->production_vertex()->id())==4 &&  abs(p->pdg_id())==5 && p->status()==11  ) return 1; // check here !!!
     }
@@ -231,6 +277,10 @@ public:
 class IsLhadron {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    //if( p->momentum().perp()<1e-03 ) return 0;
+
     int pdg = abs(p->pdg_id());
     if ( pdg!=22 && ( (pdg%1000/100>0 && pdg%1000/100<4) || (pdg%10000/1000>0 && pdg%10000/1000<4) ) && p->status()==1 ) return 1; // check here !!!
     return 0;
@@ -241,6 +291,9 @@ public:
 class IsChadron {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    //if( p->momentum().perp()<1e-03 ) return 0;
 
     int pdg = abs(p->pdg_id());
 
@@ -263,6 +316,9 @@ public:
 class IsBhadron {
 public:
   bool operator()( const HepMC::GenParticle* p ) {
+
+    // do not consider stuff along beampipe
+    //if( p->momentum().perp()<1e-03 ) return 0;
 
     int pdg = abs(p->pdg_id());
 
@@ -423,6 +479,8 @@ int main(int argc, const char* argv[])
 
   bool   jetFlavourByHad     ( in.getParameter<bool>         ("jetFlavourByHad"));
   double jetFlavourHaddR     ( in.getParameter<double>       ("jetFlavourHaddR") );
+
+  bool   jetFlavourByHadAnc  ( in.getParameter<bool>         ("jetFlavourByHadAnc"));
 
   bool   jetFlavourByMindR   ( in.getParameter<bool>         ("jetFlavourByMindR"));
   double jetFlavourdR        ( in.getParameter<double>       ("jetFlavourdR") );
@@ -794,8 +852,9 @@ int main(int argc, const char* argv[])
 	
 	// loop over all particles in the event record
 	for ( HepMC::GenEvent::particle_iterator p = evt->particles_begin();
-	      p != evt->particles_end(); ++p ) {
-	  
+	      p != evt->particles_end(); ++p ) {	  
+
+
 	  // push back final-state particles that are neither top nor higgs
 	  // [ is_fs_particle() selects only status=1 particles, but if the top and higgs are undecayed
 	  // they will ahve such status ]
@@ -805,10 +864,10 @@ int main(int argc, const char* argv[])
 	       !is_w_boson(*p) ) 
 	    finalstateparticles.push_back(*p);
 
-	    if ( is_b_quark_ME(*p) )     bquarksME.push_back(*p);
-	    if ( is_c_quark_ME(*p) )     cquarksME.push_back(*p);
-	    if ( is_l_quark_ME(*p) )     lquarksME.push_back(*p);
-	    if ( is_parton_for_match(*p) ) partonsForMatch.push_back(*p);
+	  if ( is_b_quark_ME(*p) )       bquarksME.push_back(*p);
+	  if ( is_c_quark_ME(*p) )       cquarksME.push_back(*p);
+	  if ( is_l_quark_ME(*p) )       lquarksME.push_back(*p);
+	  if ( is_parton_for_match(*p) ) partonsForMatch.push_back(*p);
 
 	  if(!fragmentation){
 	    if ( is_b_quark(*p) )     bquarks.push_back(*p);
@@ -823,15 +882,15 @@ int main(int argc, const char* argv[])
 
 	    if      ( is_b_hadron(*p) ){
 	      bhadrons.push_back(*p);
-	      if( verbose ) cout << "B-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
+	      //if( verbose ) cout << "B-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
 	    }
 	    else if ( is_c_hadron(*p) ){
 	      chadrons.push_back(*p);
-	      if( verbose ) cout << "C-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
+	      //if( verbose ) cout << "C-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
 	    }
 	    else if ( is_l_hadron(*p) ){
 	      lhadrons.push_back(*p);
-	      if( verbose ) cout << "L-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
+	      //if( verbose ) cout << "L-hadron " << (*p)->pdg_id() << ", " << (*p)->status() << endl;
 	    }
 
 	  }
@@ -884,6 +943,21 @@ int main(int argc, const char* argv[])
 				 ((*p)->momentum()).pz(),  
 				 ((*p)->momentum()).e() );
 	    cout << "c-quark (ME)" << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
+	  }
+
+	  for ( std::list<HepMC::GenParticle*>::iterator p = bhadrons.begin() ; p!=bhadrons.end() ; p++ ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    cout << "b-hadrons  " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
+	  }
+	  for ( std::list<HepMC::GenParticle*>::iterator p = chadrons.begin() ; p!=chadrons.end() ; p++ ){
+	    TLorentzVector part( ((*p)->momentum()).px(),  
+				 ((*p)->momentum()).py(),  
+				 ((*p)->momentum()).pz(),  
+				 ((*p)->momentum()).e() );
+	    cout << "c-hadrons  " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 	    
 	  }
 	 	  
 	}
@@ -1143,6 +1217,9 @@ int main(int argc, const char* argv[])
  
 	    }
 	    
+
+	    ///////////// if fragmentation = 1: /////////////
+
 	    if(verbose) cout << "    @ Check for nearby partons from ME:" << endl;
 
 	    // check for closest particle matching
@@ -1199,12 +1276,15 @@ int main(int argc, const char* argv[])
 		}
 	      }
 	    }
-	    if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from ME" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
+	    //if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from ME" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
 
 
-	    if(verbose) cout << "    @ Check for nearby partons from ME or from the shower" << endl;
+	    if(verbose) cout << "    @ Check for nearby partons from the PS" << endl;
 	    closestdRME   = 999.;
 	    for ( std::list<HepMC::GenParticle*>::iterator p = partonsForMatch.begin() ; p!=partonsForMatch.end() ; p++ ){
+
+	      if( ((*p)->momentum()).perp()<0.1 ) continue;
+
 	      TLorentzVector part( ((*p)->momentum()).px(),  
 				   ((*p)->momentum()).py(),  
 				   ((*p)->momentum()).pz(),  
@@ -1216,11 +1296,11 @@ int main(int argc, const char* argv[])
 		if(dist < closestdRME){
 		  closestdRME    = dist;
 		  partonMatch    = part ;
-		  if(verbose) cout << "      > jet matching to ME parton pdg=" << (*p)->pdg_id() << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jet matching to PS parton pdg=" << (*p)->pdg_id() << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
-	    if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from ME or shower" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
+	    //if(verbose && partonMatch.E()>1e-2) cout << "    --> matched parton from PS" << ": (" << partonMatch.Pt() << "," << partonMatch.Eta() << "," << partonMatch.Phi() << "," << partonMatch.M() << ")" <<  endl; 
 
 	    
 
@@ -1239,6 +1319,9 @@ int main(int argc, const char* argv[])
 	    float hardestE  = -999.;
 
 	    for ( std::list<HepMC::GenParticle*>::iterator p = lquarks.begin() ; p!=lquarks.end() ; p++ ){
+
+	      if( ((*p)->momentum()).perp()<0.1 ) continue;
+
 	      TLorentzVector part( ((*p)->momentum()).px(),  
 				   ((*p)->momentum()).py(),  
 				   ((*p)->momentum()).pz(),  
@@ -1252,14 +1335,14 @@ int main(int argc, const char* argv[])
 		  hardestE   = part.E();
 		  hardestPdg = (*p)->pdg_id(); 
 		}
-		if(verbose && jetFlavourByAlgo) cout << "      > jetFlavourByAlgo: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose) cout << "      > jetFlavourByAlgo: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 
 	      if( dist < jetFlavourdR && PtRel<jetFlavourPtRel ){
 		if(dist < closestdR){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jetFlavourByMindR: light-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1281,7 +1364,7 @@ int main(int argc, const char* argv[])
 		if(dist < closestdR ){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jetFlavourByMindR: c-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }
@@ -1296,14 +1379,14 @@ int main(int argc, const char* argv[])
 
 	      if( dist < jetFlavourAlgodR ){
 		numMatchedBs++;
-		if(verbose && jetFlavourByAlgo) cout << "      > jetFlavourByAlgo: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose ) cout << "      > jetFlavourByAlgo: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 
 	      if( dist < jetFlavourdR  && PtRel<jetFlavourPtRel ){
 		if(dist < closestdR){
 		  closestdR  = dist;
 		  closestPdg = (*p)->pdg_id();
-		  if(verbose && jetFlavourByMindR) cout << "      > jetFlavourByMindR: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
+		  if(verbose) cout << "      > jetFlavourByMindR: b-quark " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist << ", dPt=" << PtRel <<  endl; 
 		}
 	      }
 	    }	  
@@ -1323,7 +1406,7 @@ int main(int argc, const char* argv[])
 	      float dist  = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR){
 		matchesLhad++;
-		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad:  light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose) cout << "      > jetFlavourByHad:  light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }
 	    
@@ -1335,7 +1418,7 @@ int main(int argc, const char* argv[])
 	      float dist = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR ){
 		matchesChad++;
-		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad: c-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose) cout << "      > jetFlavourByHad: c-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }
 	    
@@ -1347,46 +1430,115 @@ int main(int argc, const char* argv[])
 	      float dist = dR(part,jet_j) ;
 	      if( dist < jetFlavourHaddR  ){
 		matchesBhad++;
-		if(verbose && jetFlavourByHad) cout << "      > jetFlavourByHad: b-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
+		if(verbose) cout << "      > jetFlavourByHad: b-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ") has dR=" << dist <<  endl; 
 	      }
 	    }	  
 
 
+
+	    if(verbose) cout << "    @ Check for ancestors hadrons:" << endl;
+
+	    int matchesBhadAsAncestor = 0;
+	    int matchesChadAsAncestor = 0;
+
+	    // loop over the constituents
+	    for(unsigned int k = 0 ; k < constituents_j.size() ; k++){
+		
+		// take the kth constituent...
+		fastjet::PseudoJet const_k = constituents_j[k] ;	
+		TLorentzVector p_k( const_k.px(),  const_k.py(),  const_k.pz(),  const_k.e() );
+		
+				
+		// check of which type it is (use angular matching)
+		for ( std::list<HepMC::GenParticle*>::iterator p = lhadrons.begin() ; p!=lhadrons.end() ; p++ ){
+		  TLorentzVector part( ((*p)->momentum()).px(),  
+				       ((*p)->momentum()).py(),  
+				       ((*p)->momentum()).pz(),  
+				       ((*p)->momentum()).e() );
+		  float dist = dR(part, p_k) ;
+		  if( dist<1e-04 && TMath::Abs(part.E()-p_k.E())/p_k.E()<1e-04 ){
+
+		    //if(verbose) cout << "      jet constituent #" << k << " matches with light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+
+		    for ( HepMC::GenVertex::particle_iterator anc = (*p)->production_vertex()->particles_begin(HepMC::ancestors);
+			  anc != (*p)->production_vertex()->particles_end(HepMC::ancestors); ++anc ){		   
+
+		      if( (*anc)->status()!=2 ) continue;
+		      //if(verbose) cout << "      ancestor id=" << (*anc)->pdg_id() << ", status=" << (*anc)->status() << endl;
+
+		      for ( std::list<HepMC::GenParticle*>::iterator bhad = bhadrons.begin() ; bhad != bhadrons.end() ; ++bhad ){
+			if( *(*anc)==*(*bhad) ){
+			  matchesBhadAsAncestor++;
+			  if(verbose){
+			    cout << "      jet constituent #" << k << " matches with light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+			    cout << "       > match with a b-hadron (" << (*bhad)->momentum().perp() << "," << (*bhad)->momentum().eta() << "," << (*bhad)->momentum().phi() << ") as a ancestor" << endl;
+			  }
+			}
+		      }
+		      for ( std::list<HepMC::GenParticle*>::iterator chad = chadrons.begin() ; chad != chadrons.end() ; ++chad ){
+			if( *(*anc) == *(*chad) ){
+			  matchesChadAsAncestor++;
+			  if(verbose){
+			    cout << "      jet constituent #" << k << " matches with light-hadron " << ": (" << part.Pt() << "," << part.Eta() << "," << part.Phi() << "," << part.M() << ")" << endl; 
+			    cout << "       > match with a c-hadron (" << (*chad)->momentum().perp() << "," << (*chad)->momentum().eta() << "," << (*chad)->momentum().phi() << ") as a ancestor" << endl;
+			  }
+			}
+		      }
+		      
+		    }
+		    
+		  }
+		  
+		}
+	    }
+
+
+
+
+
+
+
 	    // decide the flavour based on the selected algorithm
-	    int jet_flavour = -99;
 	    
-	    if( jetFlavourByAlgo ){
-	      if     ( numMatchedBs>0 ) jet_flavour = 5;
-	      else if( numMatchedCs>0 ) jet_flavour = 4;
-	      else if( numMatchedLs>0 ) jet_flavour = hardestPdg;
-	      else jet_flavour = -99;
-	    }
+	    // this is st depending on the desired option
+	    int jet_flavour     = -99;	    
 
-	    if( jetFlavourByConst ){
-	      if     ( numBs>0 ) jet_flavour = 5;
-	      else if( numCs>0 ) jet_flavour = 4;
-	      else if( numLs>0 ) jet_flavour = 21;
-	      else  jet_flavour = -99;
-	    }
+	    // this is used for transient record of various flavor assignments
+	    int jet_flavour_tmp = -99;
 
-	    if( jetFlavourByMindR ){
-	      jet_flavour = closestPdg;
-	    }
+	    if     ( numMatchedBs>0 ) jet_flavour_tmp = 5;
+	    else if( numMatchedCs>0 ) jet_flavour_tmp = 4;
+	    else if( numMatchedLs>0 ) jet_flavour_tmp = hardestPdg;
+	    else jet_flavour_tmp = -99;
+	    if( verbose ) cout << "    --> jet flavour (jetFlavourByAlgo): "  << jet_flavour_tmp << endl;
+	    if( jetFlavourByAlgo ) jet_flavour = jet_flavour_tmp;	    	    
 
-	    if( jetFlavourByHad ){
-	      if     ( matchesBhad>0 ) jet_flavour = 5;
-	      else if( matchesChad>0 ) jet_flavour = 4;
-	      else if( matchesLhad>0 ) jet_flavour = 21;
-	      else jet_flavour = -99;
-	    }
-
-
-	    // save the results
-	    if( verbose && jetFlavourByConst) cout << "    --> jet flavour (jetFlavourByConst): " << jet_flavour << endl;
-	    if( verbose && jetFlavourByAlgo ) cout << "    --> jet flavour (jetFlavourByAlgo): "  << jet_flavour << endl;
-	    if( verbose && jetFlavourByMindR) cout << "    --> jet flavour (jetFlavourByMindR): " << jet_flavour << endl;
-	    if( verbose && jetFlavourByHad  ) cout << "    --> jet flavour (jetFlavourByHad): "   << jet_flavour << endl;
+	    if     ( numBs>0 ) jet_flavour_tmp = 5;
+	    else if( numCs>0 ) jet_flavour_tmp = 4;
+	    else if( numLs>0 ) jet_flavour_tmp = 21;
+	    else  jet_flavour_tmp = -99;
+	    if( verbose ) cout << "    --> jet flavour (jetFlavourByConst): " << jet_flavour_tmp << endl;
+	    if( jetFlavourByConst ) jet_flavour = jet_flavour_tmp;
+	     
 	    
+	    jet_flavour_tmp = closestPdg;
+	    if( verbose ) cout << "    --> jet flavour (jetFlavourByMindR): " << jet_flavour_tmp << endl;
+	    if( jetFlavourByMindR )  jet_flavour = jet_flavour_tmp;	    
+
+	    if     ( matchesBhad>0 ) jet_flavour_tmp = 5;
+	    else if( matchesChad>0 ) jet_flavour_tmp = 4;
+	    else if( matchesLhad>0 ) jet_flavour_tmp = 21;
+	    else jet_flavour_tmp = -99;
+	    if( verbose ) cout << "    --> jet flavour (jetFlavourByHad): "   << jet_flavour_tmp << endl;
+	    if( jetFlavourByHad )  jet_flavour = jet_flavour_tmp;	    	    
+
+	    if     (matchesBhadAsAncestor>0) jet_flavour_tmp = 5;
+	    else if(matchesChadAsAncestor>0) jet_flavour_tmp = 4;
+	    else jet_flavour_tmp = -99;
+	    if( verbose ) cout << "    --> jet flavour (jetFlavourByHadAnc): "<< jet_flavour_tmp << endl;
+	    if( jetFlavourByHadAnc )  jet_flavour = jet_flavour_tmp;
+	    	  
+
 	    if( abs(jet_flavour)==5 ) jetBCounter++;
 	    if( abs(jet_flavour)==4 ) jetCCounter++;
 

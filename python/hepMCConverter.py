@@ -2,9 +2,9 @@ import FWCore.ParameterSet.Types as CfgTypes
 import FWCore.ParameterSet.Config as cms
 
 
-inputDir = '/scratch/bianchi/HepMC/ttH_LO_TauDecay/'
-gen      = 'LOPS_TauDecay'
-proc     = 'ttH'
+inputDir = '/scratch/bianchi/Sherpa/test/HepMC/'
+gen      = ''
+proc     = ''
 
 
 process = cms.Process("HEPMC")
@@ -13,8 +13,8 @@ process.fwliteInput = cms.PSet(
 
     # input file names
     pathToFile    = cms.vstring(
-    #'./root/S_1.hepmc2g',
-    inputDir+'/sample_'+gen+'_'+proc+'_unweighted.hepmc2g',
+    inputDir+'S_1.hepmc2g',
+    #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.hepmc2g',
     #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.1.hepmc2g',
     #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.2.hepmc2g',
     #inputDir+'/sample_'+gen+'_'+proc+'_unweighted.3.hepmc2g',
@@ -31,7 +31,7 @@ process.fwliteInput = cms.PSet(
     outFileName   = cms.string("./root/TEST.root"),
 
     # print out intermediate steps
-    verbose       = cms.bool(False),
+    verbose       = cms.bool( False ),
 
     # select only events passing lepton cut
     filter        = cms.bool(False),
@@ -44,7 +44,7 @@ process.fwliteInput = cms.PSet(
     shower        = cms.bool(True),
     
     # was the sample generated with fragmentation ?
-    fragmentation = cms.bool(False),
+    fragmentation = cms.bool(True),
 
     # use the best gen-p4 by matched partons (jetFlavourByMindR) for genJet
     genJetsByMindR  = cms.bool(False),
@@ -61,7 +61,7 @@ process.fwliteInput = cms.PSet(
     overlapLep    = cms.double(0.5),
 
     # define jet flavour b/c if a b/c quark among jet const., else a gluon
-    jetFlavourByConst    = cms.bool(True),
+    jetFlavourByConst    = cms.bool(False),
    
     # define jet flavour b/c if a b/c quark matched with dR<jetFlavourAlgodR, else take highest-energy parton
     jetFlavourByAlgo     = cms.bool(False),
@@ -75,6 +75,9 @@ process.fwliteInput = cms.PSet(
     # define jet flavour b/c if a b/c-hadron matched with dR<jetFlavourHaddR, else light
     jetFlavourByHad      = cms.bool(False),
     jetFlavourHaddR      = cms.double(0.4),
+
+    # define jet flavour b/c if a b/c-hadron is ancestor to at least oen jet constituent, else light
+    jetFlavourByHadAnc   = cms.bool(True),
     
     # lepton definition
     rIsoLep       = cms.double(0.10),

@@ -1010,6 +1010,9 @@ int main(int argc, const char* argv[])
     float           weightTrig2012;
     UChar_t         triggerFlags[70];
     float           SCALEsyst[12];
+    // gen event information
+    GenEventInfo GENEVENT;
+    int isGenEventThere = 0;
 
     Int_t   vLepton_type      [2];
     Float_t vLepton_mass      [2];
@@ -1090,6 +1093,10 @@ int main(int argc, const char* argv[])
     //if( currentTree->GetBranch("") )
 
     currentTree->SetBranchAddress("EVENT",            &EVENT);
+    if   ( currentTree->GetBranch("GENEVENT") ){
+      currentTree->SetBranchAddress("GENEVENT",       &GENEVENT);
+      isGenEventThere = 1;
+    }
     if   ( currentTree->GetBranch("PUweight") )       currentTree->SetBranchAddress("PUweight",         &PUweight);
     if   ( currentTree->GetBranch("PUweightP") )      currentTree->SetBranchAddress("PUweightP",        &PUweightP);
     if   ( currentTree->GetBranch("PUweightM") )      currentTree->SetBranchAddress("PUweightM",        &PUweightM);
@@ -1307,7 +1314,13 @@ int main(int argc, const char* argv[])
 	SCALEsyst_[1] = TMath::Power(SCALEsyst[2],SCALEsyst[1])*SCALEsyst[4]/normDown;
 	SCALEsyst_[2] = TMath::Power(SCALEsyst[3],SCALEsyst[1])*SCALEsyst[5]/normUp;
       }
-      
+      if( doGenLevelAnalysis && isGenEventThere){
+	SCALEsyst_[0] = GENEVENT.weights[0]; // the event weight
+	SCALEsyst_[1] = GENEVENT.weights[3]; // # of trials
+	SCALEsyst_[2] = GENEVENT.xSec;       //  the xSec at that event
+      }
+
+
       probAtSgn_          =  0.;
       probAtSgn_alt_      =  0.;
 
@@ -1733,19 +1746,19 @@ int main(int argc, const char* argv[])
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
 	  if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
 	  if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
-	  if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v1_++;
+	  if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_++; //baseline
 	}
 
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
           if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
           if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
-          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v2_++;
+          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v1_++; 
         }
 
 	if( hJet_pt[hj]>30 && hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
           if( topBLV.Pt()>10 && deltaR(topBLV, hJLV )<0.5 ) continue;
           if(atopBLV.Pt()>10 && deltaR(atopBLV,hJLV )<0.5 ) continue;
-          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_++; //baseline
+          if( abs(hJet_flavour[hj])==5 ) nMatchSimBs_v2_++; 
         }
 
       }
@@ -1758,19 +1771,19 @@ int main(int argc, const char* argv[])
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
 	  if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
 	  if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
-	  if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v1_++;
+	  if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_++;
 	}
 
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
           if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
           if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
-          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v2_++;
+          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v1_++;
         }
 
 	if( aJet_pt[aj]>30 && aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
           if( topBLV.Pt()>10 && deltaR(topBLV, aJLV )<0.5 ) continue;
           if(atopBLV.Pt()>10 && deltaR(atopBLV,aJLV )<0.5 ) continue;
-          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_++;
+          if( abs(aJet_flavour[aj])==5 ) nMatchSimBs_v2_++;
         }
 
       }
@@ -1786,19 +1799,19 @@ int main(int argc, const char* argv[])
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<5 ){
 	  if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
 	  if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
-	  if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v1_++;
+	  if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_++;
 	}
 
 	if( hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
           if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
           if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
-          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v2_++;
+          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v1_++;
         }
 
 	if( hJet_pt[hj]>30 && hJLV.Pt()>20 && TMath::Abs(hJLV.Eta())<2.5 ){
           if( topCLV.Pt()>10 && deltaR(topCLV, hJLV )<0.5 ) continue;
           if(atopCLV.Pt()>10 && deltaR(atopCLV,hJLV )<0.5 ) continue;
-          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_++;
+          if( abs(hJet_flavour[hj])==4 ) nMatchSimCs_v2_++;
         }
 
       }
@@ -1811,19 +1824,19 @@ int main(int argc, const char* argv[])
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<5 ){
 	  if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
 	  if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
-	  if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v1_++;
+	  if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_++;
 	}
 
 	if( aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
           if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
           if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
-          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v2_++;
+          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v1_++;
         }
 
 	if( aJet_pt[aj]>30 && aJLV.Pt()>20 && TMath::Abs(aJLV.Eta())<2.5 ){
           if( topCLV.Pt()>10 && deltaR(topCLV, aJLV )<0.5 ) continue;
           if(atopCLV.Pt()>10 && deltaR(atopCLV,aJLV )<0.5 ) continue;
-          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_++;
+          if( abs(aJet_flavour[aj])==4 ) nMatchSimCs_v2_++;
         }
 
       }
@@ -2635,14 +2648,14 @@ int main(int argc, const char* argv[])
 	  }
 
 	  // assume 16 average PU
-	  //int nPU_ran        = ran->Poisson(16);	  
+	  int nPU_ran        = ran->Poisson(16);	  
 	  // assume each PU gives 50 GeV of sumEt
-	  //float sumEt_PU_ran = nPU_ran*20.;
+	  float sumEt_PU_ran = nPU_ran*50.;
 	  // add the extra smear
-	  //MET_sumEt_ += sumEt_PU_ran;
+	  MET_sumEt_ += sumEt_PU_ran;
 
-	  deltaPx    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
-	  deltaPy    += 0.;//ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  deltaPx    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  deltaPy    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
 	  
 	  // keep it fixed to a value such that sx~29 GeV
 	  //MET_sumEt_ = 1800.;
