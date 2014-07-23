@@ -1127,3 +1127,109 @@ samples_V4       = cms.VPSet(
     ),
 
     )
+
+
+samples_HepMC       = cms.VPSet(
+
+
+    ###################################################################################
+    #################  tt+bb from Sherpa+OL
+    ###################################################################################
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('default'),
+    nickName = cms.string('default'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('defaultX05'),
+    nickName = cms.string('defaultX05'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('defaultX2'),
+    nickName = cms.string('defaultX2'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('glo_soft'),
+    nickName = cms.string('glo_soft'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('R_Mbb'),
+    nickName = cms.string('R_Mbb'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('Q_CMMPS'),
+    nickName = cms.string('Q_CMMPS'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('NNPDF'),
+    nickName = cms.string('NNPDF'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('MSTW'),
+    nickName = cms.string('MSTW'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+     cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('MPI_up'),
+    nickName = cms.string('MPI_up'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+     cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('MPI_down'),
+    nickName = cms.string('MPI_down'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+     cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('CSS_KIN'),
+    nickName = cms.string('CSS_KIN'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),
+    name     = cms.string('LO_full'),
+    nickName = cms.string('LO_full'),
+    color    = cms.int32(18),
+    xSec     = cms.double(1)
+    ),
+
+    )
