@@ -63,6 +63,23 @@ typedef struct
   int json;
 } EventInfo;
  
+typedef struct 
+{
+  int signalID;
+  float eventscale;
+  float alphaQCD;
+  float alphaQED;
+  float xSec;
+  float xSecErr;
+  int id1;
+  int id2;
+  float x1;
+  float x2;
+  float scalePDF;
+  float pdf1;
+  float pdf2;
+  float weights[8];
+} GenEventInfo;
 
 typedef struct
 {
