@@ -9,6 +9,8 @@ using namespace std;
 #include <map>
 #include <string>
 #include <vector>
+#include <bitset>       
+
 
 #include "TMath.h"
 #include "TLorentzVector.h"
@@ -919,5 +921,58 @@ float weightError( TTree* tree, float pt, float eta, float& scale_){
   return err;
 
 }
+
+
+double analytical_prob( vector<double> probs, int ntag, int isExclusive=0, int verbose=0 ){
+
+  double out  = -99.;
+  int counter = 0; 
+
+  const int njet = probs.size();
+  if( ntag>njet ) return out;
+  if( njet>20 ){
+    cout << "   Error: too many jets, return -99" << endl;
+    return out;
+  }
+
+  int failure = 0;
+  if(verbose){
+    cout << "   Probs: " ;
+    for( int i = 0; i < njet ; i++){
+      cout << "p[" << i << "]=" <<  probs[i] << "," ;
+      if( probs[i]<0 || probs[i]>1 ) failure++;
+    }
+    cout << endl;
+  }
+
+  if( failure>0 ){
+    cout << "   Error: invalid probabilities, return -99" << endl;
+    return out;
+  }
+
+  // reset out
+  out = 0.;
+  int n_max = 1;
+  for( int i = 0; i < njet ; i++) n_max *= 2;
+
+  for(  int i = 0 ; i < n_max ; i++){
+    std::bitset<20> foo(i);
+    if( (!isExclusive && int(foo.count())>=ntag) || 
+	( isExclusive && int(foo.count())==ntag) ){
+      double p_ana_foo = 1.;
+      for( int b = 0 ; b < njet; b++){
+	if( foo[b] ) p_ana_foo *= probs[b];
+	else         p_ana_foo *= (1-probs[b]);
+      }
+      out += p_ana_foo;
+    }
+  }
+  
+  if(verbose) cout << "   Status: done " << counter << " iterations, p=" << out << endl;
+  return out;
+
+}
+
+
 
 #endif

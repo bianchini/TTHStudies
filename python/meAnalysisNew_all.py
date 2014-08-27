@@ -25,17 +25,19 @@ process.fwliteInput = cms.PSet(
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store//user/bianchi/HBB_EDMNtuple/AllHDiJetPt_V4/"),
     #pathToFile    = cms.string("dcap://t3se01.psi.ch:22125//pnfs/psi.ch/cms/trivcat/store/user/bianchi/HepMC/Sherpa_run/"),
     #pathToFile    = cms.string("/scratch/bianchi/HBB_EDMNtuple/Sherpa_run/"),
-    #pathToFile    = cms.string("/shome/bianchi/CMSSW_5_3_3_patch2_New/src/VHbbAnalysis/VHbbDataFormats/bin/"),
+    #pathToFile    = cms.string("/hdfs/local/bianchi/Sherpa/test/ROOT/"),
+    #pathToFile    = cms.string("../root/files/Sherpa/"),
 
     # a name tag for the input files
     ordering      = cms.string("DiJetPt_"),
+    #ordering      = cms.string("hepMC_"),
 
     # the samples
     #samples = samples_V3,
     samples  =   cms.VPSet(
 
     cms.PSet(
-    skip     = cms.bool(True),  
+    skip     = cms.bool(False),  
     name     = cms.string('TTH_HToBB_M-125_8TeV-pythia6'),
     nickName = cms.string('TTH125'),
     color    = cms.int32(2),
@@ -43,7 +45,7 @@ process.fwliteInput = cms.PSet(
     ),
     
     cms.PSet(
-    skip     = cms.bool(False),  
+    skip     = cms.bool(True),  
     name     = cms.string('TTJets_SemiLeptMGDecays_8TeV-madgraph'),
     nickName = cms.string('TTJetsSemiLept'),
     color    = cms.int32(41),
@@ -56,6 +58,22 @@ process.fwliteInput = cms.PSet(
     nickName = cms.string('Tt'),
     color    = cms.int32(6),
     xSec     = cms.double(56.4)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),  
+    name     = cms.string('default'),
+    nickName = cms.string('ttbbNLO'),
+    color    = cms.int32(2),
+    xSec     = cms.double(0.1302*0.569)
+    ),
+
+    cms.PSet(
+    skip     = cms.bool(True),  
+    name     = cms.string('ttH_LO'),
+    nickName = cms.string('ttH_LO'),
+    color    = cms.int32(2),
+    xSec     = cms.double(0.1302*0.569)
     ),
 
     ),
@@ -117,13 +135,13 @@ process.fwliteInput = cms.PSet(
     doType2       = cms.untracked.int32(0),  #SL(4,1)
     doType3       = cms.untracked.int32(0),  #SL(4,3) 
     doType4       = cms.untracked.int32(0),  #SL(3,2)
-    doType6       = cms.untracked.int32(0),  #DL(4,X)
+    doType6       = cms.untracked.int32(1),  #DL(4,X)
     doType7       = cms.untracked.int32(0),  #DL(3M+1L,X)
-    doType0ByBTagShape = cms.untracked.int32(1),
-    doType1ByBTagShape = cms.untracked.int32(1),
-    doType2ByBTagShape = cms.untracked.int32(1),
-    doType3ByBTagShape = cms.untracked.int32(1),
-    doType6ByBTagShape = cms.untracked.int32(1),
+    doType0ByBTagShape = cms.untracked.int32(0),
+    doType1ByBTagShape = cms.untracked.int32(0),
+    doType2ByBTagShape = cms.untracked.int32(0),
+    doType3ByBTagShape = cms.untracked.int32(0),
+    doType6ByBTagShape = cms.untracked.int32(0),
 
     # MEIntegrator options
     useME         = cms.untracked.int32(1),
@@ -142,7 +160,7 @@ process.fwliteInput = cms.PSet(
     useCMVA          = cms.untracked.int32(0),
 
     # select events based on btag LLR
-    selectByBTagShape= cms.untracked.int32(1),
+    selectByBTagShape= cms.untracked.int32(0),
 
     # use CSV tag-and-probe
     useCSVcalibration= cms.untracked.int32(1),
@@ -158,14 +176,15 @@ process.fwliteInput = cms.PSet(
 
     # b-tag thresholds (for jet counting)
     csv_WP_L         = cms.untracked.double( 0.244 ),
-    csv_WP_M         = cms.untracked.double( 0.679 ),
+    #csv_WP_M         = cms.untracked.double( 0.679 ),
+    csv_WP_M         = cms.untracked.double( 0.20 ),
     csv_WP_T         = cms.untracked.double( 0.898 ),
 
     # if selectByBTagShape, choose cut-value
     #btag_prob_cut_6jets = cms.untracked.double( 0.96675 ),
     btag_prob_cut_6jets = cms.untracked.double( 0.960   ),
     btag_prob_cut_5jets = cms.untracked.double( 0.98225 ),
-    btag_prob_cut_4jets = cms.untracked.double( 0.95295 ), 
+    btag_prob_cut_4jets = cms.untracked.double( 0.85 ), 
 
     # apply energy regression on jets
     useRegression    = cms.untracked.int32(0),
@@ -231,7 +250,7 @@ process.fwliteInput = cms.PSet(
     fixNumEvJob    = cms.untracked.int32(0),
 
     # event limits
-    evLimits       = cms.vint32(0, -1),
+    evLimits       = cms.vint32(0, 1000),
 
     # do systematic shifts (dummy)
     doJERbias  = cms.untracked.int32(0),   
@@ -254,10 +273,16 @@ process.fwliteInput = cms.PSet(
     smearJets           = cms.untracked.int32(0),
 
     # toss csv values untill the event passes the cut
-    enhanceMC           = cms.untracked.int32(0),
+    enhanceMC           = cms.untracked.int32(1),
+
+    # toss csv values and assign them to reco jets (for debugging)
+    useSampledCSV       = cms.untracked.int32(0),
 
     # maximum number of trials (if enhanceMC)
-    max_n_trials        = cms.untracked.int32(50000),
+    max_n_trials        = cms.untracked.int32(200000),
+
+    # maximum number of successes (if enhanceMC)
+    max_n_success       = cms.untracked.int32(500),
 
     # if 1, save into the tree all events
     # if 0, save only events passing the analysis cuts

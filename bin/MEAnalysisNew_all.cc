@@ -71,7 +71,7 @@
 #define NMAXJETSSLW1JTYPE3 5
 
 // max number of trial (if enhance MC stat)
-#define NMAXEVENTRIALS 999999
+#define NMAXEVENTRIALS 9999999
 
 // a global flag to select RECO or GEN+SMEAR analysis
 //#define DOGENLEVELANALYSIS 0
@@ -229,7 +229,9 @@ int main(int argc, const char* argv[])
   int doGenLevelAnalysis ( in.getUntrackedParameter<int>    ("doGenLevelAnalysis",  0));
   int smearJets          ( in.getUntrackedParameter<int>    ("smearJets",  doGenLevelAnalysis));
   int enhanceMC          ( in.getUntrackedParameter<int>    ("enhanceMC",   0));
-  int max_n_trials       ( in.getUntrackedParameter<int>    ("max_n_trials",1));
+  int useSampledCSV      ( in.getUntrackedParameter<int>    ("useSampledCSV",   0));
+  int max_n_trials       ( in.getUntrackedParameter<int>    ("max_n_trials",  1));
+  int max_n_success      ( in.getUntrackedParameter<int>    ("max_n_success",-1));
 
   int   print            ( in.getUntrackedParameter<int>    ("printout", 0));
   int   debug            ( in.getUntrackedParameter<int>    ("debug",    0));
@@ -765,6 +767,9 @@ int main(int argc, const char* argv[])
   // number of trials
   int num_of_trials_;
 
+  // number of successes
+  int num_of_successes_;
+
   // number of selected jets passing CSV L,M,T
   int numBTagL_, numBTagM_, numBTagT_;
   // nummber of selected jets
@@ -911,6 +916,7 @@ int main(int argc, const char* argv[])
   tree->Branch("hJetAmong",               &hJetAmong_,   "hJetAmong/I");
   tree->Branch("jetsAboveCut",            &jetsAboveCut_,"jetsAboveCut/I");
   tree->Branch("num_of_trials",           &num_of_trials_,"num_of_trials/I");
+  tree->Branch("num_of_successes",        &num_of_successes_,"num_of_successes/I");
   
 
   // Jet multiplicity
@@ -1205,7 +1211,8 @@ int main(int argc, const char* argv[])
     cout << "Total number of entries: " << nentries << endl;
     cout << " -> This job will process events in the range [ " << evLow << ", " << evHigh << " ]" << endl;
 
-    int event_trials  = 0;
+    int event_trials    = 0;
+    int event_successes = 0;
 
     if( evHigh<0 ) evHigh = nentries;
     for (Long64_t i = 0; i < nentries ; i++){     
@@ -1279,6 +1286,7 @@ int main(int argc, const char* argv[])
       time_               = 0.;
 
       num_of_trials_      = 0;
+      num_of_successes_   = 0;
 
       counter_            = counter;
       weight_             = scaleFactor;
@@ -1317,7 +1325,7 @@ int main(int argc, const char* argv[])
       if( doGenLevelAnalysis && isGenEventThere){
 	SCALEsyst_[0] = GENEVENT.weights[0]; // the event weight
 	SCALEsyst_[1] = GENEVENT.weights[3]; // # of trials
-	SCALEsyst_[2] = GENEVENT.xSec;       //  the xSec at that event
+	SCALEsyst_[2] = GENEVENT.xSec;       // the xsection
       }
 
 
@@ -2480,7 +2488,27 @@ int main(int argc, const char* argv[])
 		  csv = 0.;
 	      }
 
+	      // for debugging
+	      if(useSampledCSV){
 
+		string bin = "";
+		if( TMath::Abs( eta ) <= 1.0 ) 
+		  bin = "Bin0";
+		if( TMath::Abs( eta ) >  1.0 ) 
+		  bin = "Bin1";
+		
+		string fl = "";
+		if(abs(flavour)==5)
+		  fl = "b";
+		else if(abs(flavour)==4)
+		  fl = "c";
+		else
+		  fl = "l";
+		
+		csv     =  btagger[fl+"_"+bin]->GetRandom();
+	      }
+
+	      // random generation of csv values 
 	      if( enhanceMC && trial_success==0){
 
 		string bin = "";
@@ -2492,7 +2520,7 @@ int main(int argc, const char* argv[])
 		string fl = "";
 		if(abs(flavour)==5)
 		  fl = "b";
-		if(abs(flavour)==4)
+		else if(abs(flavour)==4)
 		  fl = "c";
 		else
 		  fl = "l";
@@ -2506,7 +2534,8 @@ int main(int argc, const char* argv[])
 		if(coll==1){
 		  aJet_csv        [hj] = csv;
 		  aJet_csv_nominal[hj] = csv;
-		}
+		}	
+
 	      }	   
       
 	      // the jet observables (p4 and csv)
@@ -2602,9 +2631,16 @@ int main(int argc, const char* argv[])
 	      // for c-quarks, we have a dedicated csv probability (but not a TF)
 	      if(abs(flavor)==4)
 		fl = "c";
-	      
-	      // the random csv value
-	      float csv     =  btagger[fl+"_"+bin]->GetRandom();	   
+	     
+	      // use a deterministic naive tagger 
+	      float csv  =  1.;
+	      if     (fl=="b") csv = 1.;
+	      else if(fl=="c") csv = 0.;
+	      else if(fl=="l") csv = 0.;
+	      else csv = 0.;
+
+	      // random csv value
+	      if(smearJets) btagger[fl+"_"+bin]->GetRandom();	   
 	      
 	      // !!! smear the jet energy !!!
 	      if(smearJets) pt *= (e_smear/e);
@@ -2651,11 +2687,13 @@ int main(int argc, const char* argv[])
 	  int nPU_ran        = ran->Poisson(16);	  
 	  // assume each PU gives 50 GeV of sumEt
 	  float sumEt_PU_ran = nPU_ran*50.;
-	  // add the extra smear
-	  MET_sumEt_ += sumEt_PU_ran;
 
-	  deltaPx    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
-	  deltaPy    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  // add the extra smear
+	  if(smearJets){
+	    MET_sumEt_ += sumEt_PU_ran;
+	    deltaPx    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	    deltaPy    += ran->Gaus(0.,0.4*TMath::Sqrt(sumEt_PU_ran));
+	  }
 	  
 	  // keep it fixed to a value such that sx~29 GeV
 	  //MET_sumEt_ = 1800.;
@@ -3277,10 +3315,90 @@ int main(int argc, const char* argv[])
 	
 
 	if( enhanceMC ){
-	  trial_success = 1;
-	  cout << "Success after " << event_trials << " attempts!" << endl;
-	  num_of_trials_ = event_trials;
-	  event_trials   = 0;
+
+	  // stop at the first success
+	  if(max_n_success<0){
+	    trial_success = 1;
+	    lock          = 0;
+	    cout << "Success after " << event_trials << " attempts!" << endl;
+	    num_of_trials_    = event_trials;
+	    num_of_successes_ = 1;
+	    event_trials      = 0;
+	  }
+
+	  // continue untill max number of successes recorded
+	  else{
+	    if(syst_ == 0 
+	       && event_trials < max_n_trials && event_successes< max_n_success 
+	       && event_trials<NMAXEVENTRIALS){
+	      i--;
+	      lock = 1;
+	      event_trials++;
+	      event_successes++;
+
+	      num_of_successes_ = event_successes;
+	      num_of_trials_    = event_trials;
+	      if( event_successes%100==0) cout << "        -- " << event_successes << " event successes after " << event_trials << " trials ---> btag_LR = " <<  btag_LR_  << ", numBtagM = " << numJets30BtagM << endl;
+	      continue;
+	    }
+	    else if(syst_ == 0 
+	       && event_trials < max_n_trials && event_successes>= max_n_success 
+	       && event_trials<NMAXEVENTRIALS){
+	      double prob = (float(event_successes)/float(event_trials));
+	      cout << "   >>> : (Sensitivity reached): event succeded " << event_successes << " times after " << event_trials << " trials p=" << prob << " +/- " << TMath::Sqrt(prob*(1-prob)/event_trials) << " ---> btag_LR = " <<  btag_LR_  << ", numBtagM = " << numJets30BtagM  << endl;
+	      trial_success   = 1;
+	      lock            = 0;
+	      num_of_trials_    = event_trials;
+	      num_of_successes_ = event_successes;
+	      event_trials    = 0;
+	      event_successes = 0;
+	      if(debug>=0){
+		cout << " -> by the way, the event was looking like this: " << endl;	   
+		for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){
+		  cout << " > jet #" << jj << ": pt=" << jet_map[jj].p4.Pt() << " ,eta=" << jet_map[jj].p4.Eta() << ", flav=" << jet_map[jj].flavour << endl;
+		}	
+	      }  
+
+	      // estimate analytical prob for tag counting
+	      if( !selectByBTagShape ){
+
+		vector<double> probs;
+		for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){
+
+		  float eta   = jet_map[jj].p4.Eta();
+		  int flavour = jet_map[jj].flavour;
+
+		  string bin = "";
+		  if( TMath::Abs( eta ) <= 1.0 ) 
+		    bin = "Bin0";
+		  if( TMath::Abs( eta ) >  1.0 ) 
+		    bin = "Bin1";
+		  
+		  string fl = "";
+		  if(abs(flavour)==5)
+		    fl = "b";
+		  else if(abs(flavour)==4)
+		    fl = "c";
+		  else
+		    fl = "l";
+		  		 
+		  int trials = 0;
+		  int pass   = 0;
+		  while( trials<1000000 ){
+		    double val = btagger[fl+"_"+bin]->GetRandom();
+		    if( val>=csv_WP_M ) pass++;
+		    trials++;
+		  }
+		  double p_pass = float(pass)/trials ;		  
+		  probs.push_back( p_pass );		  
+		}				  
+		double p_total = analytical_prob( probs, 4 , 0, 1);
+		if(debug>=2) cout << "  >>>> Analytical prob = " << p_total << endl;
+	      }
+    
+	    }
+	    else{ /*...*/ }
+	  }
 	}
 
 	// if the event has been accepted, then compute the regressed energy per jet
@@ -4570,16 +4688,23 @@ int main(int argc, const char* argv[])
 
 	if( enhanceMC ){
 
+	  // retry, but only if one has the proper jet multiplities
 	  bool retry = 
-	    ((analyze_type0      || analyze_type1      || analyze_type2      || analyze_type3      || analyze_type6 ) && numJets30BtagM<4 )  || 
-	    (analyze_type7 && numJets30BtagM<3) ||
-	    ((analyze_type0_BTag || analyze_type1_BTag || analyze_type2_BTag || analyze_type3_BTag || analyze_type6_BTag) && !passes_btagshape);
+	    ( (  (analyze_type0 && numJets_==6) || (analyze_type1 && numJets_==6)  || 
+		 (analyze_type2 && numJets_==5) || (analyze_type3 && numJets_>6) || 
+		 (analyze_type6 && numJets_>=4) ) && numJets30BtagM<4 )  || 
+	    (analyze_type7 && numJets30BtagM<3 && numJets_>=4) ||
+	    (( (analyze_type0_BTag && numJets_==6) || (analyze_type1_BTag && numJets_==6) || 
+	       (analyze_type2_BTag && numJets_==5) || (analyze_type3_BTag && numJets_>6) || 
+	       (analyze_type6_BTag && numJets_>=4)) && !passes_btagshape);
 
 	  if(syst_ == 0 && retry && event_trials < max_n_trials && event_trials<NMAXEVENTRIALS){
 	    i--;
 	    lock = 1;
 	    event_trials++;
-	    if( event_trials%10000==0 ) cout << "   >>> : " << event_trials << "th trial ---> btag_LR = " <<  btag_LR_  << ", numBtagM = " << numJets30BtagM << endl;
+	    if( event_trials%10000==0 ){
+	      cout << "   >>> : " << event_trials << "th trial"  << endl;
+	    }
 	    if(debug>=2){	      
 	      cout << "Enhance MC: stay with event " << i+1 << endl;
 	      cout << "  - lock for systematics, # of trials = " <<  event_trials << "; btagLR = " << btag_LR_ << endl;
@@ -4588,8 +4713,13 @@ int main(int argc, const char* argv[])
 	  }
 	  if( event_trials>=NMAXEVENTRIALS || event_trials>=max_n_trials){
 	    cout << "Failure after " << event_trials << " attempts... try with the next event :-(" << endl;
+	    cout << " -> by the way, the event was looking like this: " << endl;	   
+	    for(unsigned int jj = 0; jj < jet_map.size() ; jj++ ){
+	      cout << " > jet #" << jj << ": pt=" << jet_map[jj].p4.Pt() << " ,eta=" << jet_map[jj].p4.Eta() << ", flav=" << jet_map[jj].flavour << endl;
+	    }
 	    num_of_trials_ = event_trials;
-	    event_trials   = 0;
+	    event_trials    = 0;
+	    event_successes = 0;
 	  }
 	}
 
