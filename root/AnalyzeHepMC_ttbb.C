@@ -42,6 +42,8 @@
 
 
 #define SAVE 1
+#define JETPT 40.
+#define ADDTTH 1
 
 typedef struct 
 {
@@ -123,6 +125,8 @@ void analyzeHepMC( TString sample = "test", Long64_t  tot_trials = -1, float BR 
 		   TCut cut = "type==6", float fact = 0.01 , 
 		   int nBins=12, float xMin = 0., float xMax = 1.){ 
 
+  TString production = "nosmearAll_";
+
   gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
   gStyle->SetCanvasBorderMode(0);
@@ -152,7 +156,7 @@ void analyzeHepMC( TString sample = "test", Long64_t  tot_trials = -1, float BR 
   leg->SetFillColor(10);
   leg->SetTextSize(0.04); 
 
-  TFile* f = TFile::Open( "./files/Sherpa/MEM/hepMC_Sherpa_gen_std_"+sample+".root" );
+  TFile* f = TFile::Open( "./files/Sherpa/MEM/hepMC_Sherpa_"+production+"gen_std_"+sample+".root" );
   if(f==0) return;
   if(f->IsZombie()) return;
   
@@ -169,8 +173,12 @@ void analyzeHepMC( TString sample = "test", Long64_t  tot_trials = -1, float BR 
 
   TTreeFormula* treeformula    = new TTreeFormula("cat_selection",  cut , t );
   TTreeFormula* treeobservable = 0;
-  if(doObs==1 && doObsComp==0) 
-    treeobservable = new TTreeFormula("cat_observable", obs.c_str() , t );
+  if(doObs==1 && doObsComp==0){
+    string formulaStr = obs;
+    if( obs.find("[")!=string::npos )
+      formulaStr.erase( obs.find("[") , 3 );
+    treeobservable = new TTreeFormula("cat_observable", formulaStr.c_str() , t );
+  }
 
  
   float massH = 125. ;
@@ -270,10 +278,15 @@ void analyzeHepMC( TString sample = "test", Long64_t  tot_trials = -1, float BR 
     // first of all, get the entry
     t->GetEntry(i);
 
+    // check jet pts
+    //if( !(jet_pt[2]>=JETPT && jet_pt[5]>=JETPT && jet_pt[6]>=JETPT && jet_pt[7]>=JETPT && jet_pt[1]>=30) )
+    //continue;
+
+
     if( doObs==0 ){
 
       // this number are the total probability under the ttH, ttbb, and ttjj hypotheses
-      double p_125_all_s = 0.;
+      double p_125_all_s  = 0.;
       double p_125_all_b1 = 0.;
       double p_125_all_b2 = 0.;
     
@@ -321,7 +334,19 @@ void analyzeHepMC( TString sample = "test", Long64_t  tot_trials = -1, float BR 
       continue;
     }
     else if(doObs==1 && doObsComp==0){
-      double eval  = treeobservable->EvalInstance();
+      double eval  = -99.;
+      if(obs.find("[")!=string::npos ){
+	Int_t arraySize = treeobservable->GetNdata();
+	if( arraySize<2 ){
+	  cout << "Incosistent branch" << endl;
+	  continue;
+	}
+	string pos_str = obs.substr(obs.find("[")+1, 1);
+	int pos_int    = atoi(pos_str.c_str());
+	eval = treeobservable->EvalInstance(pos_int);
+      }
+      else
+	eval = treeobservable->EvalInstance();
       h->Fill( eval , SCALEsyst[0] );
       continue;
     }
@@ -469,6 +494,7 @@ void analyzeHepMC_all( string obs="Wsb", float fact = 0.015,
   samples.push_back("CSS_KIN");      trials.push_back(353681469);  BRs.push_back(0.0121576);
   samples.push_back("MPI_up");       trials.push_back(353680503);  BRs.push_back(0.012157);
   samples.push_back("MPI_down");     trials.push_back(353682112);  BRs.push_back(0.012157);
+  samples.push_back("ttH_LO");;      trials.push_back(3103857);    BRs.push_back(0.00712719); 
 
   for(unsigned int s = 0 ; s < samples.size() ; s++ ){
     analyzeHepMC( samples[s], trials[s], BRs[s], obs , cut , fact, nBins, xMin, xMax);
@@ -477,7 +503,7 @@ void analyzeHepMC_all( string obs="Wsb", float fact = 0.015,
 }
 
 
-void make_comparison(string obs="Wsb"){
+void make_comparison(string obs="Wsb", string units = ""){
 
   gStyle->SetOptStat(0);
   gStyle->SetTitleFillColor(0);
@@ -508,6 +534,7 @@ void make_comparison(string obs="Wsb"){
   samples.push_back("CSS_KIN");
   samples.push_back("MPI_up");
   samples.push_back("MPI_down");
+  samples.push_back("ttH_LO");
 
   TH1F* h_ref = (TH1F*)((TH1F*)f->Get("h_"+samples[0]))->Clone("h_ref");
 
@@ -520,8 +547,8 @@ void make_comparison(string obs="Wsb"){
   c1->SetObjectStat(0);
 
   float histsize   = 0.65;
-  float histmargin = 0.07;
-  int variations = int(samples.size())-1;
+  float histmargin = 0.035;
+  int variations = int(samples.size())-1-(ADDTTH ? 1 : 0);
   float step     = (histsize-histmargin)/variations;
 
   map<TString, TPad*> amap;
@@ -529,11 +556,13 @@ void make_comparison(string obs="Wsb"){
 
   for( unsigned int s = 0 ; s < samples.size() ; s++ ){
 
+    if(ADDTTH && s==(samples.size()-1)) continue;
+
     TPad *p0 = 0;
     if(s==0) 
       p0 = new TPad("p_"+samples[s],"",0, histsize ,1,1);
     else
-      p0 = new TPad("p_"+samples[s],"",0, step*s   ,1, step*(s+1));
+      p0 = new TPad("p_"+samples[s],"",0, step*(s-1)   ,1, step*s);
 
     p0->SetGrid(0,0);
     p0->SetFillStyle(4000);
@@ -544,21 +573,34 @@ void make_comparison(string obs="Wsb"){
     if(s==0) 
       amap.insert( make_pair(samples[s], p0) );
     else
-      amap.insert( make_pair(samples[samples.size()-s], p0) );
+      amap.insert( make_pair(samples[(samples.size()-(ADDTTH ? 1 : 0))-s], p0) );
   }
 
  
   
   for( unsigned int s = 0 ; s < samples.size() ; s++ ){
 
+    //cout << "Drawing histo " << string(samples[s].Data()) << endl;
+
     TH1F* h = (TH1F*)f->Get("h_"+samples[s]);
-    amap2.insert( make_pair(samples[s], h) );
-    (amap.find(samples[s])->second)->cd();
+    //amap2.insert( make_pair(samples[s], h) );
+
+    if(h==0){
+      cout << "Missing histo for " << string(samples[s].Data()) << endl;
+      continue;
+    }
+
+    //cout << "Cd into directory... " ;
+    if(ADDTTH && s==(samples.size()-1)) 
+      (amap.find(samples[0])->second)->cd();
+    else
+      (amap.find(samples[s])->second)->cd();
+    //cout << "Done" << endl;
 
     if(s==0){
       h->Scale(1000.);
-      h->GetYaxis()->SetTitle("#frac{d#sigma}{dw} [fb]");
-      h->GetXaxis()->SetTitle("w = "+TString(obs.c_str()));
+      h->GetYaxis()->SetTitle("#frac{d#sigma}{dw} "+TString(("[fb"+( units!="" ?  "/"+units+"]" : "]")).c_str()));
+      h->GetXaxis()->SetTitle("w = "+TString((obs+( units!="" ? " ["+units+"]" : "")).c_str()));
       h->GetYaxis()->SetTitleSize( 0.07  );
       h->GetYaxis()->SetTitleOffset( 0.6  );
       h->GetYaxis()->CenterTitle();
@@ -566,27 +608,56 @@ void make_comparison(string obs="Wsb"){
       h->GetXaxis()->SetTitleOffset( 0.6  );
       h->SetMinimum(0.);
       h->SetLineColor( kBlack );
+      h->SetFillColor(kBlack);
+      h->SetFillStyle(3004);
       h->SetTitle("t#bar{t}+b#bar{b} #rightarrow #mu^{+}#mu^{-} + jets    Sherpa+OpenLoops (MC@NLO) #sqrt{s}=8TeV");
       h->Draw("HISTE");
+      amap2.insert( make_pair(samples[s], h) );
+    }
+    else if(ADDTTH && s==(samples.size()-1)){
+      h->Scale(1000.*1.30*10);
+      h->SetLineColor( 46 );
+      //h->SetFillColor(46);
+      //h->SetFillStyle(3005);
+      h->SetLineStyle( kDashed );
+      h->Draw("HISTESAME");
+      amap2.insert( make_pair(samples[s], h) );
     }
     else{
-      if( string(samples[s].Data()).find("LO")!=string::npos ) h->Scale( 2.011 );
+      if( string(samples[s].Data()).find("LO_full")!=string::npos ) h->Scale( 2.011 );
       h->Divide(h, h_ref, 1., 1.);
-      h->GetYaxis()->SetRangeUser(0.25,1.75);
+
+      if( string(samples[s].Data()).find("defaultX")!=string::npos ) {
+	h->GetYaxis()->SetRangeUser(0.40,1.60);
+	h->GetYaxis()->SetNdivisions(602,kFALSE);
+      }
+      else{
+	h->GetYaxis()->SetRangeUser(0.70,1.30);
+	h->GetYaxis()->SetNdivisions(602,kFALSE);
+      }
+
       h->GetYaxis()->SetTitle( samples[s] );
       h->GetYaxis()->SetLabelSize( 0.20  );
       h->GetYaxis()->SetTitle( Form("(%d)", s) );
-      h->GetYaxis()->SetTitleSize( 0.2 );
+      h->GetYaxis()->SetTitleSize( 0.20 );
       h->GetYaxis()->SetTitleOffset( 0.15 );
       h->SetTitle("");
       h->GetYaxis()->CenterTitle();
       h->GetXaxis()->SetTitle( "" );
-      h->GetYaxis()->SetNdivisions(203,kFALSE);
-      h->SetLineColor( s<=8 ? 1+s : 21+s );
-      h->Draw("HISTE");
-    }
+      h->SetLineColor( s<=8 ? (s!=4 ? 1+s : kYellow+2) : 21+s );
 
-    if(s>0){
+      TH1F* h_clone = (TH1F*)h->Clone("h_clone");
+      h_clone->SetFillColor( s<=8 ? (s!=4 ? 1+s : kYellow+2) : 21+s  );
+      h_clone->SetFillStyle( 3001 );
+      h_clone->SetLineWidth(1);
+      amap2.insert( make_pair(samples[s], h_clone) );
+
+      h->Draw("HIST");
+      h_clone->Draw("E2SAME");
+    }
+   
+
+    if(s>0 && !(ADDTTH && s==(samples.size()-1))){
       TF1* line = new TF1("line", "1", h_ref->GetXaxis()->GetXmin(),h_ref->GetXaxis()->GetXmax());
       line->SetLineStyle(kDashed);
       line->SetLineWidth(2);
@@ -605,21 +676,29 @@ void make_comparison(string obs="Wsb"){
   leg->SetFillColor(10);
   leg->SetTextSize(0.04); 
   
-  for( unsigned int s = 0 ; s < samples.size() ; s++ ){
-    if(s==0)
-      leg->AddEntry( (amap2.find(samples[0])->second), Form("%s",samples[s].Data()),  "L" );
-    else{
-      if( string(samples[s].Data()).find("LO")!=string::npos )
-	leg->AddEntry( (amap2.find(samples[s])->second), Form("(%d): LO #times k_{NLO}",s ), "L" );
-      else
-	leg->AddEntry( (amap2.find(samples[s])->second), Form("(%d): %s",s, samples[s].Data()), "L" );
-    }
+  leg->AddEntry( (amap2.find(samples[0])->second), Form("%s",samples[0].Data()),  "L" );
+  if(ADDTTH)
+    leg->AddEntry( (amap2.find(samples[samples.size()-1])->second), "t#bar{t}H(#rightarrow b#bar{b}) #times 10", "L" );  
+
+  for( unsigned int s = 1 ; s < samples.size() ; s++ ){
+
+    if(ADDTTH && s==(samples.size()-1)) continue;
+    
+    if( string(samples[s].Data()).find("LO_full")!=string::npos )
+      leg->AddEntry( (amap2.find(samples[s])->second), Form("(%d): LO #times k_{NLO}",s ), "F" );	
+    else
+      leg->AddEntry( (amap2.find(samples[s])->second), Form("(%d): %s",s, samples[s].Data()), "F" );
+    
   }
+ 
+
   leg->Draw();
 
   if(SAVE){
     c1->cd();
-    c1->SaveAs(Form("./files/Sherpa/plot_HepMC_%s.png", obs.c_str()));
+    //c1->SaveAs(Form("./files/Sherpa/plot_HepMC_%s.png", obs.c_str()));
+    c1->SaveAs(Form("./files/Sherpa/plot_HepMC_%s.pdf", obs.c_str()));
+    f->Close();
   }
   
 
@@ -629,34 +708,49 @@ void make_comparison(string obs="Wsb"){
 
 void doAll(){
 
-  analyzeHepMC_all("Wsb",  0.02, "type==6", 6, 0, 1);
+  analyzeHepMC_all("Wsb",  0.01, "type==6 && numBTagM>=0", 6, 0, 1);
   make_comparison( "Wsb" );
 
-  return;
+  //return;
 
+  //analyzeHepMC_all("Psb",    0.6, "(type==6)", 6, 0, 1);
+  //make_comparison( "Psb" );
+
+  analyzeHepMC_all("jet_pt[2]", 1, "type==6", 5, 30, 200);
+  make_comparison( "jet_pt[2]" , "GeV");
+  
+  analyzeHepMC_all("jet_pt[5]", 1, "type==6", 5, 30, 200);
+  make_comparison( "jet_pt[5]" , "GeV");
+  
+  analyzeHepMC_all("jet_pt[6]", 1, "type==6", 5, 30, 200);
+  make_comparison( "jet_pt[6]" , "GeV");
+  
+  analyzeHepMC_all("jet_pt[7]", 1, "type==6", 5, 30, 200);
+  make_comparison( "jet_pt[7]" , "GeV");
+  
   analyzeHepMC_all("best_0_mass_H",  1, "type==6", 5, 50, 200);
-  make_comparison( "best_0_mass_H" );
+  make_comparison( "best_0_mass_H" , "GeV");
 
   analyzeHepMC_all("best_1_mass_H",  1, "type==6", 6, 20, 200);
-  make_comparison( "best_1_mass_H" );
+  make_comparison( "best_1_mass_H" , "GeV");
 
-  analyzeHepMC_all("best_0_pt_bLep",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_0_pt_bLep" );
+  //analyzeHepMC_all("best_0_pt_bLep",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_0_pt_bLep" );
 
-  analyzeHepMC_all("best_1_pt_bLep",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_1_pt_bLep" );
+  //analyzeHepMC_all("best_1_pt_bLep",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_1_pt_bLep" );
 
-  analyzeHepMC_all("best_0_pt_bHad",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_0_pt_bHad" );
+  //analyzeHepMC_all("best_0_pt_bHad",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_0_pt_bHad" );
 
-  analyzeHepMC_all("best_1_pt_bHad",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_1_pt_bHad" );
+  //analyzeHepMC_all("best_1_pt_bHad",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_1_pt_bHad" );
 
-  analyzeHepMC_all("best_0_pt_b1",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_0_pt_b1" );
+  //analyzeHepMC_all("best_0_pt_b1",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_0_pt_b1" );
 
-  analyzeHepMC_all("best_1_pt_b1",  1, "type==6", 6, 30, 200);
-  make_comparison( "best_1_pt_b1" );
+  //analyzeHepMC_all("best_1_pt_b1",  1, "type==6", 6, 30, 200);
+  //make_comparison( "best_1_pt_b1" );
 
   analyzeHepMC_all("best_0_dphi_b1_b2",  1, "type==6", 4, 0, TMath::Pi());
   make_comparison( "best_0_dphi_b1_b2" );
@@ -671,24 +765,14 @@ void doAll(){
   make_comparison( "numBTagM" );
 
   analyzeHepMC_all("lepton_pt[0]", 1, "type==6", 5, 20, 200);
-  make_comparison( "lepton_pt[0]" );
+  make_comparison( "lepton_pt[0]" , "GeV");
 
   analyzeHepMC_all("lepton_pt[1]", 1, "type==6", 5, 20, 200);
-  make_comparison( "lepton_pt[1]" );
+  make_comparison( "lepton_pt[1]" , "GeV");
 
   analyzeHepMC_all("MET_pt", 1, "type==6", 5, 0, 200);
-  make_comparison( "MET_pt");
+  make_comparison( "MET_pt", "GeV");
 
-  analyzeHepMC_all("jet_pt[2]", 1, "type==6", 5, 30, 200);
-  make_comparison( "jet_pt[2]" );
-
-  analyzeHepMC_all("jet_pt[5]", 1, "type==6", 5, 30, 200);
-  make_comparison( "jet_pt[5]" );
-
-  analyzeHepMC_all("jet_pt[6]", 1, "type==6", 5, 30, 200);
-  make_comparison( "jet_pt[6]" );
-
-  analyzeHepMC_all("jet_pt[7]", 1, "type==6", 5, 30, 200);
-  make_comparison( "jet_pt[7]" );
+ 
 
 }
