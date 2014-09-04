@@ -20,6 +20,7 @@ PROCESSES=(
 "TTJetsBB"
 "TTJetsJJ"
 "TTJetsBJ"
+"TTJetsCC"
 "TTV"
 "SingleT"
 "EWK"
@@ -27,62 +28,86 @@ PROCESSES=(
 "Run2012_SingleElectron"
 "Run2012_DoubleElectron"
 "Run2012_SingleMu"
-'bEnriched'
-'BCtoE'
+#'bEnriched'
+#'BCtoE'
 
 )
 
 CUTS=(
-#"SL_g6jg3t" #tight control region
-"SL_g5jg2t" #loose control retion
+#"SL_g5jg3t" #tight control region
+#"SL_g5jg2t" #loose control retion
 
 #"SL_g5jg2t_eta15"
 #"SL_g5jg3t"
+
+#----- btag LR--------
 #"SL_5j"
 #"SL_6j"
+#"SL_5jg2t" 
+#"SL_g6jg2t"
+#----------------------
 #"SL_g4jg2t"
 
-#"SL_g6jg2t"
+#"SL_g4j"
+#"SL_4j"
+
 #"SL_g4jg2t"
 #"SL_5jg2t"
 
+#----- BDT SL table ----
+#"SL_g6jg2t"
 #"SL_4j3t"
 #"SL_5j3t"
 #"SL_g6j3t"
 #"SL_4j4t"
 #"SL_5jg4t"
 #"SL_g6jg4t"
-
+#---------------------
 #"SL_g5jg3t"
 #"SL_g6jg3t"
+#---------- DL --------------
 #"DL_g2jg2t"
 
 #"DL_g4j_z"
 #"DL_g4j"
+#"DL_g2jg2t_z"
 #"DL_g2jg2t"
 
+#----- BDT DL table ----
+#"DL_g4j2t"
 #"DL_3j2t"
+#"DL_g3jg3t"
+
+#"DL_3j3t"
+#"DL_g43t"
+#"DL_g4g4t"
+#---------------------
 #"DL_g3jg3t_mm"
 #"DL_g3jg3t_ee"
 #"DL_g3jg3t_em"
 #"DL_g4j"
 
-"DL_cat6_HP_mm"
-"DL_cat6_HP_ee"
-"DL_cat6_HP_em"
-"DL_cat6_LP_mm"
-"DL_cat6_LP_ee"
-"DL_cat6_LP_em"
+#"DL_cat6_HP_mm"
+#"DL_cat6_HP_ee"
+#"DL_cat6_HP_em"
+#"DL_cat6_LP_mm"
+#"DL_cat6_LP_ee"
+#"DL_cat6_LP_em"
 
-"SL_cat1_HP"
-"SL_cat2_HP"
-"SL_cat3_HP"
+#"SL_cat1_HP"
+#"SL_cat2_HP"
+#"SL_cat3_HP"
 #"DL_cat4_HP"
 
-"SL_cat1_LP"
-"SL_cat2_LP"
-"SL_cat3_LP"
+#"SL_cat1_LP"
+#"SL_cat2_LP"
+#"SL_cat3_LP"
 #"DL_cat4_LP"
+#----- cat 2 tests------
+"SL_cat2_HP"
+#"SL_cat2_HP_muon"
+#"SL_cat2_HP_electron"
+#"SL_cat2_loose"
 
 )
 
@@ -99,19 +124,27 @@ VARS=(
 #"numJets"
 #"numBTagM"
 
-#"jet_pt"
-#"jet_eta"
+#"bjet_pt"
+#"bjet_eta"
+#"leadjet_pt"
+#"leadjet_eta"
 
 #"muon_pt"
 #"muon_eta"
 #"muon_rIso"
 
-"Vtype"
+#"Vtype"
 
 #"electron_pt"
 #"electron_eta"
 #"electron_rIso"
 #"electron_dxy"
+
+#---- cat 2 tests ---
+#"btag_LR"
+"p_sb"
+"p_bj"
+
 )
 
 
