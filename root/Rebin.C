@@ -40,9 +40,13 @@
 #include "TIterator.h"
 
 
-void merge(){
+void merge( int binL = 1, int binH = 2){
 
-  TString  path = "datacards/Approval/zero_bins/fromNominal/";
+
+  string binNameL( Form("bin%d", binL) );
+  string binNameH( Form("bin%d", binH) );
+
+  TString  path = "datacards/PostApproval/MyTest_new_merged//";
 
   vector<TString> files;
   files.push_back("MEM_New_rec_std_sb.root");
@@ -50,8 +54,12 @@ void merge(){
   vector<TString> dirs;
   dirs.push_back("MEM_cat1_H");
   dirs.push_back("MEM_cat2_H");
-  dirs.push_back("MEM_cat3_H");
+  //dirs.push_back("MEM_cat3_H");
   dirs.push_back("MEM_cat6_H");
+  dirs.push_back("MEM_cat1_L");
+  dirs.push_back("MEM_cat2_L");
+  //dirs.push_back("MEM_cat3_L");
+  dirs.push_back("MEM_cat6_L");
 
 
   for(unsigned int f = 0; f < files.size(); f++){
@@ -59,11 +67,11 @@ void merge(){
     TFile* file = TFile::Open( path+files[f], "UPDATE" );
     
     for( unsigned int d = 0; d < dirs.size(); d++ ){
-      file->cd( dirs[d] ); 
+      file->cd( dirs[d] );   
 
       if(gDirectory->FindObject("h2")!=0){
 	gDirectory->Remove(gDirectory->FindObject("h2"));
-      }     
+      }   
       
       TIter iter( gDirectory->GetListOfKeys()  );
       TKey *key;
@@ -71,66 +79,126 @@ void merge(){
       // merge all bins
       while ( (key = (TKey*)iter.Next()) ){   
 
+	cout << "List: " << (gDirectory->GetListOfKeys())->GetSize() << endl;
+
 	TH1F* hist   =  (TH1F*)key->ReadObj(); 
 	if(hist==0){
 	  cout << "Null" << endl;
 	  continue;
 	}	
 	string hname = string(hist->GetName());
-	if(hname == "h2") continue;
+	if(hname == "h2"){
+	  cout << "Found h2.. continue" << endl;
+	  continue;
+	}
+
+	cout << "Doing..." << hname ;
 
 	// number of bins
 	int   nBins = hist->GetNbinsX();
 
 	// merge first two bins
-	TH1F* h2 = new TH1F("h2", "", nBins-1, 0, 1);
-	
-	cout << "Doing..." << hname ;
+	TArrayD newBins(nBins);
+	const TArrayD* oldBins = hist->GetXaxis()->GetXbins();
+	for( int k = 0; k <= nBins ; k++ ){
+	  if(k<=(binL-1)) newBins[k]   = (*oldBins)[k];
+	  if(k==binL)     continue;
+	  if(k>=binH)     newBins[k-1] = (*oldBins)[k];
+	}
 
-	bool isBBB = hname.find("Hbin")!=string::npos || hname.find("Lbin")!=string::npos ;
 
-	for(int b = 1; b <= nBins; b++){
-      
-	  if(b<=2){
-	    float err1 = hist->GetBinError(1);
-	    float err2 = hist->GetBinError(2);
-	    float bin1 = hist->GetBinContent(1);
-	    float bin2 = hist->GetBinContent(2);
-	    if( !isBBB ){	      
+	TH1F* h2 = new TH1F("h2", "", nBins-1, newBins.GetArray());
+	//cout << "Bins: " << endl;
+	for(int w = 1 ; w <= nBins-1; w++){
+	  //cout << " [" << w << "] --> [" << h2->GetXaxis()->GetBinLowEdge(w) << "," <<  h2->GetXaxis()->GetBinUpEdge(w) << "]" << endl;
+	}
+	//continue;
+
+
+	bool isBBB = 
+	  (hname.find("Hbin")!=string::npos     || hname.find("Lbin")!=string::npos) &&
+	  (hname.find( binNameL )!=string::npos || hname.find( binNameH )!=string::npos) ;
+
+	if(!isBBB){
+
+	  for(int b = 1; b <= nBins; b++){      
+	    
+	    if( b == binL || b == binH){
+	      float err1 = hist->GetBinError(binL);
+	      float err2 = hist->GetBinError(binH);
+	      float bin1 = hist->GetBinContent(binL);
+	      float bin2 = hist->GetBinContent(binH);
 	      h2->SetBinContent(b, bin1+bin2 );
-	      h2->SetBinError  (b, sqrt(err1*err1 + err2*err2) );
+	      h2->SetBinError  (b, sqrt(err1*err1 + err2*err2) );	    
 	    }
-	    if( isBBB && (hname.find("bin1")!=string::npos || hname.find("bin2")!=string::npos) ){	      	      
+	    else{
+	      float err1 = hist->GetBinError(b);
+	      float bin1 = hist->GetBinContent(b);
+	      
+	      int binToFill = b;
+	      if( b<binL ) binToFill = b;
+	      if( b>binH ) binToFill = b-1;
+	      h2->SetBinContent(binToFill, bin1 );
+	      h2->SetBinError  (binToFill, err1 );
+	    }	    
+	  }
+
+	}
+	else{
+
+	  for(int b = 1; b <= nBins; b++){      
+	    
+	    if( b == binL || b == binH){
+	      float err1 = hist->GetBinError(binL);
+	      float err2 = hist->GetBinError(binH);
+	      float bin1 = hist->GetBinContent(binL);
+	      float bin2 = hist->GetBinContent(binH);
+
 	      if(  hname.find("Up")  !=string::npos ){
-		if( hname.find("bin1")!=string::npos ) bin1 -= err1;
-		if( hname.find("bin2")!=string::npos ) bin2 -= err2;		
+		if( hname.find( binNameL )!=string::npos ) bin1 -= err1;
+		if( hname.find( binNameH )!=string::npos ) bin2 -= err2;		
 		h2->SetBinContent(b, bin1+bin2 + sqrt(err1*err1 + err2*err2) );
 	      }
 	      if(  hname.find("Down")!=string::npos ){
-		if( hname.find("bin1")!=string::npos ) bin1 += err1;
-		if( hname.find("bin2")!=string::npos ) bin2 += err2;
+		if( hname.find( binNameL )!=string::npos ) bin1 += err1;
+		if( hname.find( binNameH )!=string::npos ) bin2 += err2;
 		h2->SetBinContent(b, bin1+bin2 - sqrt(err1*err1 + err2*err2) );
 	      }
+
 	    }
+	    else{
+	      float err1 = hist->GetBinError(b);
+	      float bin1 = hist->GetBinContent(b);
+	      
+	      int binToFill = b;
+	      if( b<binL ) binToFill = b;
+	      if( b>binH ) binToFill = b-1;
+	      h2->SetBinContent(binToFill, bin1 );
+	      h2->SetBinError  (binToFill, err1 );
+	    }	    
 	  }
-	  else{
-	    float err1 = hist->GetBinError(b);
-	    float bin1 = hist->GetBinContent(b);
-	    h2->SetBinContent(b-1, bin1 );
-	    h2->SetBinError  (b-1, err1 );
-	  }
-	  
+
 	}
     
-	h2->Write( hname.c_str() , TObject::kOverwrite); 
-	cout << "...saved"  << endl;
+	h2->SetName( hname.c_str() );
+	h2->Write( hname.c_str() , TObject::kWriteDelete ); 
+	cout << "...saved"  << " --> list: " << (gDirectory->GetListOfKeys())->GetSize() << endl;
 	delete h2;
       }           
+
 
     }// dirs
 
     file->Close();
   }
   
+
+}
+
+
+void mergeAll(){
+
+  merge(11,12);
+  merge( 5, 6);
 
 }
