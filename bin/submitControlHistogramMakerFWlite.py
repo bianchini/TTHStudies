@@ -2,15 +2,15 @@ import FWCore.ParameterSet.Config as cms
 from submitDataCardMakerFWlite import submitDataCardMakerFWlite_all
 from numpy import arange
 
-inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
+#inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
+inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/files/byLLR/Apr23_2014/"
+
 #inpath="../root/ME_trees/"
 #inpath="../root/trees/"
+#prod_ver = "_ntuplizeAll_v3_rec_std"
+prod_ver = "_rec_std"
 
-#outdir = "May23_PAS/control_plots"
-outdir = "June03_newB/control_plots"
-#outdir = "test"
-prod_ver = "_ntuplizeAll_v3_rec_std"
-#prod_ver = "_rec_std"
+outdir = "Sep2014_cat2_test" # in ../root/datacards
 
 do_qcd = False
 
@@ -18,28 +18,28 @@ samples_SL = [
     [["TTV"],      1],
     [["SingleT"],  1],
     [["DiBoson"],  1],
-    [["TTJetsBB"], 15],
-    [["TTJetsBJ"], 15],
-    [["TTJetsJJ"], 15],
-    [["TTJetsCC"], 15],
+    [["TTJetsBB"], 1], #15
+    [["TTJetsBJ"], 1], #15
+    [["TTJetsJJ"], 1], #15
+    [["TTJetsCC"], 1], #15
     [["TTH125"],   1],
-    [["EWK"],      2],
+    [["EWK"],      1], #2
     [["Run2012_SingleMu"], 1 ],
     [["Run2012_SingleElectron"], 1 ],
     ]
 
 samples_DL = [
-    [["TTV"],      1],
-    [["SingleT"],  1],
-    [["DiBoson"],  1],
-    [["TTJetsBB"], 15],
-    [["TTJetsBJ"], 15],
-    [["TTJetsJJ"], 15],
-    [["TTJetsCC"], 15],
-    [["TTH125"],   1],
-    [["EWK"],      5],
-    [["Run2012_SingleMu"], 1 ],
-    [["Run2012_DoubleElectron"], 1 ]
+#    [["TTV"],      1],
+#    [["SingleT"],  1],
+#    [["DiBoson"],  1],
+#    [["TTJetsBB"], 15],
+#    [["TTJetsBJ"], 15],
+#    [["TTJetsJJ"], 15],
+#    [["TTJetsCC"], 15],
+#    [["TTH125"],   1],
+#    [["EWK"],      5],
+#    [["Run2012_SingleMu"], 1 ],
+#    [["Run2012_DoubleElectron"], 1 ]
     ]
 
 
@@ -53,9 +53,18 @@ if do_qcd:
     samples_SL = samples_QCD
     samples_DL = samples_QCD
 
+K = 0.0192521
+fk = 1.8
+
+Z = 3237.19
+fz = 5.5
+
+p_sb_cut = "p_125_all_s/(p_125_all_s + " + str(K*fk) + "*p_125_all_b)"
+p_bj_cut = "p_125_all_b_ttbb/(p_125_all_b_ttbb + " + str(Z*fz) + "*p_125_all_b_ttjj)"
+
 cuts_SL = {
 #------------------standard preselection------------------
-    "SL_g5jg3t": "(Vtype==2 || Vtype==3) && numJets>=5 && numBTagM>=3", 
+#    "SL_g5jg3t": "(Vtype==2 || Vtype==3) && numJets>=5 && numBTagM>=3", 
 
 #-------------------btag LR ------------------------------
 #    "SL_6j": "(Vtype==2 || Vtype==3) && numJets>=6",
@@ -75,7 +84,6 @@ cuts_SL = {
 #    "SL_4j4t":   "(Vtype==2 || Vtype==3) && numJets==4 && numBTagM==4",
 #    "SL_5jg4t":  "(Vtype==2 || Vtype==3) && numJets==5 && numBTagM>=4",
 #    "SL_g6jg4t": "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM>=4",
-
 #------------------ final categories --------------------------
 #    "SL_cat1_HP": "( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.995",
 #    "SL_cat2_HP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925",
@@ -84,7 +92,13 @@ cuts_SL = {
 #    "SL_cat1_LP": "( type==0 || (type==3 && flag_type3>0)) && btag_LR<0.995 && btag_LR>=0.960",
 #    "SL_cat2_LP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR<0.9925 && btag_LR>=0.960",
 #    "SL_cat3_LP": "type==2 && flag_type2<=999 && btag_LR<0.995 && btag_LR>=0.970",
+#--------------------------- All ----------------------------
+#    "final_SL": "(type==0 || type==1 || type==2 || type == 3) && btag_LR>0.5",
 
+#------------------- Test SL_cat2 excess ----------------------
+    #    "SL_cat2_loose": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.960" #this is limited by computing ME   
+    "SL_cat2_HP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925",
+#    "SL_cat2_HP_firstBin": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925 && " + p_sb_cut + "< x && " + p_bj_cut + " < y "
 }
 
 cuts_DL = {
@@ -116,6 +130,7 @@ cuts_DL = {
 
 #    "DL_cat4_HP": "type==6 && btag_LR>=0.925",
 #    "DL_cat4_LP": "type==6 && btag_LR<0.925 && btag_LR>=0.850",
+#    "final_DL": "type==6 && btag_LR>0.5",
 
     }
 
@@ -137,16 +152,29 @@ variables = {
 #    "numBTagM": [0, 10, 10],
 #    "numJets": [0,12,12],
 
-#    "btag_LR": [0, 1, 30], # (minbin, maxbin, nbins)
+#    "btag_LR": [0.9925, 1., 10], # (minbin, maxbin, nbins)
 #    "jetsAboveCut": [0, 10, 10],
 #    "numBTagM": [0, 7, 7], #Fixme -- need to change to allow int values
 
  #   "bjet_pt": [30, 350, 30],
  #   "bjet_eta": [-2.5, 2.5, 15],
-    "leadjet_pt": [30, 350, 30],
+#    "leadjet_pt": [30, 350, 30],
  #   "leadjet_eta": [-2.5, 2.5, 15],
 
+#    "best_0_pt_H": [0, 700, 30],
+#    "best_0_pt_Top": [0, 700, 30],
+
+    #---------- for cat2 checks ----------
+    #    "btag_LR": [0.9925, 1., 10], # (minbin, maxbin, nbins)
+#        "p_sb": [0, 1, 10],
+        "p_bj": [0, 1, 10], 
     }
+
+discriminant_mapping = {
+    "p_sb": p_sb_cut,
+    "p_bj": p_bj_cut,
+   } 
+
 
 do_muon = False
 do_electron = False
@@ -159,32 +187,42 @@ for var in variables:
     minbin = variables[var][0]
     maxbin = variables[var][1]
     nbins = variables[var][2]
-    step = maxbin*1.0/nbins
+    step = (maxbin-minbin)*1.0/nbins
 
-    varname = var
     if var[:6] == "lepton" and do_muon:
         varname = "muon" + var[6:]
         var = var + "[0]"
     elif var[:6] == "lepton" and do_electron:
         varname = "electron" + var[6:]
         var = var + "[0]"
-        
-    #    if var[:6] == "lepton":
+    else:
+        varname = var
+
+    if var == "p_sb" or var == "p_bj": # replace the discriminant by the corresponding expression
+        var = discriminant_mapping[varname]
+        print "Replacing discriminant " + varname + " with expression: " + var
+
     print "Plotting: " + varname + " with " + var
 
-    binvec = cms.vdouble( arange(minbin, maxbin + step, step) )
+#    print "arange(" + str(minbin) + "," + str(maxbin+step) + "," + str(step) + ")"
+    binvec = cms.vdouble( arange(minbin, maxbin + 0.00001, step) )
     print "binvec = " + str(binvec)
 
     print "Submitting SL jobs... "
-    for cut in cuts_SL:
-        if do_muon: # and var[:6] == "lepton":
-            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==13"
-        elif do_electron: # and var[:6] == "lepton":
-            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==11"
 
+    for cut in cuts_SL:
+        if do_muon:
+            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==13"
+            cutname = cut + "_muon"
+        elif do_electron:
+            cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==11"
+            cutname = cut + "_electron"
+        else:
+            cutname = cut
+            
         print "Submit jobs for var: " + varname + ", cut = " + cut
         print "-----------------------------------------------"
-        submitDataCardMakerFWlite_all( var, varname, cuts_SL[cut], varname + "_" + cut , binvec, binvec, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
+        submitDataCardMakerFWlite_all( var, varname, cuts_SL[cut], varname + "_" + cutname , binvec, binvec, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
 
     print "Submitting DL jobs... "
     for cut in cuts_DL:
