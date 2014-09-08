@@ -6,7 +6,7 @@ import argparse
 from histlib import colors, stackplot, get_jet_count_hist
 from systematics import systematics_list, find_sum_sys, get_tot_sys
 
-ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)
+#ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', dest='mode',  choices=["DL", "SL"], required=True, help="specify *DL* or *SL* analysis")
@@ -26,164 +26,19 @@ inpath = "../datacards/Sep14_cat2_studies/"
 version = "MEM_New_rec_std_"
 
 vars = { # x-axis title, x-axis range
-    "btag_LR": ["b_{LR}", [0,1] ],
-
-    "electron_eta": ["electron #eta", [-2.5, 2.5] ],
-    "electron_pt": ["electron p_{T}", [30, 250] ],
-    "electron_rIso": ["electron r_{iso}", [0, 0.115] ], #needed for showing 0.12 upper bound
-    "electron_dxy": ["electrond dxy", [0, 0.025] ],
-
-    "muon_eta": ["muon #eta", [-2.5, 2.5] ],
-    "muon_pt": ["muon p_{T}", [30, 250] ],
-    "muon_rIso": ["muon r_{iso}", [0, 0.115] ],
-    "muon_dxy": ["muon dxy", [0, 0.025] ],
-
-    "Mll": ["m(l^{+}l^{-})", [30,350] ],
-    "MTln": ["m_{T}(l #nu)", [30,450] ],
-    "MET_pt": ["MET", [0,250] ],
-    "MET_sumEt": ["MET_sumEt", [350,3500]],
-
-    "numJets": ["nr jets", [4, 10] ],
-    "numBTagM": ["nr b-tags (CSV medium)", [0, 5] ],
-    "jetsAboveCut": ["nr jets with p_{T} > 40", [0, 10] ],
-
-    "nPVs": ["# primary vertices", [0,40]],
-
-    "bjet_pt": ["b-jet p_{T}", [30, 250]],
-    "bjet_eta": ["b-jet #eta", [-2.5, 2.5]],
-
-    "leadjet_pt": ["leading jet p_{T}", [30, 340]],
-    "leadjet_eta": ["leading jet #eta", [-2.5, 2.5]],
-
-    "p_bj": ["P_{b/j}", [0,1,10] ],
-    "p_sb": ["P_{s/b}", [0,1,10] ],
+    "p_sb_vs_p_bj": ["P_{s/b}", [0,1,10], "P_{b/j}",[0,1,10] ],
     }
-
-if args.mode == "DL":
-    vars["electron_pt"][1] = [20, 250]
-    vars["muon_pt"][1] = [20, 250]
-    vars["numJets"][1] = [0, 10]
-    vars["numBTagM"][1] = [1, 4]
-
 
 if args.mode == "SL":
     regs = {
-#        "SL_5j": ["btag_LR"],
-#        "SL_6j": ["btag_LR"],
-#        "SL_g6jg2t": ["btag_LR"],
-#        "SL_5jg2t": ["btag_LR"],
-
-#        "SL_g4jg2t": [ "numBTagM", "numJets"],
-
-#        "SL_g5jg3t": [
-#            "electron_pt",
-#            "electron_eta",
-#            "electron_rIso",
-
-#            "muon_eta",
-#            "muon_pt",
-#            "muon_rIso",
-
-#            "MET_pt",
-            #"MET_sumEt",
- #           "MTln",
-  #          "nPVs",
-
-#            "leadjet_pt",
-#            "leadjet_eta",
-#            "bjet_pt",
-#            "bjet_eta",
-#]
         #-------- test cat2 -------
-        "SL_cat1_HP": [
-            "btag_LR",
-            "p_sb",
-            "p_bj"
+        "SL_cat2_HP": [
+            "p_sb_vs_p_bj", 
             ],
-        "SL_cat1_HP_muon": [
-            "btag_LR"
-            ],
-        "SL_cat1_HP_electron": [
-            "btag_LR"
-            ],
-
-#        "SL_cat2_HP": [
-#            "numBTagM",
-#            "btag_LR", 
-#            "p_sb", 
-#            "p_bj"
-#            ],
         }
+else:
+    regs ={}
 
-"""
-        "SL_cat2_HP_firstBin": [
-            "numBTagM",
-            "numJets",
-            "btag_LR",
-            "p_sb",
-            "p_bj",
-            "electron_pt",                                                                                                                                   
-            "electron_eta",                                                                                                                                  
-            "electron_rIso",
-            "electron_dxy",
-            "muon_eta", 
-            "muon_pt",                                                                                                                                       
-            "muon_rIso",
-            "muon_dxy",
-            "MET_pt",
-            "MTln",
-            "leadjet_pt",          
-            "leadjet_eta",                                                                                                                                   
-            "bjet_pt",                                                                                                                                       
-            "bjet_eta"
-            ],
-"""
-
-#        "SL_cat2_HP_muon": [
-#            "btag_LR",
-#            "p_sb",
-#            "p_bj"
-#            ],
-#        "SL_cat2_HP_electron": [
-#            "btag_LR",
-#            "p_sb",
-#            "p_bj" 
-#            ]
-
-#        "SL_g5jg2t_eta15": ["electron_dxy", "electron_eta", "electron_pt", "electron_rIso", "MET_pt", "MTln", "btag_LR", "jetsAboveCut", "numBTagM"], #investigating QCD in high eta electron events
-#        "SL_g5jg2t": ["MET_pt"],
-#        }
-
-
-if args.mode == "DL":
-    regs = {
-        "DL_g2jg2t": [
-#            "electron_pt",
-#            "electron_eta",
-#            "electron_rIso",
-
-#            "muon_eta",
-#            "muon_pt",
-#            "muon_rIso",
-
-#            "bjet_pt",
-#            "bjet_eta",
-#            "leadjet_pt",
-#            "leadjet_eta",
-
-#            "MET_pt",
-#            "MET_sumEt",
-#            "Mll",
-
-            "numJets",
-        ],
-#        "DL_g2jg2t": ["Mll_z"],
-
-#        "DL_g4j_z": ["btag_LR"],
-        "DL_g4j": ["btag_LR", "numBTagM"],
-#        "DL_g4j": ["numBTagM"],
-
-        }
 
 do_QCD=False
 proc_mc = dict() #filename: [histname, pretty name]
@@ -224,7 +79,7 @@ for reg in regs:
         jet_count_up = dict()
         jet_count_down = dict()
 
-        inputfiles={} # needed ?
+        inputfiles={} 
 
         for proc in proc_mc:
             infile = inpath + version +var + "_" + reg+ "_" +proc + ".root"
@@ -325,4 +180,16 @@ for reg in regs:
 
         signal = mc["TTH125"].Clone("signal")
 
-        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_cat2_tests/firstBin")
+        signal.Draw("MEM_p_sb_vs_p_bj/ttH_hbb")
+
+        h_sumMC = mc["TTV"].Clone("h_sumMC") #FIXME                                                                                                                         
+        
+        for proc in mc:
+            if not proc=="TTH125" and not proc=="TTV":
+                h_sumMC.Add(mc[proc])
+
+        
+
+        
+
+#        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_cat2_tests/firstBin")
