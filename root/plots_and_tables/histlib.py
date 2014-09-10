@@ -4,7 +4,7 @@ from systematics import get_tot_sys
 from collections import OrderedDict as dict
 
 proc_names = {
-    "TTJetsJJ": "t#bar{t} + jj",
+    "TTJetsJJ": "t#bar{t} + lf",
     "TTJetsCC": "t#bar{t} + cc",
     "TTJetsBJ": "t#bar{t} + b",
     "TTJetsBB": "t#bar{t} + bb",
@@ -25,7 +25,7 @@ colors = {
     "DiBoson":ROOT.kBlue-9,
     "TTH125": ROOT.kBlue+2,
     "TTV": ROOT.kBlue-10,
-    "SingleT": ROOT.kMagenta-2,
+    "SingleT": ROOT.kMagenta,
     "QCD_BCtoE": 15
     }
 
@@ -84,7 +84,7 @@ def style_axes(hist, xTitle="", yTitle="", is_ratio=False, is_jet_count=False):
 
   return hist
 
-def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.5,1.5]):
+def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.1,3]):
   if is_data:
     hist.SetMarkerStyle(20);
     hist.SetMarkerSize(1.5);
@@ -162,8 +162,12 @@ def get_poisson_err(hist):
 
       poissonErr.SetPointEYlow(i, N-L)
       poissonErr.SetPointEYhigh(i, U-N)
-      print "low = " + str(N-L)
-      print "high = " + str(U-N)
+      
+#      xPoint = hist.GetBinCenter(i+1)
+#      if hist.GetBinContent(i+1) < 2:
+#        poissonErr.SetPoint(i, xPoint, 0)
+#      print "low = " + str(N-L)
+#      print "high = " + str(U-N)
 
     return poissonErr
 
@@ -237,7 +241,7 @@ def get_error_band(err_up, err_down, nominal_in, band_only=True):
 
     return nominal
 
-def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg=""):
+def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg="", outdir="plots"):
     """
     data -- sum of data histograms
     mc -- dictionary of mc histograms
@@ -298,11 +302,13 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
 
 
-    if var == "numJets" or var == "numBTagM" or var == "cat_count" or var == "btag_LR" or var == "MTln" or var == "Mll" or var == "MET_pt" or var == "jetsAboveCut": #for logscale
+    if var == "Mll": #var == "numJets" or var == "numBTagM" or var == "cat_count" """ or var == "btag_LR" """ or var == "MTln" or var == "Mll" or var == "MET_pt" or var == "jetsAboveCut": #for logscale
         if var == "numJets" or var == "numBTagM":
-            ymin_log = 1
+          ymin_log = 1
+        elif var == "btag_LR":
+          ymin_log = 1
         else:
-            ymin_log = 1
+          ymin_log = 1
 
         h_sumMC.SetMinimum(ymin_log)
         sum.SetMinimum(ymin_log)
@@ -315,7 +321,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
         if var == "numBTagM":
             h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
-            h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+            h_sumMC.SetMaximum(15*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
 
     h_sumMCup = get_tot_sys(mc_up)
@@ -333,8 +339,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     error_band_mc.Draw("e2same")
     signal.Draw("histsame")
-#    dataSum.Draw("epsame")
-    dataSumPoisson.Draw("epsame")
+    dataSum.Draw("epsame")
+#    dataSumPoisson.Draw("epsame")
 
     #-------------------- legend ----------------------------
 
@@ -420,8 +426,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     textlabel = std_txt
     latex.DrawLatex(0.16, 0.972, textlabel)
 
-    c[var].SaveAs("plots/control_" + var + "_" + reg + ".png")
-#    c[var].SaveAs("plots/" + var + "_" + reg + ".pdf")
+    c[var].SaveAs( outdir + "/control_" + var + "_" + reg + ".png")
+#    c[var].SaveAs("plots/control_" + var + "_" + reg + ".pdf")
     c[var].Close()
 
     print "dataSum = " + str(dataSum.Integral())

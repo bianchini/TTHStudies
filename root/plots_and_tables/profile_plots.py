@@ -9,7 +9,8 @@ from systematics import systematics_list_profile as systematics_list
 from systematics import get_profile_sys, get_profile_sys2
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)                                                       
 
-infilepath = "../datacards/June03_PAS/2D_corr/controlPlots/"
+#infilepath = "../datacards/June03_PAS/2D_corr/controlPlots/"
+infilepath = "../datacards/June03_PAS/2D_corr_v2/" # use for "MEM_logPbjvsPsb" only
 
 proc_hist = [
     "ttH_hbb",
@@ -52,14 +53,17 @@ for reg in regs:
     infile = ROOT.TFile(infilename_full)
 
     histnames = { #histname: [xaxis, yaxis, [xmin, xmax], [ymin,ymax], doProfileY]
-        "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 35], [0,40], False],
-        "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-5, 20], [-10, 15], False],
+ #       "MEM_logPbvslogPs": ["log(#omega_{1})", "log(#omega_{0})", [0, 35], [0,40], False],
+ #       "MEM_logPbbvslogPjj": ["log(L_{bb}^{b-tag})", "log(L_{jj}^{b-tag})", [-5, 20], [-10, 15], False],
 
-        "MEM_logPbvslogPbb": ["log(#omega_{1})", "log(L_{bb}^{b-tag})", [0,35], [-5,20], False],
-        "MEM_logPbvslogPjj": ["log(#omega_{1})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
+ #       "MEM_logPbvslogPbb": ["log(#omega_{1})", "log(L_{bb}^{b-tag})", [0,35], [-5,20], False],
+ #       "MEM_logPbvslogPjj": ["log(#omega_{1})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
 
-        "MEM_logPsvslogPbb": ["log(#omega_{0})","log(L_{bb}^{b-tag})", [0,35], [-5, 20], False],
-        "MEM_logPsvslogPjj": ["log(#omega_{0})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
+ #       "MEM_logPsvslogPbb": ["log(#omega_{0})","log(L_{bb}^{b-tag})", [0,35], [-5, 20], False],
+ #       "MEM_logPsvslogPjj": ["log(#omega_{0})","log(L_{jj}^{b-tag})", [0,35], [-10, 5], False],
+        
+        "MEM_logPbjvsPsb": ["P_{b/j}","P_{s/b}",[0,1],[0,1], False],
+
         }
 
     
@@ -211,7 +215,7 @@ for reg in regs:
         latex.DrawLatex(0.71, 0.89, cat_txt)
         
 
-        outfilename = "profile_plots_rebin/profile_" + histname + "_" + reg 
+        outfilename = "profile_plots_2/profile_" + histname + "_" + reg 
         if do_sys_v2:
             outfilename = outfilename + "_sysV2"
 
