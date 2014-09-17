@@ -110,7 +110,7 @@ def tdrstyle():
     gStyle.SetPalette(1)
     #gStyle.SetNdivisions(510, "XYZ")  # 505?
     gStyle.SetNdivisions(505, "XYZ")
-    gStyle.SetEndErrorSize(0)  # 2?
+    gStyle.SetEndErrorSize(2)  # 2?
     #gStyle.SetErrorMarker(20)
     #gStyle.SetErrorX(0.)
     #gStyle.SetPaperSize(20.,20.)

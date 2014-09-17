@@ -1,6 +1,10 @@
 import ROOT
+import CMS_lumi
 import tdrstyle
+#tdrstyle.setTDRStyle()
 tdrstyle.tdrstyle()
+from numpy import arange
+
 from collections import OrderedDict as dict
 import argparse
 import math
@@ -9,9 +13,17 @@ from array import array
 from histlib import get_ratio, colors, style_hist, style_axes, get_poisson_err, get_poisson_ratio, add_cms_info
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
-infilepath = "../datacards/June03_PAS/control_final_fit/"
+plot_style="new" # "pas" for old styling
+CMS_lumi.writeExtraText = 0
+CMS_lumi.lumi_8TeV = "19.5 fb^{-1}"
+CMS_lumi.lumiTextSize = 0.75
+CMS_lumi.cmsTextSize = 0.9
 
-mc_file = "mlfitMEM_COMB_New_rec_std_sb_wplots.root"
+#infilepath = "../datacards/June03_PAS/control_final_fit/" # for pas
+infilepath = "../datacards/Sep_PAPER/"
+
+#mc_file = "mlfitMEM_COMB_New_rec_std_sb_wplots.root"
+mc_file = "mlfitMEM_COMB_New_rec_std_sb.root"
 data_file = "MEM_New_rec_std_sb.root"
 
 
@@ -37,7 +49,14 @@ infile_data =ROOT.TFile(infilename_data)
 
 prh = {} # dictionary of 8 purity histograms for each category 
 step=0.6
-binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #variable bin size
+#binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #variable bin size
+
+binvec_1 = arange(-6.3, -2.7, 0.45)
+binning = binvec_1.tolist()
+print binvec_1
+binning.append(-2.7)
+binning.append(-1.3)
+#binning = [-6.3, -6.3+0.5*step, -6.3+step, -6.3+1.5*step, -6.3+2*step, -6.3+2.5*step, -6.3+3*step, -6.3+3.5*step, -6.3+4*step, -6.3+4.5*step, -6.3+5*step, -6.3+6*step, -1.3] #variable bin size
 
 #purity_hist = ROOT.TH1F("purity","purity", 8, -7., -1.)
 purity_hist = ROOT.TH1F("purity","purity", len(binning)-1,  array('d', binning) )
@@ -122,8 +141,8 @@ for ibin in range(1, purity_hist.GetNbinsX()+1): # For data-only error-bars on r
     purity_hist_bkg.SetBinError(ibin, 0)
     data_purity_hist_for_ratio.SetBinError(ibin,0)
 
-data_mc_ratio = get_ratio(data_purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="Data/MC")
-data_mc_ratio_sb = get_ratio(purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.5, ratio_ytitle="")
+data_mc_ratio = get_ratio(data_purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.6, ratio_ytitle="Data/MC")
+data_mc_ratio_sb = get_ratio(purity_hist, purity_hist_bkg, ymin=0.5, ymax = 1.6, ratio_ytitle="")
 data_mc_ratio_poisson = get_poisson_ratio(data_purity_hist_poisson, data_purity_hist, purity_hist_bkg)
 
 error_band = get_ratio(data_purity_hist_for_ratio, purity_hist, ymin=0., ymax = 2., ratio_ytitle= "")
@@ -168,6 +187,8 @@ purity_hist.Draw()
 st.Draw("histsame")
 purity_hist.Draw("histsame")
 error_band_main.Draw("e2same")
+#data_purity_hist_poisson.SetMarkerColor(ROOT.kRed)
+data_purity_hist_poisson.SetMarkerSize(0.8)
 data_purity_hist_poisson.Draw("epsame")
 
 
@@ -195,7 +216,11 @@ legend1.Draw()
 
 #latex.DrawLatex(0.15, 0.96, std_txt)
 #latex.DrawLatex(0.71, 0.89, cat_txt)
-add_cms_info(lumi=19.5, com=8)
+
+if plot_style == "pas":
+    add_cms_info(lumi=19.5, com=8)
+else: # according to new standard
+    CMS_lumi.CMS_lumi(p1, 2, 11) # 2 -- 8TeV only, 3 -- 8 + 7
 
 c.cd()
 
@@ -220,9 +245,12 @@ one = style_hist(one, line=True)
 data_mc_ratio_sb.Draw("hist")
 one.Draw("histsame")
 error_band.Draw("e2same")
+data_mc_ratio_poisson.SetMarkerSize(0.8)
 data_mc_ratio_poisson.Draw("epsame")
 
 #purity_lin.Draw("histsame") # to add purity on the ratio band
 
-c.SaveAs("plots/purity.png")
+outfile = "plots/purity_2D.png"
+print "saving output to: " + outfile
+c.SaveAs(outfile)
 c.Close()

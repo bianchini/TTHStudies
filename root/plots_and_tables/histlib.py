@@ -86,11 +86,12 @@ def style_axes(hist, xTitle="", yTitle="", is_ratio=False, is_jet_count=False):
 
 def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.1,3]):
   if is_data:
-    hist.SetMarkerStyle(20);
-    hist.SetMarkerSize(1.5);
-    hist.SetMarkerColor(ROOT.kBlack);
-    hist.SetLineColor(ROOT.kBlack);
-    hist.SetLineWidth(2);
+    hist.SetMarkerStyle(20)
+    hist.SetMarkerSize(1.5)
+
+    hist.SetMarkerColor(ROOT.kBlack)
+    hist.SetLineColor(ROOT.kBlack)
+    hist.SetLineWidth(2)
 
 #    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
 
