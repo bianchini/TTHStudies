@@ -14,16 +14,14 @@ from histlib import get_ratio, colors, style_hist, style_axes, get_poisson_err, 
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
 plot_style="new" # "pas" for old styling
-CMS_lumi.writeExtraText = 0
-CMS_lumi.lumi_8TeV = "19.5 fb^{-1}"
-CMS_lumi.lumiTextSize = 0.75
-CMS_lumi.cmsTextSize = 0.9
 
 #infilepath = "../datacards/June03_PAS/control_final_fit/" # for pas
 infilepath = "../datacards/Sep_PAPER/"
 
-#mc_file = "mlfitMEM_COMB_New_rec_std_sb_wplots.root"
-mc_file = "mlfitMEM_COMB_New_rec_std_sb.root"
+#mc_file = "mlfitMEM_COMB_New_rec_std_sb_wplots.root" # old
+#mc_file = "mlfitMEM_COMB_New_rec_std_sb.root" # mu not fixed in fit
+mc_file = "mlfitMEM_COMB_New_rec_std_sbMu1.root" # mu set to 1 in fit
+
 data_file = "MEM_New_rec_std_sb.root"
 
 
@@ -51,12 +49,15 @@ prh = {} # dictionary of 8 purity histograms for each category
 step=0.6
 #binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #variable bin size
 
+#binning = [-6.3, -6.3+0.5*step, -6.3+step, -6.3+1.5*step, -6.3+2*step, -6.3+2.5*step, -6.3+3*step, -6.3+3.5*step, -6.3+4*step, -6.3+4.5*step, -6.3+5*step, -6.3+6*step, -1.3] #variable bin size with finer binning
+
+#----- variable binsize with semifine binning -----
 binvec_1 = arange(-6.3, -2.7, 0.45)
 binning = binvec_1.tolist()
 print binvec_1
 binning.append(-2.7)
 binning.append(-1.3)
-#binning = [-6.3, -6.3+0.5*step, -6.3+step, -6.3+1.5*step, -6.3+2*step, -6.3+2.5*step, -6.3+3*step, -6.3+3.5*step, -6.3+4*step, -6.3+4.5*step, -6.3+5*step, -6.3+6*step, -1.3] #variable bin size
+
 
 #purity_hist = ROOT.TH1F("purity","purity", 8, -7., -1.)
 purity_hist = ROOT.TH1F("purity","purity", len(binning)-1,  array('d', binning) )
@@ -220,6 +221,10 @@ legend1.Draw()
 if plot_style == "pas":
     add_cms_info(lumi=19.5, com=8)
 else: # according to new standard
+    CMS_lumi.writeExtraText = 0
+    CMS_lumi.lumi_8TeV = "19.5 fb^{-1}"
+    CMS_lumi.lumiTextSize = 0.75
+    CMS_lumi.cmsTextSize = 0.9
     CMS_lumi.CMS_lumi(p1, 2, 11) # 2 -- 8TeV only, 3 -- 8 + 7
 
 c.cd()
@@ -250,7 +255,10 @@ data_mc_ratio_poisson.Draw("epsame")
 
 #purity_lin.Draw("histsame") # to add purity on the ratio band
 
-outfile = "plots/purity_2D.png"
+#outfile = "plots/purity_2D_mu1fit_lb.png"
+outfile = "plots/purity_2D_mu1fit.png"
+#outfile = "plots/purity_2D.png"
+
 print "saving output to: " + outfile
 c.SaveAs(outfile)
 c.Close()
