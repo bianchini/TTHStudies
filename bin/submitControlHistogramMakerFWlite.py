@@ -2,13 +2,13 @@ import FWCore.ParameterSet.Config as cms
 from submitDataCardMakerFWlite import submitDataCardMakerFWlite_all
 from numpy import arange
 
-#inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
-inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/files/byLLR/Apr23_2014/"
+inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/"
+#inpath="/home/bianchi/CMSSW_5_3_3_patch2/src/Bianchi/TTHStudies/root/files/byLLR/Apr23_2014/"
 
 #inpath="../root/ME_trees/"
 #inpath="../root/trees/"
-#prod_ver = "_ntuplizeAll_v3_rec_std"
-prod_ver = "_rec_std"
+prod_ver = "_ntuplizeAll_v3_rec_std"
+#prod_ver = "_rec_std"
 
 outdir = "Sep2014_cat2_test" # in ../root/datacards
 
@@ -18,28 +18,28 @@ samples_SL = [
     [["TTV"],      1],
     [["SingleT"],  1],
     [["DiBoson"],  1],
-    [["TTJetsBB"], 1], #15
-    [["TTJetsBJ"], 1], #15
-    [["TTJetsJJ"], 1], #15
-    [["TTJetsCC"], 1], #15
+    [["TTJetsBB"], 15], #15
+    [["TTJetsBJ"], 15], #15
+    [["TTJetsJJ"], 15], #15
+    [["TTJetsCC"], 15], #15
     [["TTH125"],   1],
-    [["EWK"],      1], #2
+    [["EWK"],      2], #2
     [["Run2012_SingleMu"], 1 ],
     [["Run2012_SingleElectron"], 1 ],
     ]
 
 samples_DL = [
-#    [["TTV"],      1],
-#    [["SingleT"],  1],
-#    [["DiBoson"],  1],
-#    [["TTJetsBB"], 15],
-#    [["TTJetsBJ"], 15],
-#    [["TTJetsJJ"], 15],
-#    [["TTJetsCC"], 15],
-#    [["TTH125"],   1],
-#    [["EWK"],      5],
-#    [["Run2012_SingleMu"], 1 ],
-#    [["Run2012_DoubleElectron"], 1 ]
+    [["TTV"],      1],
+    [["SingleT"],  1],
+    [["DiBoson"],  1],
+    [["TTJetsBB"], 15],
+    [["TTJetsBJ"], 15],
+    [["TTJetsJJ"], 15],
+    [["TTJetsCC"], 15],
+    [["TTH125"],   1],
+    [["EWK"],      5],
+    [["Run2012_SingleMu"], 1 ],
+    [["Run2012_DoubleElectron"], 1 ]
     ]
 
 
@@ -71,7 +71,8 @@ cuts_SL = {
 #    "SL_5j": "(Vtype==2 || Vtype==3) && numJets==5",
 #    "SL_5jg2t": "(Vtype==2 || Vtype==3) && numJets==5 && numBTagM>=2", #loose preselectiona
 #    "SL_g6jg2t": "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM>=2", #loose preselection
-
+    "SL_5jg1t": "(Vtype==2 || Vtype==3) && numJets==5 && numBTagM>=1", #loose preselectiona
+    "SL_g6jg1t": "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM>=1", #loose preselection    
 #----------------- jet multiplicities ------------------------
 #    "SL_g4jg2t": "(Vtype==2 || Vtype==3) && numJets>=4 && numBTagM>=2",
 #    "SL_g4j": "(Vtype==2 || Vtype==3) && numJets>=4", 
@@ -85,7 +86,7 @@ cuts_SL = {
 #    "SL_5jg4t":  "(Vtype==2 || Vtype==3) && numJets==5 && numBTagM>=4",
 #    "SL_g6jg4t": "(Vtype==2 || Vtype==3) && numJets>=6 && numBTagM>=4",
 #------------------ final categories --------------------------
-#    "SL_cat1_HP": "( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.995",
+#    "SL_cat1_HP": "( type==0 || (type==3 && flag_type3>0)) && btag_LR>=0.9925", #0.995
 #    "SL_cat2_HP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925",
 #    "SL_cat3_HP": "type==2 && flag_type2<=999 && btag_LR>=0.995",
 
@@ -97,8 +98,8 @@ cuts_SL = {
 
 #------------------- Test SL_cat2 excess ----------------------
     #    "SL_cat2_loose": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.960" #this is limited by computing ME   
-    "SL_cat2_HP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925",
-#    "SL_cat2_HP_firstBin": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925 && " + p_sb_cut + "< x && " + p_bj_cut + " < y "
+#    "SL_cat2_HP": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925",
+#    "SL_cat2_HP_firstBin": "( type==1 || (type==3 && flag_type3<=0) ) && btag_LR>=0.9925 && " + p_sb_cut + "< 0.2 && " + p_bj_cut + " < 0.2 "
 }
 
 cuts_DL = {
@@ -108,6 +109,8 @@ cuts_DL = {
 #    "DL_g4j": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4", #btagLR, numBtag
 #    "DL_g4j_z": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4", #btagLR, numBtag
 #    "DL_g2jg2t_z": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=2 && numBTagM >= 2",
+
+    "DL_g4jg1t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4 && numBTagM >= 1",
 
     #------------------ BDT table ---------------------------
 #    "DL_g4j2t": "(Vtype==0 || Vtype==1 || Vtype==4) && numJets>=4 && numBTagM == 2",
@@ -154,20 +157,34 @@ variables = {
 
 #    "btag_LR": [0.9925, 1., 10], # (minbin, maxbin, nbins)
 #    "jetsAboveCut": [0, 10, 10],
-#    "numBTagM": [0, 7, 7], #Fixme -- need to change to allow int values
 
- #   "bjet_pt": [30, 350, 30],
- #   "bjet_eta": [-2.5, 2.5, 15],
+#    "bjet_pt": [30, 350, 30],
+#    "bjet_eta": [-2.5, 2.5, 15],
 #    "leadjet_pt": [30, 350, 30],
- #   "leadjet_eta": [-2.5, 2.5, 15],
+#    "leadjet_eta": [-2.5, 2.5, 15],
 
 #    "best_0_pt_H": [0, 700, 30],
 #    "best_0_pt_Top": [0, 700, 30],
 
     #---------- for cat2 checks ----------
-    #    "btag_LR": [0.9925, 1., 10], # (minbin, maxbin, nbins)
-#        "p_sb": [0, 1, 10],
-        "p_bj": [0, 1, 10], 
+#    "numBTagM": [0, 10, 10],
+#    "numJets": [0,12,12],
+
+    "btag_LR": [0., 1., 30], # (minbin, maxbin, nbins)
+#    "p_sb": [0, 1, 10],
+#    "p_bj": [0, 1, 10], 
+
+#    "MET_pt": [0, 300, 10],
+#    "MTln": [30, 500, 10],
+#    "bjet_pt": [30, 350, 10],
+#    "bjet_eta": [-2.5, 2.5, 10],
+#    "leadjet_pt": [30, 350, 10],
+#    "leadjet_eta": [-2.5, 2.5, 10],
+    
+#    "lepton_pt": [20, 250, 10], #30
+#    "lepton_eta": [-2.5, 2.5, 10], #nbins/2 15
+#    "lepton_rIso": [0, 0.12, 10],
+#    "lepton_dxy": [0, 0.025, 10],               
     }
 
 discriminant_mapping = {
@@ -182,6 +199,10 @@ do_electron = False
 print "Read input files from: " + inpath
 print "Version: " + prod_ver
 print "Write output to: " + outdir
+
+# 2D histogram for p_sb vs p_bj
+#binvec_2dDiscr = arange(0., 1.0001, 0.1)
+#submitDataCardMakerFWlite_all(discriminant_mapping["p_sb"] + ":" + discriminant_mapping["p_bj"], "p_sb_vs_p_bj", cuts_SL["SL_cat2_HP"], "p_sb_vs_p_bj_SL_cat2_HP", binvec_2dDiscr, binvec_2dDiscr, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
 
 for var in variables:
     minbin = variables[var][0]
@@ -211,15 +232,17 @@ for var in variables:
     print "Submitting SL jobs... "
 
     for cut in cuts_SL:
+        cutname = cut
         if do_muon:
             cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==13"
-            cutname = cut + "_muon"
+            if not var[:6] == "lepton":
+                cutname = cut + "_muon"
+                        
         elif do_electron:
             cuts_SL[cut] = "(" + cuts_SL[cut] + ") && lepton_type[0]==11"
-            cutname = cut + "_electron"
-        else:
-            cutname = cut
-            
+            if not var[:6] == "lepton":
+                cutname = cut + "_electron"
+                    
         print "Submit jobs for var: " + varname + ", cut = " + cut
         print "-----------------------------------------------"
         submitDataCardMakerFWlite_all( var, varname, cuts_SL[cut], varname + "_" + cutname , binvec, binvec, 0, sampless=samples_SL, inputpath=inpath, version=prod_ver, outdir=outdir)
