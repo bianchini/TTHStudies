@@ -18,7 +18,10 @@ systematics_list = ["CMS_scale_j", "CMS_res_j"] + csv_sys_list + q2_sys_list + e
 
 def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
 #    print "Getting systematics from" + str(infile)
+    rebin=1
     nominal = infile.Get(hist + "/" + procname)
+    nominal.Rebin(rebin)
+    print "doing_sum_sys"
 
     nominal_m = nominal.Clone("nominal_m")
     nominal_m.Scale(-1)
@@ -31,15 +34,18 @@ def find_sum_sys(proc, procname, systematics_list, infile, hist, shift):
     systematics_list.append(qcdScale)
     
     for idx, sys in enumerate(systematics_list):
-#        print "Getting systematic variation " + sys
+        print "Getting systematic variation " + sys
         sys_var_up = infile.Get(hist + "/" + procname + "_" + sys + shift)
 
         try:
+#            print "nbins = " + str(sys_var_up.GetNbins())
+            sys_var_up.Rebin(rebin)
             sys_var_up.Add(nominal_m)
         except AttributeError:
             print "WARNING: systematic variation '" + sys + shift + "' can not be read for " + procname
             continue
 
+        print "done adding"
         sys_var_up2 = sys_var_up*sys_var_up
         
         if idx == 0:

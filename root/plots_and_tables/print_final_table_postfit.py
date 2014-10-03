@@ -82,7 +82,7 @@ processes["TTJetsBJ"] = ["ttbarPlusB", " $t\\bar{t} + bj$"]
 processes["TTJetsBB"] = ["ttbarPlusBBbar", " $t\\bar{t} + b\\bar{b}$ "]
 processes["TTV"] = ["ttbarV", " $t\\bar{t} + V$ "]
 processes["SingleT"] = ["singlet", "single-$t$"]
-#processes["EWK"] = ["ewk", "$V$ + jets"]
+processes["EWK"] = ["ewk", "$V$ + jets"]
 #processes["DiBoson"] = ["diboson", "diboson"]
 
 # ------------------ Get Sum Bkg and Sum Data-------------
@@ -136,9 +136,12 @@ for proc in processes:
                 try:
                     nr_evts = h.IntegralAndError(0, h.GetNbinsX(), errVal)
                 except AttributeError:
-                    print "Histogram: " + histname + " cant be opened" 
-
-                nr_evts = h.Integral()
+                    if proc=="EWK":
+                        nr_evts = 0
+                    else:
+                        print "Histogram: " + histname + " cant be opened" 
+                if proc != "EWK": # if nr_evts=0 the histogram is missing
+                    nr_evts = h.Integral()
 
                 tbl_str = str( round(nr_evts, 1) ) + " $\pm$ " + str( round( math.sqrt(errVal**2), 1) )
         

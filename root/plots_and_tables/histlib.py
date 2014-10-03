@@ -1,5 +1,5 @@
-
 import ROOT, sys, re
+import CMS_lumi
 from systematics import get_tot_sys
 from collections import OrderedDict as dict
 
@@ -84,7 +84,7 @@ def style_axes(hist, xTitle="", yTitle="", is_ratio=False, is_jet_count=False):
 
   return hist
 
-def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.1,3]):
+def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.5,1.5]):
   if is_data:
     hist.SetMarkerStyle(20)
     hist.SetMarkerSize(1.5)
@@ -242,7 +242,7 @@ def get_error_band(err_up, err_down, nominal_in, band_only=True):
 
     return nominal
 
-def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg="", outdir="plots"):
+def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg="", outdir="plots", plot_style = "pas"):
     """
     data -- sum of data histograms
     mc -- dictionary of mc histograms
@@ -303,7 +303,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
 
 
-    if var == "Mll": #var == "numJets" or var == "numBTagM" or var == "cat_count" """ or var == "btag_LR" """ or var == "MTln" or var == "Mll" or var == "MET_pt" or var == "jetsAboveCut": #for logscale
+    if var == "Mll" or var == "numJets" or var == "numBTagM" or var == "cat_count" or var == "btag_LR" or var == "MTln" or var == "Mll" or var == "MET_pt" or var == "jetsAboveCut": #for logscale
         if var == "numJets" or var == "numBTagM":
           ymin_log = 1
         elif var == "btag_LR":
@@ -322,7 +322,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
         if var == "numBTagM":
             h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
-            h_sumMC.SetMaximum(15*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+            h_sumMC.SetMaximum(20*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
 
     h_sumMCup = get_tot_sys(mc_up)
@@ -368,6 +368,18 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     legend2.Draw()
 
+    if plot_style == "pas":
+      print "Labels old/costum style"
+      add_cms_info(lumi=19.5, com=8)
+    else: # according to new standard
+      print "Labels following latest CMS recommendations"
+      plot_style="new" # "pas" for old styling
+      CMS_lumi.writeExtraText = 0
+      CMS_lumi.lumi_8TeV = "19.5 fb^{-1}"
+      CMS_lumi.lumiTextSize = 0.75
+      CMS_lumi.cmsTextSize = 0.9
+      CMS_lumi.CMS_lumi(p1[var], 2, 11) # 2 -- 8TeV only, 
+
     c[var].cd()
 
     p2 = {}
@@ -380,13 +392,13 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
 
     #-----Draw and style Data/MC points----
-    hist_ratio = get_ratio(dataSum, h_sumMC, ymin=0.5, ymax=1.5, ratio_ytitle="Data/MC")
+    hist_ratio = get_ratio(dataSum, h_sumMC, ymin=0.5, ymax=1.5, ratio_ytitle="Data/Bkg")
     hist_ratio = style_hist(hist_ratio, is_data=True)
     if var != "numJets" and var != "numBTagM":
         hist_ratio.GetXaxis().SetRangeUser(var_range[0], var_range[1])
-        hist_ratio = style_axes(hist_ratio, yTitle="Data/MC", is_ratio=True)
+        hist_ratio = style_axes(hist_ratio, yTitle="Data/Bkg", is_ratio=True)
     else:
-        hist_ratio = style_axes(hist_ratio, yTitle="Data/MC", is_ratio=True, is_jet_count=True)
+        hist_ratio = style_axes(hist_ratio, yTitle="Data/Bkg", is_ratio=True, is_jet_count=True)
 
     hist_ratio_poisson = get_poisson_ratio(dataSumPoisson, dataSum, h_sumMC)
     hist_ratio_poisson = style_hist(hist_ratio_poisson, is_data=True, is_error_band=True)
@@ -402,7 +414,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     one = style_hist(one, line=True)
 
 
-#    hist_ratio.Draw("pe1")
+    hist_ratio.Draw("pe1")
     error_band.Draw("e2same")
     hist_ratio_poisson.Draw("pe1same")
 
@@ -414,20 +426,23 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     c[var].cd()
 
-    latex = ROOT.TLatex()
-    latex.SetNDC()
-    latex.SetTextSize(0.038)
-    latex.SetTextAlign(31)
-    latex.SetTextAlign(11)
 
-    cut = "CMS Preliminary"
+#    latex = ROOT.TLatex()
+#    latex.SetNDC()
+#    latex.SetTextSize(0.038)
+#    latex.SetTextAlign(31)
+#    latex.SetTextAlign(11)
 
-    std_txt = cut + "                  #sqrt{s}=8 TeV, L=19.5 fb^{-1}" # (" + reg + ")"
+#    cut = "CMS Preliminary"
 
-    textlabel = std_txt
-    latex.DrawLatex(0.16, 0.972, textlabel)
+#    std_txt = cut + "                  #sqrt{s}=8 TeV, L=19.5 fb^{-1}" # (" + reg + ")"
 
-    c[var].SaveAs( outdir + "/control_" + var + "_" + reg + ".png")
+#    textlabel = std_txt
+#    latex.DrawLatex(0.16, 0.972, textlabel)
+
+    outfile = outdir + "/control_" + var + "_" + reg + ".png"
+    print "saving outpit file to: " + outfile
+    c[var].SaveAs( outfile ) 
 #    c[var].SaveAs("plots/control_" + var + "_" + reg + ".pdf")
     c[var].Close()
 

@@ -12,6 +12,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--mode', dest='mode',  choices=["DL", "SL"], required=True, help="specify *DL* or *SL* analysis")
 parser.add_argument('--skipSys', dest='skipSys', action="store_true")#, default=True, required=False)
 args = parser.parse_args()
+plot_style="paper"
+
+rebin = 1 # FIXME, doesnt work atm
 
 if args.skipSys:
     print "Omitting systematic uncertainties"
@@ -20,13 +23,14 @@ else:
 
 #inpath = "../datacards/May26_PAS/control_plots_merged/"
 #inpath = "../datacards/June03_PAS/control_plots_merged/"
-inpath = "../datacards/Sep14_cat2_studies/"
+#inpath = "../datacards/Sep14_cat2_studies/"
+inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
 
-#version = "MEM_New_ntuplizeAll_v3_rec_std_"
-version = "MEM_New_rec_std_"
+version = "MEM_New_ntuplizeAll_v3_rec_std_"
+#version = "MEM_New_rec_std_"
 
 vars = { # x-axis title, x-axis range
-    "btag_LR": ["b_{LR}", [0,1] ],
+    "btag_LR": [" \\mathscr{F}", [0,1] ],
 
     "electron_eta": ["electron #eta", [-2.5, 2.5] ],
     "electron_pt": ["electron p_{T}", [30, 250] ],
@@ -43,8 +47,8 @@ vars = { # x-axis title, x-axis range
     "MET_pt": ["MET", [0,250] ],
     "MET_sumEt": ["MET_sumEt", [350,3500]],
 
-    "numJets": ["nr jets", [4, 10] ],
-    "numBTagM": ["nr b-tags (CSV medium)", [0, 5] ],
+    "numJets": ["jet multiplicity", [4, 10] ],
+    "numBTagM": ["multiplicity of b-tagged jets (CSVM)", [0, 5] ],
     "jetsAboveCut": ["nr jets with p_{T} > 40", [0, 10] ],
 
     "nPVs": ["# primary vertices", [0,40]],
@@ -72,6 +76,8 @@ if args.mode == "SL":
 #        "SL_6j": ["btag_LR"],
 #        "SL_g6jg2t": ["btag_LR"],
 #        "SL_5jg2t": ["btag_LR"],
+        "SL_5jg1t": ["btag_LR"],
+        "SL_g6jg1t": ["btag_LR"],
 
 #        "SL_g4jg2t": [ "numBTagM", "numJets"],
 
@@ -95,17 +101,17 @@ if args.mode == "SL":
 #            "bjet_eta",
 #]
         #-------- test cat2 -------
-        "SL_cat1_HP": [
-            "btag_LR",
-            "p_sb",
-            "p_bj"
-            ],
-        "SL_cat1_HP_muon": [
-            "btag_LR"
-            ],
-        "SL_cat1_HP_electron": [
-            "btag_LR"
-            ],
+ #       "SL_cat1_HP": [
+ #           "btag_LR",
+ #           "p_sb",
+ #           "p_bj"
+ #           ],
+ #       "SL_cat1_HP_muon": [
+ #           "btag_LR"
+ #           ],
+ #       "SL_cat1_HP_electron": [
+ #           "btag_LR"
+ #           ],
 
 #        "SL_cat2_HP": [
 #            "numBTagM",
@@ -176,13 +182,14 @@ if args.mode == "DL":
 #            "Mll",
 
             "numJets",
-        ],
+            ],
 #        "DL_g2jg2t": ["Mll_z"],
 
 #        "DL_g4j_z": ["btag_LR"],
-        "DL_g4j": ["btag_LR", "numBTagM"],
+#        "DL_g4j": ["btag_LR"],
+        "DL_g4jg1t": ["btag_LR"],
+#        "DL_g4j": ["btag_LR", "numBTagM"],
 #        "DL_g4j": ["numBTagM"],
-
         }
 
 do_QCD=False
@@ -245,6 +252,7 @@ for reg in regs:
 #                histvar=var
 
             mc[proc] = inputfiles[proc].Get(hist + "/" + proc_mc[proc][0])
+            mc[proc].Rebin(rebin)
 
             try:
                 test=mc[proc].Integral()
@@ -253,10 +261,14 @@ for reg in regs:
                 continue
             if proc != "QCD_BCtoE" and not args.skipSys:
                 mc_up[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Up") # sys_err_up per process
+                mc_up[proc].Rebin(rebin)
                 mc_down[proc] = find_sum_sys(proc, proc_mc[proc][0], systematics_list, inputfiles[proc], hist, "Down")
+                mc_down[proc].Rebin(rebin)
             else:
                 mc_up[proc] = mc[proc]
+                mc_up[proc].Rebin(rebin)
                 mc_down[proc] = mc[proc]
+                mc_down[proc].Rebin(rebin)
 
             jet_labels = {} # xaxis-range, label name (for jet count hists)
             if args.mode == "SL":
@@ -300,12 +312,13 @@ for reg in regs:
                 break
 
             inputfiles[proc] =ROOT.TFile(infile)
-
+            
  #           if var[:8] == "electron" or var[:4] == "muon":
  #               hist= "MEM_lepton_" + var.split("_")[1]
 
             print "data hist = " + hist + "/" + proc_data[proc][0]
             data[proc] = inputfiles[proc].Get(hist + "/" + proc_data[proc][0])
+            data[proc].Rebin(rebin)
 
         if len(data) == 0 or len(mc)==0:
             print "No input files found, skip"
@@ -325,4 +338,4 @@ for reg in regs:
 
         signal = mc["TTH125"].Clone("signal")
 
-        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_cat2_tests/firstBin")
+        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_paper", plot_style=plot_style)
