@@ -47,17 +47,17 @@ infile_data =ROOT.TFile(infilename_data)
 
 prh = {} # dictionary of 8 purity histograms for each category 
 step=0.6
-#binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #variable bin size
+binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #default
 
 #binning = [-6.3, -6.3+0.5*step, -6.3+step, -6.3+1.5*step, -6.3+2*step, -6.3+2.5*step, -6.3+3*step, -6.3+3.5*step, -6.3+4*step, -6.3+4.5*step, -6.3+5*step, -6.3+6*step, -1.3] #variable bin size with finer binning
 
 #----- variable binsize with semifine binning -----
-binvec_1 = arange(-6.3, -2.7, 0.45)
-binning = binvec_1.tolist()
-print binvec_1
-binning.append(-2.7)
-binning.append(-1.3)
-
+#binvec_1 = arange(-6.3, -2.7, 0.45)
+#binning = binvec_1.tolist()
+#print binvec_1
+#binning.append(-2.7)
+#binning.append(-1.3)
+#--------------------------------
 
 #purity_hist = ROOT.TH1F("purity","purity", 8, -7., -1.)
 purity_hist = ROOT.TH1F("purity","purity", len(binning)-1,  array('d', binning) )
@@ -240,7 +240,7 @@ p2.cd()
 
 #data_mc_ratio_sb.SetLineWidth(2)
 #data_mc_ratio_sb.SetLineColor(colors["TTH125"])
-data_mc_ratio_sb = style_axes(data_mc_ratio_sb, yTitle = "Data/MC", is_ratio=True)
+data_mc_ratio_sb = style_axes(data_mc_ratio_sb, yTitle = "Data/Bkg", is_ratio=True)
 data_mc_ratio_sb = style_hist(data_mc_ratio_sb, is_signal=True)
 error_band = style_hist(error_band, is_error_band=True)
 one = error_band.Clone("one")
