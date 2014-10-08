@@ -13,6 +13,12 @@ from array import array
 from histlib import get_ratio, colors, style_hist, style_axes, get_poisson_err, get_poisson_ratio, add_cms_info
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
+ROOT.gStyle.SetHatchesLineWidth(2)
+ROOT.gStyle.SetFrameLineWidth(4)
+
+ROOT.gStyle.SetEndErrorSize(8)
+
+
 plot_style="new" # "pas" for old styling
 
 #infilepath = "../datacards/June03_PAS/control_final_fit/" # for pas
@@ -173,7 +179,7 @@ error_band_main = style_hist(error_band_main, is_error_band=True)
 #error_band_main.SetFillStyle(3004)
 
 #------------------- plot -----------------------
-c = ROOT.TCanvas("pur" , "pur", 800, 1000)
+c = ROOT.TCanvas("pur" , "pur", 2400, 3000)
 
 p1 = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
 p1.SetBottomMargin(0)
@@ -188,35 +194,21 @@ purity_hist.Draw()
 st.Draw("histsame")
 purity_hist.Draw("histsame")
 error_band_main.Draw("e2same")
-#data_purity_hist_poisson.SetMarkerColor(ROOT.kRed)
-data_purity_hist_poisson.SetMarkerSize(0.8)
-data_purity_hist_poisson.Draw("epsame")
 
+data_purity_hist_poisson.SetMarkerSize(3)
+data_purity_hist_poisson.SetLineWidth(5)
+data_purity_hist_poisson.Draw("epsame")
 
 legend1 = ROOT.TLegend(0.65, 0.75, 0.95, 0.9, "", "brNDC")
 legend1.SetBorderSize(0)
 legend1.SetFillColor(0)
 legend1.SetTextSize(0.0375)
-legend1.AddEntry(data_purity_hist, "Data", "lpe")
+legend1.AddEntry(data_purity_hist_poisson, "Data", "lpe")
 #legend1.AddEntry(purity_hist, "Expectation", "l")
 legend1.AddEntry(purity_hist_signal, "Signal (#mu = 1)", "f")
 legend1.AddEntry(purity_hist_bkg, "Background", "f")
 legend1.AddEntry(error_band_main, "Bkg. Unc.", "f")
 legend1.Draw()
-
-#latex = ROOT.TLatex()
-#latex.SetNDC()
-#latex.SetTextSize(0.0375)
-#latex.SetTextAlign(31)
-#latex.SetTextAlign(11)
-        
-#cut = "CMS Preliminary"
-
-#std_txt = cut + " #sqrt{s}=8 TeV, L=19.5 fb^{-1}"                                                       
-#cat_txt = regs[reg]
-
-#latex.DrawLatex(0.15, 0.96, std_txt)
-#latex.DrawLatex(0.71, 0.89, cat_txt)
 
 if plot_style == "pas":
     add_cms_info(lumi=19.5, com=8)
@@ -236,27 +228,29 @@ p2.SetFillStyle(0);
 p2.Draw()
 p2.cd()
 
-
-
-#data_mc_ratio_sb.SetLineWidth(2)
 #data_mc_ratio_sb.SetLineColor(colors["TTH125"])
 data_mc_ratio_sb = style_axes(data_mc_ratio_sb, yTitle = "Data/Bkg", is_ratio=True)
 data_mc_ratio_sb = style_hist(data_mc_ratio_sb, is_signal=True)
-error_band = style_hist(error_band, is_error_band=True)
-one = error_band.Clone("one")
-one = style_hist(one, line=True)
+data_mc_ratio_sb.SetLineWidth(10)
 
+error_band = style_hist(error_band, is_error_band=True)
+
+one = ROOT.TLine(binning[0],1,binning[-1],1) 
+one = style_hist(one, line=True)
+one.SetLineStyle(9) #long dashed
+one.SetLineWidth(4)
 
 data_mc_ratio_sb.Draw("hist")
 one.Draw("histsame")
 error_band.Draw("e2same")
-data_mc_ratio_poisson.SetMarkerSize(0.8)
+data_mc_ratio_poisson.SetMarkerSize(3)
+data_mc_ratio_poisson.SetLineWidth(5)
 data_mc_ratio_poisson.Draw("epsame")
 
 #purity_lin.Draw("histsame") # to add purity on the ratio band
 
 #outfile = "plots/purity_2D_mu1fit_lb.png"
-outfile = "plots/purity_2D_mu1fit.png"
+outfile = "plots_paper/purity_2D_mu1fit.png"
 #outfile = "plots/purity_2D.png"
 
 print "saving output to: " + outfile

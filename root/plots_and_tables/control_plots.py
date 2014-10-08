@@ -8,6 +8,11 @@ from systematics import systematics_list, find_sum_sys, get_tot_sys
 
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)
 
+ROOT.gStyle.SetHatchesLineWidth(2)
+ROOT.gStyle.SetEndErrorSize(8)
+ROOT.gStyle.SetFrameLineWidth(6)
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--mode', dest='mode',  choices=["DL", "SL"], required=True, help="specify *DL* or *SL* analysis")
 parser.add_argument('--skipSys', dest='skipSys', action="store_true")#, default=True, required=False)
@@ -22,8 +27,9 @@ else:
     print "Running with MC systematics"
 
 #inpath = "../datacards/May26_PAS/control_plots_merged/"
-#inpath = "../datacards/June03_PAS/control_plots_merged/"
 #inpath = "../datacards/Sep14_cat2_studies/"
+
+#inpath = "../datacards/June03_PAS/control_plots_merged/"
 inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
@@ -47,8 +53,8 @@ vars = { # x-axis title, x-axis range
     "MET_pt": ["MET", [0,250] ],
     "MET_sumEt": ["MET_sumEt", [350,3500]],
 
-    "numJets": ["jet multiplicity", [4, 10] ],
-    "numBTagM": ["multiplicity of b-tagged jets (CSVM)", [0, 5] ],
+    "numJets": ["jet multiplicity", [4, 11] ],
+    "numBTagM": ["multiplicity of b-tagged jets (CSVM)", [2, 6] ],
     "jetsAboveCut": ["nr jets with p_{T} > 40", [0, 10] ],
 
     "nPVs": ["# primary vertices", [0,40]],
@@ -66,8 +72,8 @@ vars = { # x-axis title, x-axis range
 if args.mode == "DL":
     vars["electron_pt"][1] = [20, 250]
     vars["muon_pt"][1] = [20, 250]
-    vars["numJets"][1] = [0, 10]
-    vars["numBTagM"][1] = [1, 4]
+    vars["numJets"][1] = [2, 9]
+    vars["numBTagM"][1] = [1, 5]
 
 
 if args.mode == "SL":
@@ -181,7 +187,7 @@ if args.mode == "DL":
 #            "MET_sumEt",
 #            "Mll",
 
-            "numJets",
+#            "numJets",
             ],
 #        "DL_g2jg2t": ["Mll_z"],
 

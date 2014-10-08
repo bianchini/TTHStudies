@@ -87,19 +87,23 @@ def style_axes(hist, xTitle="", yTitle="", is_ratio=False, is_jet_count=False):
 def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=False, line=False, yRange=[0.5,1.5]):
   if is_data:
     hist.SetMarkerStyle(20)
-    hist.SetMarkerSize(1.5)
-
     hist.SetMarkerColor(ROOT.kBlack)
     hist.SetLineColor(ROOT.kBlack)
-    hist.SetLineWidth(2)
 
-#    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
+    hist.SetMarkerSize(5)
+    hist.SetLineWidth(5)
+
+    #    hist.SetMarkerSize(1.5)
+    #    hist.SetLineWidth(2)
+    #    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
 
   elif is_signal:
     hist.SetLineColor(colors["TTH125"])
-#    signal.SetLineStyle(ROOT.kDashed)
-    hist.SetLineWidth(4)
     hist.SetFillStyle(0)
+#    signal.SetLineStyle(ROOT.kDashed)
+    
+#    hist.SetLineWidth(4)
+    hist.SetLineWidth(10)
 
   elif is_error_band:
     hist.SetMarkerSize(0)
@@ -114,9 +118,13 @@ def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=Fa
 
   elif line:
     hist.SetLineColor(ROOT.kBlack)
-    hist.SetLineStyle(ROOT.kDashed)
-    hist.SetFillStyle(0)
-    hist.SetLineWidth(1)
+#    hist.SetFillStyle(0)
+    
+    hist.SetLineStyle(9)
+    hist.SetLineWidth(4) 
+
+#    hist.SetLineStyle(ROOT.kDashed)
+#    hist.SetLineWidth(1)
 
   else: #regular MC stack
     hist.SetLineColor(color)
@@ -274,7 +282,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
             h_sumMC.Add(mc[proc])
 
     c={}
-    c[var] = ROOT.TCanvas("c" + var ,"c" + var, 800, 1000)
+    c[var] = ROOT.TCanvas("c" + var ,"c" + var, 3*800, 3*1000)
 
     p1 = {}
     p1[var] = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
@@ -340,7 +348,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     error_band_mc.Draw("e2same")
     signal.Draw("histsame")
-    dataSum.Draw("epsame")
+#    dataSum.Draw("epsame")
+    dataSum.Draw("pe1same")
 #    dataSumPoisson.Draw("epsame")
 
     #-------------------- legend ----------------------------
@@ -410,16 +419,19 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     error_band = style_hist(error_band, color=ROOT.kGreen, is_error_band=True)
     error_band = style_axes(error_band, is_ratio=True)
 
-    one = error_band.Clone("one")
-    one = style_hist(one, line=True)
-
-
-    hist_ratio.Draw("pe1")
+    hist_ratio.Draw("ep")
     error_band.Draw("e2same")
     hist_ratio_poisson.Draw("pe1same")
 
+    c[var].Update()
+#    one = ROOT.TLine(c[var].GetUxmin(),1,c[var].GetUxmax(),1)
+    print "xmin = " + str(c[var].GetUxmin()) + ", xmax = " + str(c[var].GetUxmax())
+    print var_range[0], var_range[1] #hist_ratio.GetXaxis().GetXmin()
 
-    one.Draw("histsame")
+    one = ROOT.TLine(var_range[0],1,var_range[1],1)
+    one = style_hist(one, line=True)
+
+    one.Draw("same")
 #    hist_ratio.Draw("pe1same")
 
     #-----------------------------------
