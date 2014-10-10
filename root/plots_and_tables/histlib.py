@@ -5,9 +5,9 @@ from collections import OrderedDict as dict
 
 proc_names = {
     "TTJetsJJ": "t#bar{t} + lf",
-    "TTJetsCC": "t#bar{t} + cc",
+    "TTJetsCC": "t#bar{t} + c#bar{c}",
     "TTJetsBJ": "t#bar{t} + b",
-    "TTJetsBB": "t#bar{t} + bb",
+    "TTJetsBB": "t#bar{t} + b#bar{b}",
     "TTV": "t#bar{t} + W,Z",
     "DiBoson": "VV",
     "TTH125": "t#bar{t}H (125)",
@@ -419,7 +419,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     error_band = style_hist(error_band, color=ROOT.kGreen, is_error_band=True)
     error_band = style_axes(error_band, is_ratio=True)
 
-    hist_ratio.Draw("ep")
+    hist_ratio.Draw("p")
     error_band.Draw("e2same")
     hist_ratio_poisson.Draw("pe1same")
 

@@ -29,8 +29,10 @@ else:
 #inpath = "../datacards/May26_PAS/control_plots_merged/"
 #inpath = "../datacards/Sep14_cat2_studies/"
 
-#inpath = "../datacards/June03_PAS/control_plots_merged/"
-inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
+########################
+inpath = "../datacards/June03_PAS/control_plots_merged/"
+#inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
+########################
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
@@ -82,10 +84,10 @@ if args.mode == "SL":
 #        "SL_6j": ["btag_LR"],
 #        "SL_g6jg2t": ["btag_LR"],
 #        "SL_5jg2t": ["btag_LR"],
-        "SL_5jg1t": ["btag_LR"],
-        "SL_g6jg1t": ["btag_LR"],
+#        "SL_5jg1t": ["btag_LR"],
+#        "SL_g6jg1t": ["btag_LR"],
 
-#        "SL_g4jg2t": [ "numBTagM", "numJets"],
+        "SL_g4jg2t": [ "numBTagM", "numJets"],
 
 #        "SL_g5jg3t": [
 #            "electron_pt",
@@ -187,15 +189,15 @@ if args.mode == "DL":
 #            "MET_sumEt",
 #            "Mll",
 
-#            "numJets",
+            "numJets",
             ],
 #        "DL_g2jg2t": ["Mll_z"],
 
 #        "DL_g4j_z": ["btag_LR"],
 #        "DL_g4j": ["btag_LR"],
-        "DL_g4jg1t": ["btag_LR"],
-#        "DL_g4j": ["btag_LR", "numBTagM"],
-#        "DL_g4j": ["numBTagM"],
+#        "DL_g4jg1t": ["btag_LR"],
+    
+        "DL_g4j": ["numBTagM"],
         }
 
 do_QCD=False
