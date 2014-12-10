@@ -6,11 +6,11 @@ import argparse
 from histlib import colors, stackplot, get_jet_count_hist
 from systematics import systematics_list, find_sum_sys, get_tot_sys
 
-ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)
+ROOT.gROOT.SetBatch(ROOT.kTRUE) 
 
-ROOT.gStyle.SetHatchesLineWidth(2)
-ROOT.gStyle.SetEndErrorSize(8)
-ROOT.gStyle.SetFrameLineWidth(6)
+#ROOT.gStyle.SetHatchesLineWidth(2)
+#ROOT.gStyle.SetEndErrorSize(8)
+#ROOT.gStyle.SetFrameLineWidth(6)
 
 
 parser = argparse.ArgumentParser()
@@ -30,15 +30,16 @@ else:
 #inpath = "../datacards/Sep14_cat2_studies/"
 
 ########################
-inpath = "../datacards/June03_PAS/control_plots_merged/"
-#inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
+#inpath = "../datacards/June03_PAS/control_plots_merged/"
+inpath = "../datacards/Sep_PAPER/btag_LR_5j1t_10bin/"
 ########################
 
 version = "MEM_New_ntuplizeAll_v3_rec_std_"
 #version = "MEM_New_rec_std_"
 
 vars = { # x-axis title, x-axis range
-    "btag_LR": [" \\mathscr{F}", [0,1] ],
+    "btag_LR": ["#it{F}", [0,1] ],
+#    "btag_LR": ["\\mathscr{F}", [0,1] ],
 
     "electron_eta": ["electron #eta", [-2.5, 2.5] ],
     "electron_pt": ["electron p_{T}", [30, 250] ],
@@ -72,11 +73,13 @@ vars = { # x-axis title, x-axis range
     }
 
 if args.mode == "DL":
+    legend_header = "DL"
     vars["electron_pt"][1] = [20, 250]
     vars["muon_pt"][1] = [20, 250]
     vars["numJets"][1] = [2, 9]
     vars["numBTagM"][1] = [1, 5]
-
+else:
+    legend_header = "SL"
 
 if args.mode == "SL":
     regs = {
@@ -84,10 +87,10 @@ if args.mode == "SL":
 #        "SL_6j": ["btag_LR"],
 #        "SL_g6jg2t": ["btag_LR"],
 #        "SL_5jg2t": ["btag_LR"],
-#        "SL_5jg1t": ["btag_LR"],
-#        "SL_g6jg1t": ["btag_LR"],
+        "SL_5jg1t": ["btag_LR"],
+        "SL_g6jg1t": ["btag_LR"],
 
-        "SL_g4jg2t": [ "numBTagM", "numJets"],
+#        "SL_g4jg2t": [ "numBTagM", "numJets"],
 
 #        "SL_g5jg3t": [
 #            "electron_pt",
@@ -346,4 +349,4 @@ for reg in regs:
 
         signal = mc["TTH125"].Clone("signal")
 
-        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_paper", plot_style=plot_style)
+        stackplot(dataSum, mc, mc_up, mc_down, signal, var, vars[var][0], vars[var][1], reg, outdir="plots_paper", plot_style=plot_style, legend_header=legend_header)

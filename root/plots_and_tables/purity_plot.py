@@ -13,11 +13,11 @@ from array import array
 from histlib import get_ratio, colors, style_hist, style_axes, get_poisson_err, get_poisson_ratio, add_cms_info
 ROOT.gROOT.SetBatch(ROOT.kTRUE) #dont show graphics (messes things up)  
 
-ROOT.gStyle.SetHatchesLineWidth(2)
-ROOT.gStyle.SetFrameLineWidth(4)
+do_ln = True
 
-ROOT.gStyle.SetEndErrorSize(8)
-
+#ROOT.gStyle.SetHatchesLineWidth(2)
+#ROOT.gStyle.SetFrameLineWidth(4)
+#ROOT.gStyle.SetEndErrorSize(8)
 
 plot_style="new" # "pas" for old styling
 
@@ -53,11 +53,18 @@ infile_data =ROOT.TFile(infilename_data)
 
 prh = {} # dictionary of 8 purity histograms for each category 
 step=0.6
-binning = [-6.3, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.3] #default
+
+binning_ln = [-6.4, -6.3+step, -6.3+2*step, -6.3+3*step, -6.3+4*step, -6.3+5*step,  -6.3+6*step, -1.5] #default
+if do_ln:
+    binning = binning_ln
+else:
+    binning = [i/math.log(10) for i in binning_ln] # change the base of the log
+
+print "Binning = " + str(binning)
 
 #binning = [-6.3, -6.3+0.5*step, -6.3+step, -6.3+1.5*step, -6.3+2*step, -6.3+2.5*step, -6.3+3*step, -6.3+3.5*step, -6.3+4*step, -6.3+4.5*step, -6.3+5*step, -6.3+6*step, -1.3] #variable bin size with finer binning
 
-#----- variable binsize with semifine binning -----
+#----- variable binsize with reduced binning -----
 #binvec_1 = arange(-6.3, -2.7, 0.45)
 #binning = binvec_1.tolist()
 #print binvec_1
@@ -102,8 +109,11 @@ for i in range(1,3): # SL/DL
 
             for ibin in range(1,bkg.GetNbinsX()+1):
                 if bkg.GetBinContent(ibin) != 0:
-                    pur_bin = math.log(signal.GetBinContent(ibin)/bkg.GetBinContent(ibin)) #purity at bin in log scale
-                    if pur_bin > -2.7:
+                    if do_ln:
+                        pur_bin = math.log(signal.GetBinContent(ibin)/bkg.GetBinContent(ibin)) #purity at bin in log scale
+                    else:
+                        pur_bin = math.log10(signal.GetBinContent(ibin)/bkg.GetBinContent(ibin)) #purity at bin in log scale
+                    if pur_bin > -2.7 and do_ln:
                         print "SL/DL = " + str(i) + ", cat = " + str(j) + ", in bin " + str(ibin) + ", purity = " + str(pur_bin) + ", nr signal = " + str(signal_pf.GetBinContent(ibin)) + ", nr bkg = " + str(bkg.GetBinContent(ibin)) + ", nr data = " + str(data.GetBinContent(ibin)) 
                     pur_list.append(pur_bin)
                 else:
@@ -157,7 +167,11 @@ error_band = get_ratio(data_purity_hist_for_ratio, purity_hist, ymin=0., ymax = 
 #--------------------- style --------------------
 data_mc_ratio_poisson = style_hist(data_mc_ratio_poisson, is_data=True)
 
-purity_hist = style_axes(purity_hist, xTitle="log(S/B)", yTitle="Events") 
+if do_ln:
+    purity_hist = style_axes(purity_hist, xTitle="ln(S/B)", yTitle="Events") 
+else:
+    purity_hist = style_axes(purity_hist, xTitle="log(S/B)", yTitle="Events") 
+
 purity_hist.GetXaxis().SetNdivisions(8)
 
 purity_hist.SetStats(False)
@@ -169,7 +183,7 @@ purity_lin.SetLineWidth(2)
 purity_lin.SetLineColor(colors["TTH125"])
 
 data_mc_ratio = style_hist(data_mc_ratio, is_data=True)
-data_mc_ratio.SetTitle("log(S/B)")
+#data_mc_ratio.SetTitle("log(S/B)")
 
 error_band_main = style_hist(error_band_main, is_error_band=True)
 
@@ -179,15 +193,19 @@ error_band_main = style_hist(error_band_main, is_error_band=True)
 #error_band_main.SetFillStyle(3004)
 
 #------------------- plot -----------------------
-c = ROOT.TCanvas("pur" , "pur", 2400, 3000)
+#c = ROOT.TCanvas("pur" , "pur", 2400, 3000)
+c = ROOT.TCanvas("pur", "pur", 5, 30, 640, int(580/0.85)) # Daniel sizing
 
-p1 = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
-p1.SetBottomMargin(0)
 
-p1.Draw()
+#p1 = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
+p1 = ROOT.TPad("p1", "p1", 0, 0.155, 1, 1) #Daniel
+
+#p1.SetBottomMargin(0)
+
 p1.SetTicks(0, 0);
 p1.SetFillStyle(0);
 p1.SetLogy()
+p1.Draw()
 p1.cd()
 
 purity_hist.Draw()
@@ -195,8 +213,8 @@ st.Draw("histsame")
 purity_hist.Draw("histsame")
 error_band_main.Draw("e2same")
 
-data_purity_hist_poisson.SetMarkerSize(3)
-data_purity_hist_poisson.SetLineWidth(5)
+data_purity_hist_poisson.SetMarkerSize(1.5)
+data_purity_hist_poisson.SetLineWidth(2)
 data_purity_hist_poisson.Draw("epsame")
 
 legend1 = ROOT.TLegend(0.65, 0.75, 0.95, 0.9, "", "brNDC")
@@ -221,8 +239,9 @@ else: # according to new standard
 
 c.cd()
 
-p2 = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
-p2.SetTopMargin(0.0)
+#p2 = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
+p2 = ROOT.TPad("p2","p2", 0, 0, 1, 0.175) #Daniel
+#p2.SetTopMargin(0.0)
 #p2.SetGrid();
 p2.SetFillStyle(0);
 p2.Draw()
@@ -231,28 +250,35 @@ p2.cd()
 #data_mc_ratio_sb.SetLineColor(colors["TTH125"])
 data_mc_ratio_sb = style_axes(data_mc_ratio_sb, yTitle = "Data/Bkg", is_ratio=True)
 data_mc_ratio_sb = style_hist(data_mc_ratio_sb, is_signal=True)
-data_mc_ratio_sb.SetLineWidth(10)
+data_mc_ratio_sb.SetLineWidth(3)
 
 error_band = style_hist(error_band, is_error_band=True)
 
 one = ROOT.TLine(binning[0],1,binning[-1],1) 
 one = style_hist(one, line=True)
-one.SetLineStyle(9) #long dashed
-one.SetLineWidth(4)
+one.SetLineStyle(ROOT.kDashed)  # 
+#one.SetLineStyle(9) #long dashed
+one.SetLineWidth(2)
 
 data_mc_ratio_sb.Draw("hist")
 one.Draw("histsame")
 error_band.Draw("e2same")
-data_mc_ratio_poisson.SetMarkerSize(3)
-data_mc_ratio_poisson.SetLineWidth(5)
+data_mc_ratio_poisson.SetMarkerSize(1.5)
+data_mc_ratio_poisson.SetLineWidth(2)
 data_mc_ratio_poisson.Draw("epsame")
 
 #purity_lin.Draw("histsame") # to add purity on the ratio band
 
-#outfile = "plots/purity_2D_mu1fit_lb.png"
-outfile = "plots_paper/purity_2D_mu1fit.png"
-#outfile = "plots/purity_2D.png"
+if do_ln:
+    ln_log_str = "_ln"
+else:
+    ln_log_str = "_log"
+
+outfile = "plots_paper/purity_2D_mu1fit" + ln_log_str
 
 print "saving output to: " + outfile
-c.SaveAs(outfile)
+#c.SaveAs(outfile)
+c.SaveAs(outfile + ".root")
+c.SaveAs(outfile + ".png")
+c.SaveAs(outfile + ".pdf")
 c.Close()

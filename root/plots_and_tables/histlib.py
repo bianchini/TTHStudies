@@ -90,20 +90,17 @@ def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=Fa
     hist.SetMarkerColor(ROOT.kBlack)
     hist.SetLineColor(ROOT.kBlack)
 
-    hist.SetMarkerSize(5)
-    hist.SetLineWidth(5)
-
-    #    hist.SetMarkerSize(1.5)
-    #    hist.SetLineWidth(2)
-    #    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
+    hist.SetMarkerSize(1.5)
+    hist.SetLineWidth(2)
+#    hist.SetBinErrorOption(ROOT.TH1F.kPoisson)
 
   elif is_signal:
     hist.SetLineColor(colors["TTH125"])
     hist.SetFillStyle(0)
 #    signal.SetLineStyle(ROOT.kDashed)
     
-#    hist.SetLineWidth(4)
-    hist.SetLineWidth(10)
+    hist.SetLineWidth(4)
+#    hist.SetLineWidth(10)
 
   elif is_error_band:
     hist.SetMarkerSize(0)
@@ -119,11 +116,11 @@ def style_hist(hist, color=0, is_data = False, is_signal=False, is_error_band=Fa
   elif line:
     hist.SetLineColor(ROOT.kBlack)
 #    hist.SetFillStyle(0)
-    
-    hist.SetLineStyle(9)
-    hist.SetLineWidth(4) 
 
-#    hist.SetLineStyle(ROOT.kDashed)
+    hist.SetLineStyle(ROOT.kDashed)
+#    hist.SetLineStyle(9)
+    hist.SetLineWidth(2) 
+
 #    hist.SetLineWidth(1)
 
   else: #regular MC stack
@@ -250,7 +247,7 @@ def get_error_band(err_up, err_down, nominal_in, band_only=True):
 
     return nominal
 
-def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg="", outdir="plots", plot_style = "pas"):
+def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-500,500], reg="", outdir="plots", plot_style = "pas", legend_header=""):
     """
     data -- sum of data histograms
     mc -- dictionary of mc histograms
@@ -282,16 +279,29 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
             h_sumMC.Add(mc[proc])
 
     c={}
-    c[var] = ROOT.TCanvas("c" + var ,"c" + var, 3*800, 3*1000)
-
+#    c[var] = ROOT.TCanvas("c" + var ,"c" + var, 3*800, 3*1000)
+    c[var] = ROOT.TCanvas("c" + var, "c" + var,  5, 30, 640, int(580/0.85) ) # Daniel sizing
+    
     p1 = {}
-    p1[var] = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
-    p1[var].SetBottomMargin(0)
+#    p1[var] = ROOT.TPad("p1", "p1", 0, 0.25, 1, 1)
 
+    p1[var] = ROOT.TPad("p1", "p1", 0, 0.155, 1, 1) #Daniel
+#    p1[var].SetBottomMargin(0)
+
+
+    p1[var].SetGrid(0,0)
+    p1[var].SetFillStyle(4000)
+    p1[var].SetFillColor(10)
+    p1[var].SetTicky()
+    p1[var].SetTicks(0,0)
+    p1[var].SetObjectStat(0)
     p1[var].Draw()
-    p1[var].SetTicks(0, 0);
-    p1[var].SetFillStyle(0);
+    p1[var].cd()
 
+#    p1[var].SetTicks(0, 0)
+#    p1[var].SetFillStyle(0)
+#    p1.SetObjectStat(0)
+#    p1[var].Draw()
 
     h_sumMC.SetTitle("")
     h_sumMC.SetStats(False)
@@ -300,8 +310,6 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     h_sumMC.SetMinimum(0.)
     h_sumMC.SetLineColor(ROOT.kBlack)
     h_sumMC.SetFillStyle(0)
-
-
 
     if var != "numJets" and var != "numBTagM":
         h_sumMC.GetXaxis().SetRangeUser( var_range[0], var_range[1])
@@ -328,9 +336,11 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
         p1[var].SetLogy()
 
         if var == "numBTagM":
-            h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+          h_sumMC.SetMaximum(10*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+        elif var == "btag_LR":
+          h_sumMC.SetMaximum(70*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
         else:
-            h_sumMC.SetMaximum(20*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
+          h_sumMC.SetMaximum(20*ROOT.TMath.Max(h_sumMC.GetMaximum(), dataSum.GetMaximum()) )
 
 
     h_sumMCup = get_tot_sys(mc_up)
@@ -340,7 +350,7 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     error_band_mc = style_hist(error_band_mc, is_error_band=True)
 
 
-    p1[var].cd()
+#    p1[var].cd()
 
     h_sumMC.Draw("hist")
     sum.Draw("histsame")
@@ -354,8 +364,9 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
 
     #-------------------- legend ----------------------------
 
-    legend1 = ROOT.TLegend(0.45, 0.8, 0.66, 0.92, "", "brNDC")
+    legend1 = ROOT.TLegend(0.45, 0.76, 0.66, 0.92, "", "brNDC")
     legend1 = style_legend(legend1)
+    legend1.SetHeader(legend_header)
 
     legend1.AddEntry(dataSum, "Data", "lpe")
     legend1.AddEntry(error_band_mc, "Bkg. Unc.", "f")
@@ -370,6 +381,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     mc_rev = mc.items()
     mc_rev.reverse()
     lmc = dict(mc_rev)
+
+   
 
     for lname, lh in lmc.iteritems():
         if not (lname == "TTH125"):
@@ -392,8 +405,9 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     c[var].cd()
 
     p2 = {}
-    p2[var] = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
-    p2[var].SetTopMargin(0.0)
+#    p2[var] = ROOT.TPad("p2","p2", 0, 0.02, 1, 0.18)
+    p2[var] = ROOT.TPad("p2","p2", 0, 0, 1, 0.175)
+#    p2[var].SetTopMargin(0.0)
 #    p2[var].SetGrid();
     p2[var].SetFillStyle(0);
     p2[var].Draw()
@@ -455,7 +469,8 @@ def stackplot(dataSum, mc, mc_up, mc_down, signal, var, varname="", var_range=[-
     outfile = outdir + "/control_" + var + "_" + reg + ".png"
     print "saving outpit file to: " + outfile
     c[var].SaveAs( outfile ) 
-#    c[var].SaveAs("plots/control_" + var + "_" + reg + ".pdf")
+    c[var].SaveAs( outdir + "/control_" + var + "_" + reg + ".root" )
+    c[var].SaveAs( outdir + "/control_" + var + "_" + reg + ".pdf")
     c[var].Close()
 
     print "dataSum = " + str(dataSum.Integral())
